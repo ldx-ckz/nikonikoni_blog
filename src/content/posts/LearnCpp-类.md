@@ -381,8 +381,6 @@ Fraction(const Fraction&) = delete;
 
 ## 参考来源
 
-访问日期：2026-08-31。
-
 - [14.1 — Introduction to object-oriented programming](https://www.learncpp.com/cpp-tutorial/introduction-to-object-oriented-programming/)
 - [14.2 — Introduction to classes](https://www.learncpp.com/cpp-tutorial/introduction-to-classes/)
 - [14.3 — Member functions](https://www.learncpp.com/cpp-tutorial/member-functions/)

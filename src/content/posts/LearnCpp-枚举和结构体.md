@@ -789,4 +789,3 @@ void print(T value)
 - [13.12 — Member selection with pointers and references](https://www.learncpp.com/cpp-tutorial/member-selection-with-pointers-and-references/)
 - [13.13 — Class templates](https://www.learncpp.com/cpp-tutorial/class-templates/)
 
-访问日期：2026-08-20。
