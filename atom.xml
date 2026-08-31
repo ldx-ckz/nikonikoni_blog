@@ -5,8 +5,319 @@
   <link href="https://miku.nikonikoni.blog/" rel="alternate" type="text/html"/>
   <link href="https://miku.nikonikoni.blog/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://miku.nikonikoni.blog/</id>
-  <updated>2026-08-22T07:07:49.285Z</updated>
+  <updated>2026-08-31T03:21:18.922Z</updated>
   <language>zh_CN</language>
+  <entry>
+    <title>LearnCpp 类</title>
+    <link href="https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB/" rel="alternate" type="text/html"/>
+    <id>https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB/</id>
+    <published>2026-08-31T00:00:00.000Z</published>
+    <updated>2026-08-31T00:00:00.000Z</updated>
+    <summary>LearnCpp 类笔记，介绍面向对象编程、类与成员函数、访问控制、封装、构造函数和复制构造函数。</summary>
+    <content type="html"><![CDATA[<h1>LearnCpp 类</h1>
+<h2>14.1 面向对象编程简介</h2>
+<p>过程式编程把程序组织为一组函数或过程，数据与操作数据的函数彼此分离。例如，<code>eat(you, apple)</code> 把动作写成独立函数，并把参与动作的对象作为参数传入。</p>
+<p>现实对象通常同时具有属性和行为。人在程序中可以具有姓名、身高等属性，也可以执行进食、行走等行为。面向对象编程允许程序定义同时包含属性和明确行为的类型；由这种类类型实例化出的对象称为类对象。调用形式也相应变成 <code>you.eat(apple)</code>：对象本身位于成员选择运算符左侧，行为属于该对象。</p>
+<p>把数据与行为组织在一起具有以下作用：</p>
+<ul>
+<li>相关状态和操作集中在一个模块中，代码更容易理解和维护；</li>
+<li>对象之间的交互更接近所建模的关系；</li>
+<li>类型可以在不同程序中复用；</li>
+<li>修改一种对象的实现时，影响通常局限在该类型内部。</li>
+</ul>
+<p>在纯过程式设计中，如果用一个动物枚举和多组独立函数实现名称、腿数、叫声等属性，加入一种新动物往往需要同时修改枚举以及多个函数。任何漏改都会产生不一致。改为 <code>Cat</code>、<code>Dog</code>、<code>Chicken</code> 等类型后，每种动物的数据和行为集中在自己的类型中，扩展更局部。</p>
+<p>如果多个类型的组成和行为完全相同，单独定义它们会产生重复，此时一个通用 <code>Animal</code> 类型可能更合适；如果某种类型具有独有状态，例如鸡的每日虫子数量，独立类型又能准确表达差异。长期维护的程序会不断演化，模块化且避免不必要重复的设计可以降低变化造成的破坏。</p>
+<p>面向对象编程常涉及继承、封装、抽象和多态。它补充而不是取代过程式编程：成员函数内部仍由语句、条件和循环等过程式结构实现。</p>
+<p>“对象”一词有两种常见含义。传统 C++ 定义中的对象是一段可用于存储值的内存；面向对象语境中的对象通常特指把数据和行为组合起来的实体。本文按前一种通用含义使用“对象”，需要强调后一种含义时使用“类对象”。</p>
+<h2>14.2 类简介</h2>
+<p>结构体可以把相关数据绑定在一起，并作为一个整体初始化、传递和返回。作为聚合类型使用时，调用者能够直接访问并设置各个数据成员。</p>
+<p>类不变量是对象处于有效状态时必须始终成立的条件。违反不变量可能导致错误结果，甚至未定义行为。并非所有类型都有不变量：只保存两个互不相关整数的 <code>Pair</code> 没有成员间约束；分数则要求分母不为零。</p>
+<pre><code>struct Fraction
+{
+    int numerator { 0 };
+    int denominator { 1 };
+};
+
+Fraction valid { 3, 4 };
+Fraction invalid { 3, 0 }; // 聚合初始化可以覆盖默认成员初始化器
+</code></pre>
+<p>默认成员初始化器和注释都不能阻止调用者显式创建无效对象。在之后执行除法的位置使用断言虽然能记录前置条件，却只能在错误状态被使用时发现问题，距离错误产生处可能已经很远。</p>
+<p>不变量也可能涉及多个成员。例如，若 <code>Employee</code> 同时保存姓名和姓名首字母，那么初始化和每次修改姓名时都必须同步首字母。把维护这种关系的责任交给每个调用者并不可靠。理想的类型应当阻止无效状态，或在无效值进入对象时立即报告。</p>
+<p>类是程序定义的复合类型。它在语言机制上与结构体几乎相同，但惯用目的不同：结构体通常表示可直接访问的简单数据聚合；类通常用于隐藏表示并通过受控操作维护状态。</p>
+<pre><code>class Date
+{
+public:
+    int year {};
+    int month {};
+    int day {};
+};
+
+Date today { 2026, 8, 31 };
+</code></pre>
+<p>类定义以 <code>class</code> 开始，必须先于使用出现，并以分号结束。在所有成员都显式声明为 <code>public</code> 时，这个类与相同成员的结构体在行为上等价。</p>
+<p>标准库中大多数不是别名的类型都是类类型，包括 <code>std::string</code> 和 <code>std::string_view</code>。C++ 最初也曾被称为“带类的 C”。</p>
+<h2>14.3 成员函数</h2>
+<p>成员函数是作为类类型成员声明的函数。这里的类类型包括结构体、类和联合体。与之相对，不属于类类型的普通函数称为非成员函数或自由函数；其他语言常把成员函数称为方法。</p>
+<p>成员函数必须在类定义内部声明，其定义可以写在类内部，也可以写在类外部。定义在类定义内部的成员函数隐式具有 <code>inline</code> 属性，因此把这样的类定义放入头文件并由多个翻译单元包含，不会违反单一定义规则。</p>
+<pre><code>#include &lt;iostream&gt;
+
+struct Date
+{
+    int year {};
+    int month {};
+    int day {};
+
+    void print() const
+    {
+        std::cout &lt;&lt; year &lt;&lt; '/' &lt;&lt; month &lt;&lt; '/' &lt;&lt; day;
+    }
+};
+
+int main()
+{
+    Date today { 2026, 8, 31 };
+    today.print();
+}
+</code></pre>
+<p>定义在全局命名空间的自由函数默认具有外部链接，其他源文件在看到适当的前向声明后也能调用它；把数据类型与相关自由函数放进同一命名空间可以表达关联，但会增加名称和命名空间限定。成员函数则直接把行为声明为类类型的一部分。</p>
+<p>所有非静态成员函数都必须通过该类类型的对象调用。调用 <code>today.print()</code> 时，点号左侧的 <code>today</code> 是隐式对象，并被隐式传给成员函数。成员函数体中未加限定的成员名会在该隐式对象中查找，因此 <code>year</code> 等价于 <code>today.year</code>。自由函数的对应写法通常是 <code>print(today)</code>，对象作为显式实参传入。</p>
+<p>当成员函数同时操作另一个同类型对象时，两者角色不同。例如 <code>joe.kisses(kate)</code> 中，<code>joe</code> 是隐式对象，<code>kate</code> 是显式实参；函数体中的 <code>name</code> 指 <code>joe.name</code>，而 <code>person.name</code> 指参数对象 <code>kate</code> 的成员。</p>
+<p>类定义中的成员函数可以调用在其后声明的成员函数，也可以访问在其后声明的数据成员。普通非成员函数则必须在调用点之前已有声明。编译器可以把类内定义理解为：先看到整个类的成员声明，再处理成员函数体。</p>
+<p>这一规则不改变数据成员的初始化顺序。数据成员始终按其在类中的声明顺序初始化。默认成员初始化器若读取一个稍后才初始化的成员，会读取未初始化值并可能产生未定义行为。因此默认成员初始化器不应依赖其他数据成员。</p>
+<p>成员函数与非成员函数一样可以重载，只要参数列表满足重载区分规则。C++ 允许结构体拥有成员函数，这是结构体和类共享统一语言规则的结果；但为保持结构体的聚合性质，通常不应给结构体添加构造函数。</p>
+<p>没有数据成员的空类仍可实例化，但如果一组函数不管理任何对象状态，通常应把它们放在命名空间中作为非成员函数。这样无需创建无意义的对象，也能清楚表达这些函数不依赖实例数据。</p>
+<h2>14.5 公有成员、私有成员与访问说明符</h2>
+<p>每个类成员都有访问级别，编译器在成员被访问时检查权限。C++ 提供 <code>public</code>、<code>private</code> 和 <code>protected</code> 三种级别。</p>
+<ul>
+<li>公有成员可由同一类的成员、派生类以及类外代码访问；类外代码包括非成员函数和其他类类型的成员。</li>
+<li>受保护成员可由同一类及其派生类访问，但不能由普通类外代码访问。</li>
+<li>私有成员只能由同一类的成员访问，派生类和普通类外代码都不能直接访问。</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>访问级别</th>
+<th>同一类成员</th>
+<th>派生类成员</th>
+<th>类外代码</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>public</code></td>
+<td>可以</td>
+<td>可以</td>
+<td>可以</td>
+</tr>
+<tr>
+<td><code>protected</code></td>
+<td>可以</td>
+<td>可以</td>
+<td>不可以</td>
+</tr>
+<tr>
+<td><code>private</code></td>
+<td>可以</td>
+<td>不可以</td>
+<td>不可以</td>
+</tr>
+</tbody>
+</table>
+<p>结构体和联合体的成员默认是公有的，类的成员默认是私有的。私有数据成员会使类不再是聚合类型，因此不能再使用聚合初始化直接设置这些成员。</p>
+<p><code>public:</code>、<code>private:</code> 和 <code>protected:</code> 是访问说明符。一个说明符影响其后的所有成员，直到遇到下一个说明符或类定义结束。说明符可以重复，也可以按任意顺序出现。类开头显式写 <code>private:</code> 虽然在语义上多余，却能清楚表明设计意图。</p>
+<pre><code>class Employee
+{
+private:
+    std::string m_name {};
+    int m_id {};
+
+public:
+    void print() const;
+};
+</code></pre>
+<p>私有数据成员常使用 <code>m_</code> 前缀。它能区分持续存在的成员状态与参数、局部变量，也能避免数据成员与同名成员函数冲突。作为简单聚合使用的结构体，其公有成员通常不加此前缀。</p>
+<p>访问控制按类而不是按对象实施。同一个类的成员函数不仅能访问隐式对象的私有成员，也能访问作为参数传入的另一个同类型对象的私有成员。</p>
+<p>类与结构体的主要技术区别是默认访问级别：类默认私有，结构体默认公有。继承时默认访问方式也不同，结构体默认公有继承，类默认私有继承；代码不应依赖这个次要默认值来隐藏设计意图。</p>
+<p>结构体适合同时满足以下条件的类型：表示简单数据集合，允许调用者不受限制地访问成员，聚合初始化足以完成初始化，不需要维护类不变量，也不需要专门的设置或清理。否则通常应使用类。类的数据成员应为私有或受保护，面向调用者的成员函数通常为公有，只供内部实现使用的成员函数则保持非公有。结构体通常不使用访问说明符，以维持聚合性质。</p>
+<h2>14.6 访问函数</h2>
+<p>访问函数是用于读取或修改私有成员的简单公有成员函数。读取值的函数称为 getter 或访问器，设置值的函数称为 setter。广义的 mutator 指任何改变对象状态的成员函数，setter 是其中专门设置某个值的一类。</p>
+<pre><code>class Date
+{
+private:
+    int m_year { 2026 };
+
+public:
+    int getYear() const { return m_year; }
+    void setYear(int year) { m_year = year; }
+};
+</code></pre>
+<p>getter 不修改对象，应声明为 <code>const</code>；setter 会修改对象，不能声明为 <code>const</code>。便宜复制的成员通常按值返回，复制成本高的成员通常按常量左值引用返回。</p>
+<p>访问函数有几种常见命名方式：</p>
+<ul>
+<li><code>getName()</code> 与 <code>setName()</code> 明确区分读写，也暗示操作成本低；</li>
+<li><code>name()</code> 与重载的 <code>name(value)</code> 更简洁，且接近标准库风格，但调用点不一定能直观看出后者在修改对象；</li>
+<li><code>name()</code> 与 <code>setName()</code> 只给 setter 加前缀，在简洁性和明确性之间折中。</li>
+</ul>
+<p>setter 宜使用 <code>set</code> 前缀；getter 可以使用 <code>get</code> 前缀，也可以直接使用属性名。<code>m_</code> 前缀使数据成员可以与无前缀 getter 共存而不发生名称冲突。</p>
+<p>并非每个私有成员都应机械地配备 getter 和 setter。若一个类型没有需要保护的不变量，并且绝大多数成员都要通过成套访问函数直接读写，那么简单结构体和公有数据可能更合适。接口也应优先表达有意义的行为：<code>kill()</code> 和 <code>revive()</code> 通常比 <code>setAlive(bool)</code> 更清楚，并能把合法状态转换集中到类中。只公开调用者合理需要的访问能力。</p>
+<h2>14.7 返回数据成员引用的成员函数</h2>
+<p>函数按引用返回是否安全，取决于被引用对象是否比返回的引用活得更久。引用形参所引用的对象和具有静态存储期的对象通常满足这一条件。getter 返回数据成员的常量左值引用时，只要隐式对象仍然存在，该引用就有效。</p>
+<pre><code>class Employee
+{
+private:
+    std::string m_name {};
+
+public:
+    const std::string&amp; getName() const { return m_name; }
+};
+</code></pre>
+<p>按值返回最安全，但对经常调用的 getter 而言，反复复制昂贵成员并不理想。返回常量引用可以避免复制，同时不允许调用者通过该引用修改成员。按引用返回时，返回类型应与数据成员类型匹配。若成员是 <code>std::string</code>，getter 宜返回 <code>const std::string&amp;</code>；改为按值返回 <code>std::string_view</code> 会在每次调用时创建转换得到的临时视图，徒增开销。需要视图的调用者可以在调用端进行转换。</p>
+<p><code>const auto&amp;</code> 可以让编译器从成员推导引用类型并避免这种错误，但它隐藏了接口的实际返回类型，降低文档可读性，因此一般仍应写出显式类型。</p>
+<p>左值隐式对象通常在调用后继续存在；按值返回的临时类对象是右值，会在创建它的完整表达式结束时销毁。临时对象销毁后，对其成员的任何引用都会悬空，因此这种引用只能在创建临时对象的同一个完整表达式中安全使用。</p>
+<pre><code>std::cout &lt;&lt; createEmployee("Frank").getName(); // 安全：立即使用
+
+const std::string&amp; ref { createEmployee("Garbo").getName() };
+std::cout &lt;&lt; ref;                                // 未定义行为：ref 已悬空
+
+std::string value { createEmployee("Hans").getName() };
+std::cout &lt;&lt; value;                              // 安全：已复制到独立对象
+</code></pre>
+<p>完整表达式在其作为初始化器的所有用途完成之后才结束。因此第三种写法可以在临时对象销毁前把成员复制到非引用局部变量。</p>
+<p>安全使用按引用返回成员函数的规则是：优先立即使用返回值；只有确定隐式对象是仍然存活的左值时，才保存该引用供以后使用；若无法确定，保存一个非引用副本。</p>
+<p>不应返回私有数据成员的非常量引用。非常量引用的行为与被引用对象相同，会让调用者绕过访问控制直接修改私有成员。常量成员函数也不能返回指向其数据成员的非常量引用，否则调用者会借此修改本应保持不变的对象状态。</p>
+<h2>14.8 数据隐藏（封装）的益处</h2>
+<p>类的公有成员构成类接口，也称公有接口。接口是类向调用者提供的契约，应经过良好设计并尽量保持稳定。数据成员和成员函数体构成实现。数据隐藏或信息隐藏通过私有数据和公有操作，把实现细节与接口分离。</p>
+<p>“封装”有时泛指把数据和函数包在一个类型中，有时特指让外部无法直接访问实现。这里的封装类同时包含数据与行为，并实施数据隐藏。类通常应隐藏数据；结构体通常不这样做，因为非公有成员会破坏聚合性质。</p>
+<p>数据隐藏带来以下益处：</p>
+<ul>
+<li>降低使用复杂度。调用者只需理解接口，不必理解内部表示和实现步骤。</li>
+<li>维护类不变量。所有状态变化经过受控接口时，一个操作可以同步更新相关成员。</li>
+<li>消除冗余状态。可由其他成员推导的值可以改为按需计算，从根源上移除成员间一致性约束。</li>
+<li>更早发现错误。接口可以在值进入对象时验证；对无效输入可以忽略、断言或抛出异常，而不是等到之后使用坏状态时才失败。</li>
+<li>隔离实现变化。只要公有接口不变，内部可从多个独立成员改为数组等不同表示，调用代码无需修改。</li>
+<li>便于调试。若状态只能经少数修改函数变化，可以在这些位置设置断点，迅速定位错误写入。</li>
+</ul>
+<p>例如，姓名不能为空是一个不变量，因为对空字符串调用 <code>front()</code> 会产生未定义行为。若姓名为公有成员，类无法阻止调用者写入空字符串；若修改必须经过 <code>setName()</code>，该函数就能在赋值前验证输入。若首字母总是姓名的第一个字符，则不必单独保存首字母，可以由成员函数按需返回 <code>m_name.front()</code>，从而删除一项冗余状态。</p>
+<p>并非所有操作都应成为成员函数。可以合理实现为非成员函数的操作通常宜保持为非成员函数，因为这样能够缩小类接口，迫使实现仅依赖公有契约，减少实现变化的耦合，也使调试与应用特定逻辑的分离更清楚。打印到某种具体输出格式往往属于应用逻辑，可以由非成员函数通过 getter 完成。</p>
+<p>构造函数、析构函数、虚函数和某些运算符必须是成员函数。确实需要直接访问私有或受保护成员的操作也适合做成员函数；不修改对象且只依赖公有接口的操作尤其适合做非成员函数。但不应为了把某个操作移到类外而无条件增加访问函数：若新增访问器会不必要地扩大接口、暴露实现或允许破坏不变量，成员函数反而更合适。</p>
+<p>类成员的现代常见排列顺序是先 <code>public</code>，再 <code>protected</code>，最后 <code>private</code>，使读者先看到接口。更细的组织方式可以依次放置嵌套类型和别名、静态常量、工厂函数、构造与赋值函数、析构函数、其他成员函数，最后放数据成员。无论采用哪种顺序，都应保持一致。</p>
+<h2>14.9 构造函数简介</h2>
+<p>聚合初始化要求调用者知道成员及其声明顺序，并相信调用者提供满足不变量的值。把数据成员设为私有可以阻止这种直接初始化，但类仍需要一种受控方式建立初始状态。</p>
+<p>构造函数是一种特殊成员函数，在非聚合类对象创建后自动调用。编译器根据初始化器中的实参执行重载决议，寻找可访问且匹配的构造函数；参数允许通常的隐式转换。找不到匹配函数时，编译失败。</p>
+<p>对象的内存在构造函数运行前已经分配，因此构造函数并不创建对象。它负责初始化数据成员，并可在函数体中执行验证、资源获取或其他设置。构造完成时，对象应处于一致且可使用的状态。</p>
+<p>构造函数具有以下语法特征：</p>
+<ul>
+<li>名称必须与类名相同，大小写也相同；对于类模板，名称不包含模板实参；</li>
+<li>没有返回类型，连 <code>void</code> 也不能写；</li>
+<li>通常声明为 <code>public</code>，以便类外代码创建对象；</li>
+<li>可以重载，以支持不同的初始化方式；</li>
+<li>不能声明为 <code>const</code>，因为构造期间对象尚未成为常量；常量对象仍通过普通的非常量构造函数完成初始化，构造结束后才受常量限制。</li>
+</ul>
+<pre><code>class Foo
+{
+private:
+    int m_x {};
+    int m_y {};
+
+public:
+    Foo(int x, int y)
+        : m_x { x }, m_y { y }
+    {
+    }
+};
+
+Foo f { 6, 7 };
+</code></pre>
+<p>成员初始化列表负责初始化数据成员；构造函数体中的赋值发生得更晚，属于对已经初始化成员的赋值。只写一个空构造函数体不会用传入参数初始化成员，成员仍使用各自的默认初始化方式。</p>
+<p>聚合类型不能拥有用户声明的构造函数；一旦为结构体或类声明构造函数，它就不再是聚合类型。构造函数一次建立整个对象的初始状态，而 setter 在对象已经存在之后修改某个方面，两者用途不同。</p>
+<h2>14.11 默认构造函数与默认实参</h2>
+<p>不需要实参即可调用的构造函数称为默认构造函数，通常没有参数。值初始化 <code>T object {};</code> 和默认初始化 <code>T object;</code> 都会调用类的默认构造函数。对所有类类型通常优先使用值初始化，因为当类型仍是聚合类型时，空花括号也能进行安全的值初始化。</p>
+<p>构造函数参数可以像普通函数参数一样拥有默认实参，并且默认实参必须位于参数列表右侧。若所有参数都有默认值，该构造函数也能不带实参调用，因此同样是默认构造函数。</p>
+<pre><code>class Fraction
+{
+private:
+    int m_numerator { 0 };
+    int m_denominator { 1 };
+
+public:
+    Fraction(int numerator = 0, int denominator = 1)
+        : m_numerator { numerator }, m_denominator { denominator }
+    {
+    }
+};
+
+Fraction zero {};      // 0/1
+Fraction half { 1, 2 };
+</code></pre>
+<p>一个类可以重载多个构造函数，但在无实参初始化时只能有一个可调用的默认构造函数；若两个构造函数都能无实参调用，调用会产生歧义。</p>
+<p>对于没有用户声明任何构造函数的非聚合类，编译器会隐式生成一个公有默认构造函数。它等价于没有参数、没有成员初始化列表且函数体为空的构造函数。它对没有数据成员的类可能足够，但本身不会为用户提供的值建立有意义的状态。</p>
+<p>只要类声明了任何构造函数，编译器就不再隐式生成默认构造函数。如果仍需要默认构造，可以显式请求：</p>
+<pre><code>class Foo
+{
+public:
+    Foo() = default;
+    Foo(int x);
+};
+</code></pre>
+<p><code>= default</code> 通常优于手写空函数体，因为它明确要求编译器生成默认实现，并保留语言对默认化函数的特殊处理。</p>
+<p>值初始化存在一个细微区别：若默认构造函数是用户提供的，值初始化直接执行默认初始化，缺少默认成员初始化器的成员可能保持未初始化；若使用隐式生成或显式默认化且非用户提供的默认构造函数，值初始化会先进行零初始化，再进行默认初始化。实际代码应为成员提供默认成员初始化器，不依赖这一差异。手写空构造函数在大量对象场景中可能避免零初始化，但也可能妨碍某些优化，只有经测量证明必要时才考虑。</p>
+<p>在 C++20 之前，手写用户提供的空默认构造函数会使类型失去聚合资格，而显式默认化的构造函数不会；从 C++20 起，两种用户声明的构造函数都会使类型不再是聚合。</p>
+<p>只有当“没有显式初始化值”的对象具有合理语义时，才应提供默认构造函数。默认的 <code>Fraction</code> 表示 <code>0/1</code> 是合理的；没有姓名的 <code>Employee</code> 通常没有意义，此时不提供默认构造函数，让无参初始化在编译期失败更合适。</p>
+<h2>14.14 复制构造函数简介</h2>
+<p>复制构造函数使用同类型的现有对象初始化一个新对象，结果对象是源对象的副本。若类没有声明复制构造函数，编译器通常会隐式生成一个公有复制构造函数，并按成员逐一初始化新对象。</p>
+<p>自定义复制构造函数的典型形式是 <code>T(const T&amp;)</code>：</p>
+<pre><code>class Fraction
+{
+private:
+    int m_numerator { 0 };
+    int m_denominator { 1 };
+
+public:
+    Fraction(int numerator = 0, int denominator = 1)
+        : m_numerator { numerator }, m_denominator { denominator }
+    {
+    }
+
+    Fraction(const Fraction&amp; other)
+        : m_numerator { other.m_numerator }
+        , m_denominator { other.m_denominator }
+    {
+    }
+};
+</code></pre>
+<p>访问控制按类实施，所以复制构造函数可以读取源对象的私有成员。复制构造函数的参数必须是左值引用或常量左值引用；由于复制不应修改源对象，应优先使用常量左值引用。若按值接收源对象，为了先创建该形参又必须调用复制构造函数，会形成无法完成的递归复制，因此语言不允许这种签名成为复制构造函数。</p>
+<p>复制构造函数除复制之外不应有副作用。编译器可通过复制消除省略某些复制操作；若程序依赖复制构造函数打印日志、递增业务计数或执行其他必要行为，这些行为可能发生，也可能被优化掉。</p>
+<p>对象按值传参时，若实参与形参是同一类类型，复制构造函数用于初始化形参。函数按值返回同一类类型时，从概念模型看，复制构造函数可用于初始化返回的临时对象；再用该临时对象初始化目标对象以及随后按值传参，也可能继续发生复制。实际调用次数可能因复制消除而减少，程序不能依赖固定的复制次数。</p>
+<p>隐式复制构造函数所做的成员逐一复制通常正是所需行为，因此除非有明确理由，应优先使用隐式版本。管理动态资源并需要深复制等情况，才可能需要自定义复制逻辑。</p>
+<p>可以用 <code>= default</code> 显式要求编译器生成默认复制构造函数：</p>
+<pre><code>Fraction(const Fraction&amp;) = default;
+</code></pre>
+<p>不希望对象可复制时，可以删除复制构造函数：</p>
+<pre><code>Fraction(const Fraction&amp;) = delete;
+</code></pre>
+<p>把复制构造函数声明为私有只能阻止普通类外代码复制，同一类的成员仍可复制，因此除非这正是目标，一般应使用 <code>= delete</code> 明确表达不可复制。</p>
+<p>若一个类需要自定义复制构造函数、析构函数或复制赋值运算符中的任意一个，它通常也需要同时考虑另外两个，这称为“三法则”。加入移动构造函数和移动赋值运算符后形成“五法则”。违反这些配套关系往往意味着资源所有权处理不完整。</p>
+<h2>参考来源</h2>
+<p>访问日期：2026-08-31。</p>
+<ul>
+<li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-object-oriented-programming/">14.1 — Introduction to object-oriented programming</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-classes/">14.2 — Introduction to classes</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/member-functions/">14.3 — Member functions</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/public-and-private-members-and-access-specifiers/">14.5 — Public and private members and access specifiers</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/access-functions/">14.6 — Access functions</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/member-functions-returning-references-to-data-members/">14.7 — Member functions returning references to data members</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/the-benefits-of-data-hiding-encapsulation/">14.8 — The benefits of data hiding (encapsulation)</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-constructors/">14.9 — Introduction to constructors</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/default-constructors-and-default-arguments/">14.11 — Default constructors and default arguments</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-the-copy-constructor/">14.14 — Introduction to the copy constructor</a></li>
+</ul>
+]]></content>
+    <author>
+      <name>nikonikoni</name>
+    </author>
+    <category term="LearnCpp"></category>
+    <category term="Tutorial"></category>
+  </entry>
   <entry>
     <title>LearnCpp 枚举和结构体</title>
     <link href="https://miku.nikonikoni.blog/posts/learncpp-%E6%9E%9A%E4%B8%BE%E5%92%8C%E7%BB%93%E6%9E%84%E4%BD%93/" rel="alternate" type="text/html"/>
