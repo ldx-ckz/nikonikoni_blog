@@ -5,7 +5,7 @@
   <link href="https://miku.nikonikoni.blog/" rel="alternate" type="text/html"/>
   <link href="https://miku.nikonikoni.blog/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://miku.nikonikoni.blog/</id>
-  <updated>2026-08-31T03:21:18.922Z</updated>
+  <updated>2026-08-31T15:15:05.370Z</updated>
   <language>zh_CN</language>
   <entry>
     <title>LearnCpp 类</title>
@@ -298,7 +298,6 @@ public:
 <p>把复制构造函数声明为私有只能阻止普通类外代码复制，同一类的成员仍可复制，因此除非这正是目标，一般应使用 <code>= delete</code> 明确表达不可复制。</p>
 <p>若一个类需要自定义复制构造函数、析构函数或复制赋值运算符中的任意一个，它通常也需要同时考虑另外两个，这称为“三法则”。加入移动构造函数和移动赋值运算符后形成“五法则”。违反这些配套关系往往意味着资源所有权处理不完整。</p>
 <h2>参考来源</h2>
-<p>访问日期：2026-08-31。</p>
 <ul>
 <li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-object-oriented-programming/">14.1 — Introduction to object-oriented programming</a></li>
 <li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-classes/">14.2 — Introduction to classes</a></li>
@@ -310,6 +309,268 @@ public:
 <li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-constructors/">14.9 — Introduction to constructors</a></li>
 <li><a href="https://www.learncpp.com/cpp-tutorial/default-constructors-and-default-arguments/">14.11 — Default constructors and default arguments</a></li>
 <li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-the-copy-constructor/">14.14 — Introduction to the copy constructor</a></li>
+</ul>
+]]></content>
+    <author>
+      <name>nikonikoni</name>
+    </author>
+    <category term="LearnCpp"></category>
+    <category term="Tutorial"></category>
+  </entry>
+  <entry>
+    <title>LearnCpp C 风格数组</title>
+    <link href="https://miku.nikonikoni.blog/posts/learncpp-c%E9%A3%8E%E6%A0%BC%E6%95%B0%E7%BB%84/" rel="alternate" type="text/html"/>
+    <id>https://miku.nikonikoni.blog/posts/learncpp-c%E9%A3%8E%E6%A0%BC%E6%95%B0%E7%BB%84/</id>
+    <published>2026-08-31T00:00:00.000Z</published>
+    <updated>2026-08-31T00:00:00.000Z</updated>
+    <summary>LearnCpp C 风格数组笔记，介绍数组声明与初始化、数组退化、指针算术、C 风格字符串及多维数组。</summary>
+    <content type="html"><![CDATA[<h1>LearnCpp C 风格数组</h1>
+<h2>17.7 C 风格数组简介</h2>
+<p>C 风格数组继承自 C，是 C++ 核心语言原生支持的数组类型，无需包含头文件即可使用。<code>std::array</code> 和 <code>std::vector</code> 等标准库数组容器通常也以 C 风格数组作为底层实现的一部分。</p>
+<h3>声明、长度与下标</h3>
+<p>C 风格数组使用方括号声明，方括号中的长度表示元素数量，其类型是 <code>std::size_t</code>：</p>
+<pre><code>int testScore[30] {}; // 30 个经过值初始化的 int 元素
+</code></pre>
+<p>普通 C 风格数组的长度必须至少为 <code>1</code>。零、负数或非整数长度都会导致编译错误；动态分配在堆上的 C 风格数组是例外，可以具有零长度。</p>
+<p>数组长度必须是常量表达式。部分编译器为了兼容 C99，会把非常量长度的可变长度数组（variable-length array，VLA）作为扩展接受，但 VLA 不是合法的标准 C++，不应使用。编译器接受这类声明通常意味着编译器扩展尚未禁用。</p>
+<pre><code>constexpr int length { 5 };
+int valid[length] {};
+
+int runtimeLength { 5 };
+int invalid[runtimeLength] {}; // 非标准 C++
+</code></pre>
+<p>下标运算符 <code>operator[]</code> 可以使用任意整数类型的值，包括有符号整数、无符号整数和无作用域枚举。这与只接受无符号 <code>std::size_t</code> 下标的标准库容器不同，因而不会自动引入同样的符号转换问题。</p>
+<p><code>operator[]</code> 不进行边界检查。长度为 <code>N</code> 的数组有效下标为 <code>0</code> 到 <code>N-1</code>；越界访问会产生未定义行为。声明 <code>int arr[5]</code> 中的方括号属于声明语法，并不是一次下标运算。</p>
+<h3>聚合初始化</h3>
+<p>C 风格数组是聚合类型，可以通过花括号中的初始化列表按元素顺序初始化，从下标 <code>0</code> 开始：</p>
+<pre><code>int fibonacci[6] = { 0, 1, 1, 2, 3, 5 }; // 复制列表初始化
+int prime[5] { 2, 3, 5, 7, 11 };          // 列表初始化，优先使用
+</code></pre>
+<p>未提供初始化器时，元素执行默认初始化；对 <code>int</code> 等基本类型，这通常会留下未初始化值。没有显式初值时应使用空花括号进行值初始化：</p>
+<pre><code>int uninitialized[5];
+int zeroed[5] {}; // 所有元素值初始化为 0
+</code></pre>
+<p>初始化器数量超过数组长度会导致编译错误；数量少于数组长度时，剩余元素执行值初始化。</p>
+<pre><code>int tooMany[4] { 1, 2, 3, 4, 5 }; // 编译错误
+int partial[4] { 1, 2 };           // 后两个元素为 0
+</code></pre>
+<p>C 风格数组不是类模板，不能使用类模板实参推导；也不能以 <code>auto</code> 从初始化列表推导数组元素类型，元素类型必须显式写出。</p>
+<p>当初始化列表显式给出全部元素时，可以省略数组长度，由编译器根据初始化器数量推导：</p>
+<pre><code>const int prime1[5] { 2, 3, 5, 7, 11 };
+const int prime2[]  { 2, 3, 5, 7, 11 }; // 推导长度为 5
+</code></pre>
+<p>省略长度要求存在能够确定全部成员数量的初始化器。<code>int bad[] {};</code> 会推导出不允许的零长度数组。显式初始化每个元素时，优先省略长度，使数组长度在增删初始化器后自动同步。</p>
+<h3><code>const</code>、<code>constexpr</code>、占用空间与长度</h3>
+<p>C 风格数组可以声明为 <code>const</code> 或 <code>constexpr</code>。常量数组必须初始化，之后不能修改其元素。</p>
+<pre><code>constexpr int squares[] { 1, 4, 9, 16, 25 };
+const int primes[] { 2, 3, 5, 7, 11 };
+// primes[0] = 17; // 编译错误
+</code></pre>
+<p>对数组对象使用 <code>sizeof</code>，得到整个数组占用的字节数，而不是元素数量。C 风格数组本身没有额外管理开销，只包含连续存放的元素。例如，若 <code>int</code> 占 4 字节，则 5 个 <code>int</code> 的数组占 20 字节。</p>
+<p>C++17 可以使用 <code>&lt;iterator&gt;</code> 中的 <code>std::size()</code> 获取无符号长度，返回类型为 <code>std::size_t</code>；C++20 可以使用 <code>std::ssize()</code> 获取有符号长度，返回类型通常是 <code>std::ptrdiff_t</code>。<code>&lt;array&gt;</code>、<code>&lt;vector&gt;</code> 等头文件也经常间接提供这两个函数，但对裸数组而言，惯例是显式包含其规范头文件 <code>&lt;iterator&gt;</code>。</p>
+<pre><code>#include &lt;iterator&gt;
+
+const int primes[] { 2, 3, 5, 7, 11 };
+auto length1 = std::size(primes);  // 5，C++17
+auto length2 = std::ssize(primes); // 5，C++20
+</code></pre>
+<p>C++11 和 C++14 可以用数组引用形参及非类型模板参数保留并返回长度：</p>
+<pre><code>template &lt;typename T, std::size_t N&gt;
+constexpr std::size_t length(const T (&amp;)[N]) noexcept
+{
+    return N;
+}
+</code></pre>
+<p>旧代码还可能使用 <code>sizeof(array) / sizeof(array[0])</code> 或等价的 <code>sizeof(array) / sizeof(*array)</code>。其依据是“数组字节数 = 元素数量 × 单个元素字节数”。数组一旦退化为指针，这个公式会错误地使用指针大小，因此不安全；<code>std::size()</code> 和数组引用模板在这种情况下会直接编译失败，更适合作为防错方案。</p>
+<h3>C 风格数组不支持整体赋值</h3>
+<p>C 风格数组不是可修改左值，因此不能在创建后通过赋值运算符替换整个数组。单个元素仍可赋值。</p>
+<pre><code>int arr[] { 1, 2, 3 };
+arr[0] = 4;        // 合法
+// arr = { 5, 6, 7 }; // 编译错误
+</code></pre>
+<p>需要整体替换值时，通常应改用 <code>std::vector</code>。也可以逐元素赋值，或使用 <code>std::copy(std::begin(src), std::end(src), std::begin(arr))</code> 从另一个数组复制元素。</p>
+<h2>17.8 C 风格数组退化</h2>
+<p>若按值传递大型数组，每次调用都复制所有元素会非常昂贵；同时，不同长度的数组具有不同类型，C 既没有引用和模板，也没有表示“任意长度数组”的参数语法。C 和 C++ 通过数组退化同时绕开了复制成本和长度类型不兼容问题。</p>
+<h3>数组到指针的转换</h3>
+<p>在大多数表达式中，C 风格数组会隐式转换为指向元素类型的指针，指针保存下标 <code>0</code> 元素的地址。这称为数组到指针转换，通常简称数组退化。<code>int[N]</code> 退化为 <code>int*</code>，<code>const int[N]</code> 退化为 <code>const int*</code>。</p>
+<pre><code>int arr[5] { 9, 7, 5, 3, 1 };
+auto ptr { arr }; // ptr 的类型为 int*，值等于 &amp;arr[0]
+</code></pre>
+<p>退化产生的指针只是普通指针。数组不是指针：数组对象是连续元素序列，类型 <code>int[5]</code> 包含长度信息；指针对象只保存地址，类型 <code>int*</code> 不包含数组长度。“退化”描述的正是类型中长度信息的丢失。</p>
+<p>C++ 中常见的不退化场景有：</p>
+<ul>
+<li>作为 <code>sizeof()</code> 或 <code>typeid()</code> 的实参；</li>
+<li>对数组使用取地址运算符 <code>operator&amp;</code>；</li>
+<li>数组作为类类型的成员随类对象传递；</li>
+<li>数组按引用传递。</li>
+</ul>
+<p>对 C 风格数组使用下标时，<code>operator[]</code> 实际作用于退化后的指针。因此只要指针指向数组首元素，<code>arr[2]</code> 与 <code>ptr[2]</code> 会访问同一元素。</p>
+<h3>函数参数中的数组退化</h3>
+<p>C 风格数组作为函数实参时会退化，实际传递的是首元素地址，而不是数组副本。因此它看起来像按值传递，实际采用按地址传递；函数能够直接访问并修改原数组元素。函数无意修改数组时，应把元素类型声明为 <code>const</code>。</p>
+<p>同一元素类型但不同长度的数组是不同类型，例如 <code>int[5]</code> 与 <code>int[8]</code> 互不兼容；退化后两者都是 <code>int*</code>，因此可传给同一个函数。</p>
+<pre><code>void printFirst(const int arr[]) // 编译器按 const int* 处理
+{
+    std::cout &lt;&lt; arr[0];
+}
+
+const int primes[] { 2, 3, 5, 7, 11 };
+const int squares[] { 1, 4, 9, 16, 25, 36 };
+printFirst(primes);
+printFirst(squares);
+</code></pre>
+<p>函数形参 <code>const int arr[]</code> 与 <code>const int* arr</code> 在类型上相同，方括号中的长度即使写出也会被忽略。数组语法能向调用者表明该参数预期接收退化数组，而不是指向单个值的指针，因此接收 C 风格数组的形参宜写成 <code>T arr[]</code>。代价是退化事实不如指针语法明显，函数体必须避免把形参误当作仍保留长度的数组。</p>
+<h3>退化丢失长度造成的问题</h3>
+<p>数组对象与退化指针上的 <code>sizeof</code> 含义不同：前者返回整个数组的字节数，后者只返回指针本身的字节数。因此在函数形参上使用 <code>sizeof(arr) / sizeof(*arr)</code> 会算出错误长度。<code>std::size()</code> 和 <code>std::ssize()</code> 不接受指针，能把这类错误转化为编译错误。</p>
+<p>代码在原函数中直接操作未退化数组时可能正确；将代码重构进接收数组形参的函数后，数组已经退化，同一段长度逻辑可能无法编译，甚至静默产生错误结果。</p>
+<p>缺少长度还使函数无法可靠检查数组是否足够长，也无法知道遍历终点。调用者可以传入比预期更短的数组，甚至传入指向单个对象的指针，随后下标访问就可能越界并产生未定义行为。</p>
+<p>传统代码主要用两种方法补偿长度丢失。</p>
+<p>第一种方法是分别传入数组地址和长度。这仍存在多项风险：</p>
+<ul>
+<li>调用者必须保证指针与长度匹配，传错长度仍会出错；</li>
+<li><code>std::size()</code> 返回 <code>std::size_t</code>，与有符号长度参数之间可能发生符号转换；</li>
+<li>运行时 <code>assert</code> 只有执行到对应路径才生效；函数形参不能是 <code>constexpr</code>，即使函数本身是 <code>constexpr</code> 或 <code>consteval</code>，也难以用 <code>static_assert</code> 验证常量数组的长度；</li>
+<li>只有显式函数调用能额外传入长度，运算符等隐式调用没有第三个位置携带长度。</li>
+</ul>
+<p>第二种方法是用语义上无效的哨兵元素标记末尾，再从起点遍历到哨兵。C 风格字符串使用空终止符完成这件事，因此退化后仍可确定逻辑终点。这种方法同样脆弱：缺失哨兵会使遍历越过数组末尾；处理函数必须专门识别并跳过哨兵；物理数组长度与有效元素数量不一致；并且只有确实存在一个无效值时才能采用。</p>
+<h3>现代 C++ 中的使用边界</h3>
+<p>由于非标准的按地址传递语义和长度丢失风险，应尽量避免 C 风格数组：</p>
+<ul>
+<li>只读字符串使用 <code>std::string_view</code>；</li>
+<li>可修改字符串使用 <code>std::string</code>；</li>
+<li>非全局的常量表达式数组使用 <code>std::array</code>；</li>
+<li>非常量表达式数组使用 <code>std::vector</code>。</li>
+</ul>
+<p>数组也可以按引用传递以阻止实参在传入时退化，但函数体中对该数组引用求值时仍会发生退化。数组引用形参还固定了长度；若要接受多种长度，必须再使用函数模板。任何一个调用点漏写引用都会重新发生退化，因此通常直接使用 <code>std::array</code> 更简单可靠。</p>
+<p>现代 C++ 中仍常见的 C 风格数组用途有两类：</p>
+<ol>
+<li>保存全局 <code>constexpr</code> 或静态局部 <code>constexpr</code> 程序数据。调用者可直接访问，不必通过函数传递，因而避开退化问题；其声明语法较简洁，下标也没有标准库容器的符号转换问题。</li>
+<li>直接接收非常量 C 风格字符串的函数或类。把它转换为 <code>std::string_view</code> 需要先遍历空终止字符串以确定长度；若性能关键路径根本不需要长度，或随后还要调用只接受 C 风格字符串的接口，来回转换可能没有收益。</li>
+</ol>
+<h2>17.9 指针算术与下标</h2>
+<p>数组元素在内存中连续存放。指针算术允许对指针应用整数加法、减法、递增和递减，生成新的元素地址。</p>
+<h3>指针算术按对象大小移动</h3>
+<p>对于指针 <code>ptr</code>，<code>ptr + 1</code> 指向下一个同类型对象，<code>ptr - 1</code> 指向前一个同类型对象，而不是简单移动一个字节。若 <code>ptr</code> 是 <code>int*</code> 且 <code>int</code> 占 4 字节，<code>ptr + 1</code> 的地址增加 4 字节，<code>ptr + 2</code> 增加 8 字节。</p>
+<p><code>++ptr</code> 等价于 <code>ptr = ptr + 1</code>，<code>--ptr</code> 等价于 <code>ptr = ptr - 1</code>，会把计算结果写回指针。</p>
+<p>按照 C++ 标准，只有当原指针和计算结果都位于同一数组内，或结果恰好是数组末元素之后一个位置时，指针算术才有定义。越过这个范围即使不解引用结果也是未定义行为。实现通常不会主动阻止这种计算，不能因此把它视为合法。</p>
+<h3>下标是指针算术的简写</h3>
+<p>指针下标表达式 <code>ptr[n]</code> 等价于 <code>*((ptr) + (n))</code>：先将指针移动 <code>n</code> 个元素，再隐式解引用结果。数组用于表达式时先退化为首元素指针，所以 <code>arr[n]</code> 的工作方式相同。</p>
+<p>数组从 <code>0</code> 开始编号使这种计算无需额外减一：<code>arr[0]</code> 等价于 <code>*arr</code>，<code>arr[n]</code> 等价于 <code>*(arr + n)</code>。由于加法可交换，语法上 <code>n[ptr]</code> 也能工作，但这种写法难以理解，不应使用。</p>
+<p>下标表示相对于当前指针的位置，而不是数组中的绝对位置。若 <code>ptr</code> 指向数组元素 <code>3</code>，则 <code>ptr[0]</code> 是元素 <code>3</code>，<code>ptr[1]</code> 是元素 <code>4</code>，<code>ptr[-1]</code> 是元素 <code>2</code>。负下标因此可以合法工作，前提是结果仍在同一数组的有效范围内。</p>
+<p>从数组首元素开始访问时应优先使用下标，使下标值与数组元素编号一致；从任意给定元素进行相对定位时应使用指针算术，避免让代码误示为绝对编号。</p>
+<h3>使用首尾指针遍历数组</h3>
+<p>指针算术可以在没有显式下标的情况下遍历数组：</p>
+<pre><code>constexpr int arr[] { 9, 7, 5, 3, 1 };
+
+const int* begin { arr };
+const int* end { arr + std::size(arr) }; // 尾后位置
+
+for (; begin != end; ++begin)
+    std::cout &lt;&lt; *begin &lt;&lt; ' ';
+</code></pre>
+<p><code>end</code> 指向末元素之后一个位置。保存和比较这个地址是合法的，但该位置没有对象，不能解引用。使用半开区间 <code>[begin, end)</code> 可以让循环条件和地址计算无需额外加减一。</p>
+<p>把遍历代码提取为 <code>printArray(const int* begin, const int* end)</code> 后，两个指针已经包含遍历所需边界，不必把数组对象本身传入函数，也就不需要在函数内恢复退化后丢失的长度。标准库的迭代器和算法广泛使用同样的首尾对约定。</p>
+<p>范围 <code>for</code> 循环处理 C 风格数组时也使用这一机制：建立指向起点和尾后位置的内部值，在二者不相等时递增起点，解引用当前指针以初始化循环变量。其基本结构相当于：</p>
+<pre><code>auto begin = arr;
+auto end = arr + std::size(arr);
+
+for (; begin != end; ++begin)
+{
+    auto element = *begin;
+    std::cout &lt;&lt; element &lt;&lt; ' ';
+}
+</code></pre>
+<h2>17.10 C 风格字符串</h2>
+<p>C 风格字符串是元素类型为 <code>char</code> 或 <code>const char</code> 的 C 风格数组。字符串字面量的类型是 <code>const char[N]</code>，其中 <code>N</code> 包括所有显式字符以及末尾隐藏的空终止字符。例如，<code>"Hello, world!"</code> 包含 13 个可见字符，类型为 <code>const char[14]</code>。</p>
+<p>C 风格字符串字面量本身可以正常使用，但可修改的 C 风格字符串对象难用且危险；现代 C++ 通常使用 <code>std::string</code> 和 <code>std::string_view</code>。</p>
+<h3>定义、退化与输出</h3>
+<pre><code>char buffer[8] {};
+const char text[] { "string" };      // 6 个字符加空终止符，数组长度 7
+constexpr char greeting[] { "hello" }; // 数组长度 6
+</code></pre>
+<p>字符串需要额外一个元素保存隐式空终止符。使用字符串初值定义数组时，应省略数组长度，让编译器同时计算可见字符和空终止符，避免修改初值后忘记同步长度。</p>
+<p>C 风格字符串会遵循普通数组的退化规则。字符串字面量退化为 <code>const char*</code>；数组对象根据其常量性退化为 <code>char*</code> 或 <code>const char*</code>。退化会丢失类型中的数组长度，空终止符使程序仍能通过从起点计数到 <code>\0</code> 来重新确定字符串的逻辑长度，但这种遍历需要线性时间。</p>
+<p><code>std::cout</code> 从首字符开始输出，遇到空终止符停止。若字符串缺少空终止符或终止符被覆盖，输出会继续读取相邻内存，直到偶然遇到值为零的字节，行为未定义。</p>
+<h3>输入与缓冲区溢出</h3>
+<p>C 风格字符串容量固定，输入前必须分配足够大的数组。C++20 之前，<code>std::cin &gt;&gt; buffer</code> 会一直提取到首个非前导空白，输入字符数可能超过数组容量，覆盖数组之后的内存并产生未定义行为。</p>
+<p>这种向存储区写入超出其容量数据的错误称为数组溢出或缓冲区溢出。它不仅造成程序错误，也是安全漏洞：攻击者可能利用越界写入改变相邻内存和程序行为。</p>
+<p>C++20 修改了 <code>operator&gt;&gt;</code>，使其只接受未退化的 C 风格字符串并根据数组长度限制提取数量，从而避免溢出；代价是不能再用它向已经退化的字符串指针输入。</p>
+<p>使用 <code>std::cin</code> 读取 C 风格字符串时，推荐显式提供容量：</p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;iterator&gt;
+
+int main()
+{
+    char rolls[255] {}; // 最多 254 个字符和一个空终止符
+    std::cin.getline(rolls, std::size(rolls));
+    std::cout &lt;&lt; rolls &lt;&lt; '\n';
+}
+</code></pre>
+<p><code>getline()</code> 可以读取空白，最多接收容量允许的字符，超出部分被丢弃。未退化数组可用 <code>std::size()</code> 安全提供容量；指针已经丢失长度，必须通过其他方式取得容量，传错数值仍会造成错误或安全问题。存储用户输入时，能自动扩容的 <code>std::string</code> 更安全。</p>
+<h3>修改与长度</h3>
+<p>C 风格字符串可以在创建时初始化，但数组不支持整体赋值，因此不能用赋值运算符替换整个字符串。非常量字符数组仍可通过下标逐字符修改。</p>
+<pre><code>char str[] { "string" };
+str[1] = 'p'; // 结果为 "spring"
+// str = "rope"; // 编译错误
+</code></pre>
+<p><code>std::size()</code> 和 <code>std::ssize()</code> 返回物理数组长度，包括未使用容量和空终止符，并且不适用于退化指针。例如 <code>char str[255]{ "string" };</code> 的数组长度是 <code>255</code>，不是字符串的 6 个可见字符。</p>
+<p><code>&lt;cstring&gt;</code> 中的 <code>std::strlen()</code> 接受未退化数组或指针，返回空终止符之前的字符数量，不包含空终止符。它必须从头遍历到终止符，因此成本与字符串长度成正比。</p>
+<p>旧代码中还常见以下 <code>&lt;cstring&gt;</code> 函数：</p>
+<ul>
+<li><code>strcpy()</code>、<code>strncpy()</code>、<code>strcpy_s()</code>：用一个 C 风格字符串覆盖另一个；</li>
+<li><code>strcat()</code>、<code>strncat()</code>：在末尾追加字符串；</li>
+<li><code>strcmp()</code>、<code>strncmp()</code>：比较字符串，相等时返回 <code>0</code>。</li>
+</ul>
+<p>除 <code>strlen()</code> 外，通常应避免这些接口。除非存在明确且充分的理由，应使用 <code>std::string</code> 代替非常量 C 风格字符串；内存受限设备等确实需要固定缓冲区时，宜选择经过充分测试的第三方定长字符串库。</p>
+<h2>17.12 多维 C 风格数组</h2>
+<p>数组的维数是选定一个元素所需的下标数量。一个下标即可选定元素的是一维数组；数组的元素类型也可以是另一个数组，因此可以构成二维及更高维数组。</p>
+<pre><code>int a[3][5];       // 含 3 个元素，每个元素都是含 5 个 int 的数组
+int cube[4][4][4]; // 4×4×4 三维数组
+</code></pre>
+<p>二维数组使用两个下标，通常把左侧下标视为行，右侧下标视为列，因此 <code>a[2][3]</code> 表示第 2 行、第 3 列。超过三维的数组受语言支持，但实际较少使用。</p>
+<h3>内存布局与初始化</h3>
+<p>物理内存是一维的，多维数组仍以连续元素序列存放。C++ 使用行主序：同一行的元素按列从左到右连续排列，一行结束后再存放下一行。Fortran 等语言使用列主序，即先沿同一列从上到下排列。</p>
+<p>C++ 按行主序初始化数组。遍历时按照实际内存顺序访问通常最有效率，因此二维数组应把行循环放在外层、列循环放在内层。</p>
+<p>二维数组宜使用嵌套花括号初始化，每组内层花括号代表一行。某些编译器允许省略内层花括号，但保留它们可显著提高可读性。行内缺少的初始化器执行值初始化。</p>
+<pre><code>int values[3][5]
+{
+    { 1, 2 },          // 1, 2, 0, 0, 0
+    { 6, 7, 8 },       // 6, 7, 8, 0, 0
+    { 11, 12, 13, 14 } // 11, 12, 13, 14, 0
+};
+</code></pre>
+<p>具有初始化器的多维数组只能省略最左侧长度，编译器可根据行数推导该维度；其他维度必须保留，因为它们定义每个子数组的类型。空花括号仍可把所有元素值初始化为零。</p>
+<pre><code>int valid[][5]
+{
+    { 1, 2, 3, 4, 5 },
+    { 6, 7, 8, 9, 10 }
+};
+
+// int invalid[][] { { 1, 2 }, { 3, 4 } }; // 编译错误
+int zeroed[3][5] {};
+</code></pre>
+<h3>遍历与坐标映射</h3>
+<p>索引循环中，<code>std::size(arr)</code> 返回行数，<code>std::size(arr[0])</code> 返回列数。范围 <code>for</code> 循环则先以常量引用取得每一行数组，再遍历该行中的元素：</p>
+<pre><code>for (std::size_t row { 0 }; row &lt; std::size(arr); ++row)
+{
+    for (std::size_t col { 0 }; col &lt; std::size(arr[0]); ++col)
+        std::cout &lt;&lt; arr[row][col] &lt;&lt; ' ';
+}
+
+for (const auto&amp; row : arr)
+{
+    for (const auto&amp; element : row)
+        std::cout &lt;&lt; element &lt;&lt; ' ';
+}
+</code></pre>
+<p>二维数组适合表示乘法表等网格数据。以编译期常量指定行列数，先值初始化整个数组，再用外层行循环和内层列循环计算及输出，可保持访问顺序与行主序一致。</p>
+<p>笛卡尔坐标通常写作 <code>{x, y}</code>：<code>x</code> 选择水平方向的列，<code>y</code> 选择垂直方向的行；二维数组索引写作 <code>[row][col]</code>。因此笛卡尔坐标 <code>{x, y}</code> 应转换为数组索引 <code>[y][x]</code>。以坐标变量遍历时，外层使用 <code>y</code>，内层使用 <code>x</code>，访问表达式为 <code>array[y][x]</code>。</p>
+<h2>参考来源</h2>
+<ul>
+<li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-c-style-arrays/">17.7 — Introduction to C-style arrays</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/c-style-array-decay/">17.8 — C-style array decay</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/pointer-arithmetic-and-subscripting/">17.9 — Pointer arithmetic and subscripting</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/c-style-strings/">17.10 — C-style strings</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/multidimensional-c-style-arrays/">17.12 — Multidimensional C-style Arrays</a></li>
 </ul>
 ]]></content>
     <author>
@@ -917,7 +1178,6 @@ void print(T value)
 <li><a href="https://www.learncpp.com/cpp-tutorial/member-selection-with-pointers-and-references/">13.12 — Member selection with pointers and references</a></li>
 <li><a href="https://www.learncpp.com/cpp-tutorial/class-templates/">13.13 — Class templates</a></li>
 </ul>
-<p>访问日期：2026-08-20。</p>
 ]]></content>
     <author>
       <name>nikonikoni</name>
