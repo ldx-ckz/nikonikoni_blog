@@ -102,8 +102,8 @@ importers:
         specifier: ^7.0.1
         version: 7.0.1
       overlayscrollbars:
-        specifier: ^2.12.0
-        version: 2.12.0
+        specifier: ^2.13.0
+        version: 2.13.0
       pagefind:
         specifier: ^1.4.0
         version: 1.4.0
@@ -4129,8 +4129,8 @@ packages:
   ordered-read-streams@1.0.1:
     resolution: {integrity: sha512-Z87aSjx3r5c0ZB7bcJqIgIRX5bxR7A4aSzvIbaxd0oTkWBCOoKfuGHiKj60CHVUgg1Phm5yMZzBdt8XqRs73Mw==}
 
-  overlayscrollbars@2.12.0:
-    resolution: {integrity: sha512-mWJ5MOkcZ/ljHwfLw8+bN0V9ziGCoNoqULcp994j5DTGNQvnkWKWkA7rnO29Kyew5AoHxUnJ4Ndqfcl0HSQjXg==}
+  overlayscrollbars@2.13.0:
+    resolution: {integrity: sha512-uQGpLESrbFDLTWucWAKX9ceIANj7detMwH/2yJ315Llt72ZcWN3P6ckMotoqVv2Mk29R/pnhDtgYjy4K+kwAyQ==}
 
   own-keys@1.0.1:
     resolution: {integrity: sha512-qFOyK5PjiWZd+QQIh+1jhdb9LpxTF0qs7Pm8o5QHYZ0M3vKqSqzsZaEB6oWlxZ+q2sJBMI/Ktgd2N5ZwQoRHfg==}
@@ -10638,7 +10638,7 @@ snapshots:
     dependencies:
       readable-stream: 2.3.8
 
-  overlayscrollbars@2.12.0: {}
+  overlayscrollbars@2.13.0: {}
 
   own-keys@1.0.1:
     dependencies:
