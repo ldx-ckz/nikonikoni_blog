@@ -80,7 +80,7 @@ The production site is deployed at <https://miku.nikonikoni.blog/>. The build co
 
 Before deploying:
 
-1. explicitly set `ENABLE_CONTENT_SYNC` to `false`, or configure the content repository URL;
+1. use repository content by default without setting a sync variable; configure an external content repository and set `ENABLE_CONTENT_SYNC=true` only when needed;
 2. configure required secrets on the hosting platform and never commit `.env`;
 3. confirm that `siteURL` in `src/config.ts` matches the production domain.
 

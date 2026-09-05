@@ -9,14 +9,26 @@
 
 ## 本地验证
 
+首次配置环境或依赖变化时安装依赖：
+
 ```bash
 corepack enable
 pnpm install --frozen-lockfile
-pnpm check
-pnpm type-check
-pnpm build
-pnpm preview
 ```
+
+站点代码、文章或页面数据变化后运行一次完整构建：
+
+```bash
+pnpm build
+```
+
+需要检查页面布局和交互时再运行 `pnpm preview`，检查受影响页面；涉及响应式时覆盖桌面和移动端。
+纯 README、AGENTS 或其他非站点文档修改只检查差异、受影响链接及说明一致性，不要求构建。
+同一版本已有有效验证结果时直接复用；代码、依赖或合并结果变化后重验受影响部分。
+
+`pnpm check`、`pnpm type-check` 和全仓库 Biome 存在已记录的历史检查债务。
+按改动需要运行这些诊断，区分本次引入的失败与既有失败，不要求每次提交清空全部历史问题。
+失败和跳过的检查不能报告为通过。当前任务导致的回归需要修复；既有构建失败若阻碍验证，应说明证据与限制。
 
 若不使用外部内容仓库，无需设置内容同步变量；默认就会使用仓库内内容。需要在 `.env` 中显式说明时可写：
 
@@ -44,15 +56,16 @@ ENABLE_CONTENT_SYNC=false
 
 ## GitHub Actions
 
-- `build.yml`：在 `master` 推送和 Pull Request 上运行 Astro 检查与构建。
-- `biome.yml`：检查 `src/` 的代码格式和质量。
-- `deploy.yml`：把 `dist/` 发布到 `pages` 分支。
+- `build.yml`：在 `master` 推送和 Pull Request 上运行 Astro 检查与构建。Astro 检查为非阻断诊断；构建执行 `pnpm astro build`，不包含完整 `pnpm build` 的搜索索引和字体压缩步骤。
+- `biome.yml`：以非阻断诊断方式检查 `src/` 的代码格式和质量。
+- `deploy.yml`：在推送到 `master` 或手动触发时运行完整构建，把 `dist/` 发布到 `pages` 分支。
 
-同一站点应只选择一个生产部署入口。若使用 Vercel，`deploy.yml` 可以保留为手动/备用方案；若使用 GitHub Pages，需要在仓库设置中把发布源配置为 `pages` 分支。
+当前 `deploy.yml` 包含自动推送触发器，并非仅手动备用。连接 Vercel 等托管服务后，也可能由托管端触发部署；实际连接和生产分支以平台配置为准。需要改为手动部署或调整生产入口时，作为独立部署配置变更处理。
 
-## 发布前检查
+## 提交、上传与上线验证
 
-1. `pnpm check`、`pnpm type-check`、`pnpm build` 全部通过；
-2. 桌面端和移动端首页、文章页、搜索和导航可用；
-3. `siteURL`、RSS、Atom、sitemap 和 robots.txt 指向正式域名；
-4. Git 状态不包含 `.env`、本地密码文件或临时构建产物。
+日常使用直接 `master` 工作流，具体授权与分支处理见 [AGENTS.md](../AGENTS.md)。仅要求提交时创建本地提交；要求上传或推送时发布指定改动，确认目标提交已到达远端。
+
+提交前只暂存授权范围内的内容，检查暂存差异，避免包含 `.env`、本地密码文件或临时构建产物。推送 `master` 会触发现有自动化；自动检查成功、推送成功和生产站点已经更新是不同状态。
+
+当任务包含上线验收时，再核对部署记录与目标版本，并访问正式地址验证本次受影响的路径。域名或站点地址变化时检查 `siteURL`、订阅源、sitemap 和 robots.txt；首页、搜索、导航等只在受本次改动影响时纳入验收。

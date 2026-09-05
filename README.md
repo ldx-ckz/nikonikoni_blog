@@ -80,7 +80,7 @@ docs/             架构、部署与维护文档
 
 部署前需要：
 
-1. 将 `ENABLE_CONTENT_SYNC` 明确设置为 `false`，或配置内容仓库地址；
+1. 默认使用本仓库内容，无需设置同步变量；只有需要外部内容仓库时才配置地址并设置 `ENABLE_CONTENT_SYNC=true`；
 2. 在托管平台中配置所需密钥，不要提交 `.env`；
 3. 确认 `src/config.ts` 中的 `siteURL` 与正式域名一致。
 

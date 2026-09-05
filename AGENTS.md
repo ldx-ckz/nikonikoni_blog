@@ -2,139 +2,94 @@
 
 ## Project Context
 
-`nikonikoni blog` is a personal Astro static site and digital garden, not a generic theme.
-It uses Astro 5, TypeScript, Svelte, Tailwind CSS, Node.js 24+, and pnpm 10.22.0.
+`nikonikoni blog` is a personal Astro static site and digital garden.
+Use `package.json` for runtime versions and scripts, `README.md` for setup,
+`docs/ARCHITECTURE.md` for structure, and `docs/DEPLOYMENT.md` for deployment.
+Site settings live in `src/config.ts`; content requirements live in `src/content.config.ts`.
 
-This file contains execution rules only. Use the following as the source of truth:
+## Scope And Autonomy
 
-- `README.md`: local setup and public project overview.
-- `docs/ARCHITECTURE.md`: directory ownership and system structure.
-- `docs/CONTENT_SYNC.md`: optional external-content workflow.
-- `docs/DEPLOYMENT.md`: deployment and environment variables.
-- `src/config.ts`: site identity, navigation, feature flags, and services.
-- `src/content.config.ts`: content collections and frontmatter requirements.
+Start with `git status --short` and identify the affected files. Carry out clear requests,
+including routine supporting edits and verification. For complex work, explain a short plan;
+a plan does not itself require another approval. When the user requests a plan or diagnosis
+only, stop before implementation and wait for their go-ahead.
 
-## Planning And Approval
+Use local conventions for routine choices. Ask when a missing decision materially changes
+the outcome, the scope expands beyond the request, or an action requires authority not
+already given. Existing authorization remains valid for the same scope; do not ask again
+for each step. Explain consequential dependency, configuration, or workflow changes before
+making them, and obtain a decision if they introduce a new cost, service, or external effect.
 
-Before editing, run `git status --short` and identify the smallest affected surface.
-Preserve user changes: never reset, revert, stage, or clean changes you did not make.
-Leave unrelated changes alone; if overlapping changes cannot be safely separated,
-explain the conflict and wait for direction.
+Preserve user changes. Only edit, stage, or clean files within the authorized task, including
+user-authored files when the user asks to publish them. Do not overwrite unrelated work.
+Resolve routine integration issues within scope; ask if a conflict requires choosing between
+the user's intent and another change. Do not force-push or discard unique work without authorization.
 
-Surface material assumptions, ambiguities, and outcome-changing alternatives in the plan;
-do not choose among them silently. Follow local patterns for routine details; ask only when
-an ambiguity blocks a safe choice.
+## Git And Publishing
 
-Direct execution is allowed only for an explicit, local, single-file correction that does not
-change public behavior or a data contract, or touch dependencies, lockfiles, configuration, CI,
-deployment, content, structured data, personal assets, or delete/move files.
+This is a single-maintainer repository. Use direct `master` publishing by default. Follow
+the user's and this project's branch policy even if a generic commit skill prefers branches.
+Create a feature branch or PR only when requested or when repository protection requires it.
 
-For every other task, present a plan and wait for explicit approval before editing. State the
-goal, affected files, useful alternatives, risks, and validation. If the scope materially expands,
-the approach changes, or a new external effect appears, stop the affected work and obtain approval again.
+- A commit request authorizes a local commit. An upload or push request includes the commits
+  needed to publish the specified work to GitHub. Do not infer a push from a commit-only request.
+- Interpret "sync" in context: Git synchronization is separate from external content sync.
+- Inspect the current branch, changes, and staged diff. Stage the authorized paths explicitly;
+  use `git add .` only when all pending changes are in scope. Prefer one commit per independent
+  change and match the repository's commit-message style.
+- Before pushing, fetch the target branch and compare histories. On `master`, integrate remote
+  changes as needed, rebasing only unpublished local commits. If on another branch, ensure the
+  intended changes actually reach `master`; do not blindly run `git push origin master` from a
+  feature branch. Preserve unrelated work and inspect the resulting diff before publishing.
+- Apply the verification below to the final changes. Reuse valid results for unchanged inputs;
+  recheck affected behavior if integration changes the code or dependencies.
+- Confirm the remote contains the intended commit and report the branch and commit. A push
+  to `master` triggers the configured automation; see `docs/DEPLOYMENT.md`. Check the production
+  site when the task requests deployment verification, not for every repository upload.
 
-Do not create branches or commits, push, create or update pull requests, deploy, change remote
-settings, or perform destructive cleanup unless explicitly requested. Adding a dependency or changing
-`pnpm-lock.yaml`, CI, deployment configuration, or an environment-variable contract requires a separately
-stated item in an approved plan.
+## Content And Secrets
 
-## Direct Master Publishing
+Treat `src/content/**`, `src/data/**`, and personal assets in `public/images/**` as user-owned.
+An explicit content-editing request authorizes the necessary edits; preserve intentional wording
+and metadata outside that request. Follow the content schema when adding or updating posts.
 
-This is a single-maintainer repository. When the user explicitly asks to sync, commit, upload, or push
-local work, use the direct `master` workflow by default:
+Keep `.env` and `post-passwords.local.json` local. Do not expose or commit secret values.
+Read secret-bearing files only when needed for an authorized configuration diagnosis, reporting
+key names or behavior rather than values. If a committed secret is found, report its path and risk;
+credential rotation or history rewriting requires authorization.
 
-```powershell
-git status
-npm.cmd run build
-git add .
-git commit -m "Describe the change"
-git pull --rebase origin master
-git push origin master
-git status
-```
+External content sync is disabled by default. Enable `ENABLE_CONTENT_SYNC=true` only for an
+authorized external-content task: it can replace local content directories. Ordinary verification
+must leave sync disabled; if the environment already enables it, override it for that command.
+See `docs/CONTENT_SYNC.md`. `predev` and `prebuild` tolerate sync failure with `|| true`, so a
+successful dev server or build does not prove an explicitly requested sync succeeded.
 
-Do not create a feature branch or pull request unless the user explicitly requests one, or direct pushes
-to `master` are rejected by repository protection. Run `git status` before `git add .` and preserve any
-unrelated changes. The repository ignores only known Obsidian runtime-state files; do not broaden that
-ignore rule to `.obsidian/` as a whole.
+The repository ignores specific Obsidian runtime-state files. Do not ignore `.obsidian/` wholesale.
 
-## Content And Secret Boundaries
+## Editing And Verification
 
-Treat `src/content/**`, `src/data/**`, and personal assets in `public/images/**` as user-owned content.
-Do not modify, rename, or delete them unless explicitly authorized; follow `src/content.config.ts` and
-preserve intentional wording and metadata when content work is approved.
+Prefer the simplest change that achieves the requested result. Follow existing structure and style;
+avoid speculative abstractions, fallback behavior, and unrelated refactoring. Remove code made
+unused by your change. Update existing documentation when the change affects its instructions.
 
-Never commit, print, or copy secret values. Keep `.env` and `post-passwords.local.json` local.
-Read them only for an explicitly requested configuration diagnosis; report key names or behavior, never values.
+`pnpm format` and `pnpm lint` write across `src/`; they are not read-only checks. Scope formatting
+to touched files. Choose checks that can detect a plausible regression:
 
-If sensitive data is already committed, immediately alert the user with the affected path and risk; do not repeat the value, rotate credentials, or rewrite Git history without explicit authorization.
+- Non-site documentation and rules: review the diff, affected links, and consistency. No site build.
+- Blog content or structured page data: run `pnpm build` once; inspect the affected page if special
+  markup or layout warrants it.
+- Source changes: run relevant non-writing checks supported for the touched file types and
+  `pnpm build`. Add or update an existing regression test when it usefully catches the defect;
+  a small reversible change does not automatically require a new test or framework.
+- Layout and interaction changes: inspect the affected page and behavior, including desktop and
+  mobile when responsive behavior is involved. Save screenshots when useful or requested.
 
-## Content Sync Safety
+Full Astro, TypeScript, and Biome checks have recorded baseline failures. Use them when relevant
+to the change, not as mandatory debt-clearing steps. Capture a before/after baseline only when
+needed to distinguish a regression. Fix failures introduced by the task; report inherited failures
+separately. A failed check is not a pass, and an existing build failure must be reported if it
+prevents the required build verification. Reuse results until relevant inputs or assumptions change.
 
-`scripts/sync-content.js` is disabled by default and runs only when `ENABLE_CONTENT_SYNC=true`. When
-enabled, it can clone or pull an external repository and replace, link, or copy `src/content/posts`,
-`src/content/spec`, `src/data`, and `public/images`; treat it as an external, content-mutating operation.
-
-For ordinary local development and verification, run the normal commands without enabling content sync:
-
-```powershell
-pnpm build
-```
-
-```sh
-pnpm build
-```
-
-Enable external content sync only as an approved task requirement by setting
-`ENABLE_CONTENT_SYNC=true` before `pnpm dev`, `pnpm check`, `pnpm build`, or commands that may run lifecycle
-scripts. A successful `pnpm dev` or `pnpm build` does not prove synchronization succeeded: `predev` and
-`prebuild` allow sync failures with `|| true`.
-
-## Editing Discipline
-
-Make the smallest change that satisfies the task. Keep routes in `src/pages/`, reusable UI in
-`src/components/`, shared behavior in `src/utils/`, site-wide styles in `src/styles/`, and structured
-page data in `src/data/`. Prefer `src/config.ts` for site settings.
-
-Prefer the simplest implementation. Do not add unrequested features, configuration, single-use
-abstractions, or speculative error handling. Match established local style. Remove imports, variables,
-or functions made unused by your own change, but report rather than alter pre-existing dead code.
-Every changed line must trace directly to the approved task.
-
-Do not perform unrelated refactors or repository-wide style cleanup. `pnpm format` and `pnpm lint` both
-write across `src/`; never use them as read-only checks or let them create a repository-wide diff. If
-formatting is needed, scope it to touched files and review the resulting diff.
-
-When code changes public behavior, a configuration contract, content structure, or deployment workflow,
-update the relevant existing README or document in the same approved task. Do not duplicate architecture or
-operational detail here.
-
-## Goal-Driven Execution
-
-Define observable success criteria before implementation. In a multi-step plan, pair each step with its
-validation. For a bug fix, use matching existing test infrastructure to add or adjust a regression test that
-fails before the fix and passes after it; otherwise record a reproducible behavioral check. For a refactor,
-verify relevant behavior before and after. Do not add a test framework solely to satisfy this rule.
-
-## Verification
-
-Run `git diff --check` for every change and inspect `git status --short` before hand-off.
-
-- Documentation only: verify changed relative Markdown links resolve locally, then run `git diff --check`.
-- Content or structured data: build with content sync explicitly disabled.
-- Source code: run a non-writing targeted check such as `pnpm exec biome ci <touched-paths>`, then build
-  with content sync disabled.
-- Visible UI: also inspect one desktop and one mobile viewport in a browser. Check the console, layout,
-  text overflow, overlap, and changed interactions; retain screenshots or record the observed result.
-
-Full static checks have known baseline failures. Treat `pnpm check`, `pnpm type-check`, and full-repository
-Biome output as diagnostics; a nonzero exit code alone neither proves a regression nor permits claiming
-success. Capture relevant diagnostics before editing; do not add diagnostics in files you touch, and report
-inherited failures separately. Code, content, and data tasks still require a successful content-sync-disabled
-build unless an existing build failure blocks it and is reported with evidence.
-
-## Hand-off
-
-Report changed files, affected behavior or content, commands actually run and their results, inherited
-static-check failures, and verification gaps. Do not claim a check passed when it was skipped, advisory,
-or masked by a package script.
+Finish with a diff review, `git diff --check`, and `git status --short`. Report what changed,
+meaningful verification results, and remaining limitations. For cleanup, check exact targets and
+unique work first; execute clearly authorized cleanup without requesting the same approval again.
