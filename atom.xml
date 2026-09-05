@@ -5,7 +5,7 @@
   <link href="https://miku.nikonikoni.blog/" rel="alternate" type="text/html"/>
   <link href="https://miku.nikonikoni.blog/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://miku.nikonikoni.blog/</id>
-  <updated>2026-08-31T15:15:05.370Z</updated>
+  <updated>2026-09-05T09:56:53.455Z</updated>
   <language>zh_CN</language>
   <entry>
     <title>LearnCpp 类</title>
@@ -1186,6 +1186,500 @@ void print(T value)
     <category term="Tutorial"></category>
   </entry>
   <entry>
+    <title>LearnCpp 作用域、变量与命名空间</title>
+    <link href="https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/" rel="alternate" type="text/html"/>
+    <id>https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</id>
+    <published>2026-08-19T00:00:00.000Z</published>
+    <updated>2026-08-19T00:00:00.000Z</updated>
+    <summary>LearnCpp 作用域、变量与命名空间笔记，介绍代码块、用户命名空间、局部与全局变量、变量遮蔽、静态局部变量以及 using 语句。</summary>
+    <content type="html"><![CDATA[<h1>LearnCpp 作用域、变量与命名空间</h1>
+<h2>7.1 复合语句（代码块）</h2>
+<p><strong>复合语句</strong>（compound statement）也称为<strong>代码块</strong>（block）或<strong>块语句</strong>（block statement），由零条或多条语句组成，但编译器把整个代码块当作一条语句处理。</p>
+<p>代码块以 <code>{</code> 开始，以 <code>}</code> 结束。凡是语法要求一条语句的地方，都可以放置一个代码块。代码块的右花括号后不需要分号。</p>
+<pre><code>int add(int x, int y)
+{ // 代码块开始
+    return x + y;
+} // 代码块结束，无分号
+
+int main()
+{
+    int value{}; // 这里的花括号用于初始化，不是代码块
+    add(3, 4);
+
+    return 0;
+}
+</code></pre>
+<p>函数体本身就是代码块。用于列表初始化的花括号并不构成代码块。</p>
+<h3>嵌套代码块</h3>
+<p>函数不能定义在另一个函数内部，但代码块可以嵌套在其他代码块中。包含其他代码块的块称为<strong>外层代码块</strong>，被包含的块称为<strong>内层代码块</strong>或<strong>嵌套代码块</strong>。</p>
+<pre><code>int main()
+{ // 外层代码块
+    int value{};
+
+    { // 内层代码块
+        value = 7;
+    }
+
+    return 0;
+}
+</code></pre>
+<p>代码块的常见用途是让 <code>if</code> 或 <code>else</code> 条件控制多条语句。<code>if</code> 默认只控制紧随其后的一条语句；以代码块替代该语句后，块内所有语句会作为一个整体执行。</p>
+<pre><code>if (value &gt;= 0)
+{
+    std::cout &lt;&lt; value &lt;&lt; " is non-negative\n";
+    std::cout &lt;&lt; "Double: " &lt;&lt; value * 2 &lt;&lt; '\n';
+}
+else
+{
+    std::cout &lt;&lt; value &lt;&lt; " is negative\n";
+    std::cout &lt;&lt; "Absolute value: " &lt;&lt; -value &lt;&lt; '\n';
+}
+</code></pre>
+<h3>嵌套层级</h3>
+<p>函数的<strong>嵌套层级</strong>或<strong>嵌套深度</strong>，是执行到函数中某一点时最多能同时位于多少层代码块之内，函数最外层代码块也计入。嵌套层级不是代码块总数：两个并列的三级代码块仍只产生三级深度。</p>
+<p>C++ 标准建议编译器至少支持 256 层嵌套，但并非所有实现都达到这一数量。可编译不等于易读；过深嵌套会使控制关系难以追踪。</p>
+<p><strong>最佳实践</strong></p>
+<p>函数的嵌套层级尽量不超过 3。需要更深嵌套时，通常应把最深处的代码提取为独立函数。</p>
+<h2>7.2 用户定义命名空间与作用域解析运算符</h2>
+<p>当两个相同标识符被引入同一作用域，而编译器无法判断应使用哪一个时，就会发生<strong>命名冲突</strong>（naming collision）。冲突可能由编译器报告，也可能在多个翻译单元链接时由链接器报告。</p>
+<p>同一作用域中的每个名称都可能与其他名称冲突。因此，标识符数量线性增加时，潜在冲突组合会大幅增加。这也是应把标识符定义在最小可用作用域内的重要原因。</p>
+<p>例如，两个源文件都在全局作用域定义 <code>doSomething(int, int)</code>，即使程序从未调用该函数，链接器仍会在处理重复定义时报告错误。直接改名能够消除冲突，却需要同步修改所有调用点。命名空间可以让名称保持不变，同时把它们放入不同作用域。</p>
+<h3>定义命名空间</h3>
+<p>程序定义的命名空间使用 <code>namespace</code> 关键字：</p>
+<pre><code>namespace Foo
+{
+    int doSomething(int x, int y)
+    {
+        return x + y;
+    }
+}
+
+namespace Goo
+{
+    int doSomething(int x, int y)
+    {
+        return x - y;
+    }
+}
+</code></pre>
+<p>命名空间只能定义在全局作用域或另一个命名空间内，不能定义在函数内部。命名空间内容通常缩进一级；右花括号后的分号是可选的。</p>
+<p>历史上，命名空间名通常使用小写，许多风格指南仍采用这种约定。LearnCpp 推荐程序定义的命名空间以大写字母开头，理由包括：</p>
+<ul>
+<li>与程序定义类型的命名约定保持一致；</li>
+<li>降低与系统或库提供的小写名称冲突的概率；</li>
+<li>C++20 标准文本与 C++ Core Guidelines 采用这种风格。</li>
+</ul>
+<p>大写与小写两种风格都有效，项目内保持一致更重要。</p>
+<h3>作用域解析运算符</h3>
+<p>把函数移入 <code>Foo</code> 和 <code>Goo</code> 后，原先位于全局作用域的前置声明不再与它们匹配。编译器可能接受该全局声明，但链接器找不到对应的全局定义。</p>
+<p><strong>作用域解析运算符</strong> <code>::</code> 用于明确指定标识符所在的作用域。左操作数是要查找的作用域，右操作数是该作用域内的标识符。</p>
+<pre><code>std::cout &lt;&lt; Foo::doSomething(4, 3) &lt;&lt; '\n'; // 7
+std::cout &lt;&lt; Goo::doSomething(4, 3) &lt;&lt; '\n'; // 1
+</code></pre>
+<p>显式限定名称能够消除两个同名函数之间的歧义。<code>::name</code> 没有左侧命名空间名时，表示从全局命名空间查找 <code>name</code>：</p>
+<pre><code>void print()
+{
+    std::cout &lt;&lt; "global\n";
+}
+
+namespace Foo
+{
+    void print()
+    {
+        std::cout &lt;&lt; "Foo\n";
+    }
+
+    void callBoth()
+    {
+        print();   // Foo::print()
+        ::print(); // 全局命名空间中的 print()
+    }
+}
+</code></pre>
+<p>在命名空间内部使用未限定名称时，编译器先查找当前命名空间，再依次查找各层外部命名空间，最后查找全局命名空间。<code>::</code> 可以跳过这套逐层查找，直接要求使用全局名称。</p>
+<h3>声明、定义与多个命名空间块</h3>
+<p>命名空间中标识符的前置声明和定义必须位于同一命名空间。头文件中的声明、源文件中的定义以及调用点应保持一致：</p>
+<pre><code>// add.h
+namespace BasicMath
+{
+    int add(int x, int y);
+}
+
+// add.cpp
+#include "add.h"
+
+namespace BasicMath
+{
+    int add(int x, int y)
+    {
+        return x + y;
+    }
+}
+
+// main.cpp
+#include "add.h"
+
+int result{ BasicMath::add(4, 3) };
+</code></pre>
+<p>若声明留在全局命名空间，编译器看不到 <code>BasicMath::add</code> 的声明；若定义留在全局命名空间，链接器找不到 <code>BasicMath::add</code> 的定义。</p>
+<p>同一命名空间可以在同一文件的多个位置或不同文件中反复打开。所有同名命名空间块的声明都属于同一命名空间。标准库头文件正是通过多个 <code>namespace std</code> 块共同组成 <code>std</code>。</p>
+<p><strong>警告</strong></p>
+<p>不要向 <code>std</code> 命名空间添加自定义功能。除标准明确允许的少数情况外，这通常会导致未定义行为。</p>
+<h3>嵌套命名空间</h3>
+<p>命名空间可以嵌套：</p>
+<pre><code>namespace Foo
+{
+    namespace Goo
+    {
+        int add(int x, int y)
+        {
+            return x + y;
+        }
+    }
+}
+
+int sum{ Foo::Goo::add(1, 2) };
+</code></pre>
+<p>C++17 可以使用等价的紧凑语法：</p>
+<pre><code>namespace Foo::Goo
+{
+    int add(int x, int y)
+    {
+        return x + y;
+    }
+}
+</code></pre>
+<p>之后仍可单独重新打开 <code>namespace Foo</code>，向 <code>Foo</code> 而不是 <code>Foo::Goo</code> 添加声明。选择传统嵌套写法还是 C++17 紧凑写法属于风格问题。</p>
+<h3>命名空间别名</h3>
+<p>长命名空间链可以通过别名临时缩短：</p>
+<pre><code>namespace Active = Foo::Goo;
+
+int result{ Active::add(1, 2) };
+</code></pre>
+<p>命名空间别名遵循其声明位置的作用域规则。例如，函数块内声明的 <code>Active</code> 会在该块结束时失效。别名还提供一层间接性：实现迁移到 <code>V2</code> 后，只需把别名改为 <code>namespace Active = V2;</code>，调用点仍可保持 <code>Active::add()</code>。</p>
+<h3>命名空间的使用尺度</h3>
+<p>命名空间的首要目的不是建立信息层次，而是防止命名冲突。标准库主体位于单一顶层命名空间 <code>std</code>；名称较多的新组件也会采用嵌套命名空间，例如 <code>std::ranges</code>。</p>
+<ul>
+<li>小型、仅供个人使用的程序通常不必放入自定义命名空间。</li>
+<li>引入大量第三方库的较大项目可用命名空间降低冲突风险。</li>
+<li>会分发给其他项目使用的代码应放入命名空间；一个独特的顶层命名空间通常已经足够，也便于编辑器自动补全展示库的公开名称。</li>
+<li>多团队项目常采用“项目或库::模块”“组织::项目或库”，或“组织::项目或库::模块”的两至三级结构。</li>
+<li>模块级命名空间可区分可复用代码与应用专用代码；目录结构也能承担一部分组织职责。</li>
+</ul>
+<p>命名空间一般不应嵌套超过 3 层。</p>
+<h2>7.3 局部变量</h2>
+<p>定义在函数内部的变量，包括函数形参，称为<strong>局部变量</strong>。C++ 并不存在一个单独属性来判定“局部”；局部变量的行为由作用域、存储期和链接属性共同构成。</p>
+<h3>块作用域</h3>
+<p>标识符的<strong>作用域</strong>决定源代码中哪些位置可以访问它。能够访问时称为“在作用域内”，不能访问时称为“超出作用域”。作用域是编译期属性；访问超出作用域的标识符会产生编译错误。</p>
+<p>局部变量具有<strong>块作用域</strong>：从定义点开始进入作用域，到所在代码块末尾离开作用域。</p>
+<pre><code>int main()
+{
+    int i{ 5 };      // i 从这里进入作用域
+    double d{ 4.0 }; // d 从这里进入作用域
+
+    return 0;
+} // d 和 i 在这里离开作用域
+</code></pre>
+<p>普通函数的形参虽然写在函数体之前，但通常可以把它们视为处于函数体代码块的作用域中。</p>
+<p>同一作用域中的变量名必须唯一。形参与函数体顶层局部变量属于同一作用域，因此不能重名：</p>
+<pre><code>void someFunction(int x)
+{
+    int x{}; // 错误：与形参 x 冲突
+}
+</code></pre>
+<h3>自动存储期与生命周期</h3>
+<p>变量的<strong>存储期</strong>（storage duration）规定变量何时以及如何创建和销毁；多数情况下，存储期直接决定变量的<strong>生命周期</strong>，即对象从实际创建到实际销毁的时间。</p>
+<p>局部变量默认具有<strong>自动存储期</strong>：执行到定义处时创建，在所在代码块结束时销毁。因此局部变量也称为<strong>自动变量</strong>。</p>
+<p>作用域与生命周期描述不同维度：作用域是名称能否在某段源代码中被使用的编译期属性；生命周期是对象在运行时是否存在。</p>
+<h3>嵌套块中的局部变量</h3>
+<p>内层变量只能从其定义点使用到内层块末尾；离开内层块后，它既超出作用域，也被销毁。外层块的作用域包含其嵌套块，因此外层变量在内层块中仍然可见。</p>
+<pre><code>int main()
+{
+    int x{ 5 };
+
+    {
+        int y{ 7 };
+        std::cout &lt;&lt; x + y &lt;&lt; '\n'; // x 与 y 都在作用域内
+    } // y 离开作用域并被销毁
+
+    // y 在这里不可访问
+    return 0;
+} // x 离开作用域并被销毁
+</code></pre>
+<h3>无链接</h3>
+<p>标识符的<strong>链接属性</strong>决定不同作用域中的同名声明是否指向同一对象或函数。局部变量没有链接属性（no linkage）；每个声明都表示一个独立对象。</p>
+<pre><code>int main()
+{
+    int x{ 2 };
+
+    {
+        int x{ 3 }; // 与外层 x 是不同对象
+    }
+}
+</code></pre>
+<p>作用域回答“单个声明在哪里可见”，链接属性回答“多个声明是否指向同一实体”，二者不能混为一谈。</p>
+<h3>使用最小的现有作用域</h3>
+<p>变量应定义在能够满足使用需求的最小现有作用域内。较小的作用域减少同时活跃的变量数量，也让变量可能被使用的位置更容易辨认。</p>
+<p>如果变量只在嵌套块中使用，就在该块中定义。如果变量离开内层块后仍要使用，则必须在外层块中定义；这种需求可能导致变量早于首次使用声明。</p>
+<p>不应仅为缩短变量作用域而额外创建代码块，因为这会让整个函数变长并增加结构复杂度。若一段代码确实值得形成独立作用域，通常更适合提取为函数。</p>
+<p><strong>最佳实践</strong></p>
+<p>在最小的现有作用域内定义变量。不要创建唯一目的只是限制变量作用域的新代码块。</p>
+<h2>7.4 全局变量简介</h2>
+<p>定义在函数外部的变量称为<strong>全局变量</strong>。按惯例，全局变量放在文件顶部、<code>#include</code> 指令之后。</p>
+<pre><code>#include &lt;iostream&gt;
+
+int g_x{}; // 全局变量
+
+void setValue()
+{
+    g_x = 3;
+}
+
+int main()
+{
+    setValue();
+    std::cout &lt;&lt; g_x &lt;&lt; '\n';
+}
+</code></pre>
+<h3>全局命名空间作用域</h3>
+<p>在全局命名空间中声明的标识符具有<strong>全局命名空间作用域</strong>，常简称为全局作用域，也会被非正式地称为文件作用域。它从声明点持续到所在文件末尾。</p>
+<p>全局变量也可以定义在用户命名空间中：</p>
+<pre><code>namespace Foo
+{
+    int x{};
+}
+
+void setValue()
+{
+    Foo::x = 3;
+}
+</code></pre>
+<p><code>x</code> 的名称受 <code>Foo</code> 限定，但仍可通过 <code>Foo::x</code> 在文件各处访问，所以它仍是全局变量。</p>
+<p><strong>最佳实践</strong></p>
+<p>全局变量优先定义在用户命名空间中，而不是直接放在全局命名空间。</p>
+<h3>静态存储期</h3>
+<p>全局变量具有<strong>静态存储期</strong>：在程序启动时、<code>main()</code> 执行前创建，在程序结束时销毁。具有静态存储期的变量有时也称为静态变量；这里的“静态”描述存储期，不要求变量写出 <code>static</code> 关键字。</p>
+<h3>命名全局变量</h3>
+<p>一些项目使用 <code>g</code> 或 <code>g_</code> 前缀标记全局变量。该前缀可以：</p>
+<ul>
+<li>降低与全局命名空间中其他标识符冲突的概率；</li>
+<li>减少无意遮蔽全局变量的可能；</li>
+<li>表明该变量会在当前函数结束后继续存在，对它的修改也会保留。</li>
+</ul>
+<p>命名空间中的全局变量常省略 <code>g_</code>，因为命名空间限定已经能降低冲突并表明其非局部来源；保留前缀仍可强调其静态存储期。</p>
+<p>用名称前缀编码类型的匈牙利命名法在现代 C++ 中通常价值有限；用 <code>g_</code>、<code>s_</code>、<code>m_</code> 表达作用域或存储期则仍能提供有用信息。</p>
+<p><strong>最佳实践</strong></p>
+<p>尤其对全局命名空间中的变量，可考虑使用 <code>g</code> 或 <code>g_</code> 前缀，将其与局部变量和函数形参区分。</p>
+<h3>初始化</h3>
+<p>具有静态存储期的变量在没有显式初始化器时会默认零初始化，这与默认未初始化的普通局部变量不同：</p>
+<pre><code>int g_x;       // 默认零初始化
+int g_y{};     // 值初始化，结果为零
+int g_z{ 1 };  // 初始化为 1
+</code></pre>
+<p>非常量全局变量可以省略初始化器。<code>const</code> 和 <code>constexpr</code> 全局变量必须初始化：</p>
+<pre><code>const int g_a;          // 错误
+constexpr int g_b;      // 错误
+const int g_c{ 1 };     // 正确
+constexpr int g_d{ 2 }; // 正确
+</code></pre>
+<p><strong>警告</strong></p>
+<p>通常应完全避免使用非常量全局变量。它们让任何可访问位置都能改变共享状态，使函数行为产生难以追踪的隐式依赖。</p>
+<h2>7.5 变量遮蔽（名称隐藏）</h2>
+<p>每个代码块都定义自己的作用域区域。内层块声明与外层变量同名的变量后，在两者作用域重叠的区域中，内层变量会<strong>隐藏</strong>外层变量。这称为<strong>名称隐藏</strong>（name hiding）或<strong>变量遮蔽</strong>（shadowing）。</p>
+<h3>局部变量之间的遮蔽</h3>
+<pre><code>int main()
+{
+    int apples{ 5 };
+
+    {
+        std::cout &lt;&lt; apples &lt;&lt; '\n'; // 外层 apples：5
+
+        int apples{ 0 }; // 从这里开始隐藏外层 apples
+        apples = 10;
+
+        std::cout &lt;&lt; apples &lt;&lt; '\n'; // 内层 apples：10
+    } // 内层 apples 被销毁
+
+    std::cout &lt;&lt; apples &lt;&lt; '\n'; // 外层 apples：5
+}
+</code></pre>
+<p>输出为：</p>
+<pre><code>5
+10
+5
+</code></pre>
+<p>遮蔽不会修改或销毁外层对象。内层声明出现前，未限定名称仍指向外层变量；从内层声明到代码块结束，名称指向内层变量。内层块结束后，外层名称重新可见，其值保持不变。</p>
+<p>如果没有声明内层 <code>apples</code>，内层块中的读取和赋值都会作用于外层变量，输出会是 <code>5</code>、<code>10</code>、<code>10</code>。</p>
+<p>在内层块中，没有语法可以直接访问被同名局部变量遮蔽的外层局部变量。</p>
+<h3>局部变量遮蔽全局变量</h3>
+<p>局部变量也可以遮蔽同名全局变量。局部变量在作用域内时，未限定名称指向局部对象：</p>
+<pre><code>int value{ 5 };
+
+int main()
+{
+    int value{ 7 };
+
+    ++value;     // 局部 value 变为 8
+    --(::value); // 全局 value 变为 4
+
+    std::cout &lt;&lt; value &lt;&lt; '\n';   // 8
+    std::cout &lt;&lt; ::value &lt;&lt; '\n'; // 4
+}
+</code></pre>
+<p>全局变量属于全局命名空间，所以即使被局部变量遮蔽，仍可通过无前缀作用域解析 <code>::value</code> 明确访问。这个办法不适用于被遮蔽的外层局部变量。</p>
+<p><strong>最佳实践</strong></p>
+<p>避免变量遮蔽。遮蔽容易让代码读取或修改错误的对象。为全局变量统一使用 <code>g_</code> 前缀可以简单地避免局部变量与全局变量同名。</p>
+<p>GCC 和 Clang 可用 <code>-Wshadow</code> 启用遮蔽警告，并提供 <code>-Wshadow=global</code>、<code>-Wshadow=local</code>、<code>-Wshadow=compatible-local</code> 等变体。Visual Studio 默认启用相应警告。</p>
+<h2>7.11 静态局部变量</h2>
+<p><code>static</code> 在不同上下文中含义不同：</p>
+<ul>
+<li>全局变量本身具有静态存储期；</li>
+<li><code>static</code> 修饰全局标识符时赋予其内部链接；</li>
+<li><code>static</code> 修饰局部变量时，把它的存储期从自动存储期改为静态存储期。</li>
+</ul>
+<p>本节的 <code>static</code> 指第三种用法。</p>
+<h3>跨函数调用保留值</h3>
+<p>普通局部变量每次执行到定义处都会创建，并在离开代码块时销毁：</p>
+<pre><code>void incrementAndPrint()
+{
+    int value{ 1 };
+    ++value;
+    std::cout &lt;&lt; value &lt;&lt; '\n';
+}
+</code></pre>
+<p>调用三次会输出三次 <code>2</code>。改为静态局部变量后：</p>
+<pre><code>void incrementAndPrint()
+{
+    static int s_value{ 1 };
+    ++s_value;
+    std::cout &lt;&lt; s_value &lt;&lt; '\n';
+}
+</code></pre>
+<p>初始化只发生一次。函数结束时，<code>s_value</code> 离开作用域而暂时不可访问，但对象不会被销毁。三次调用依次输出 <code>2</code>、<code>3</code>、<code>4</code>。</p>
+<p>静态局部变量兼具两类属性：名称具有局部变量的块作用域，对象却具有延续到程序结束的生命周期。它适合需要局部状态在多次函数调用之间保留的场景。</p>
+<h3>初始化规则</h3>
+<p>可零初始化或具有常量表达式初始化器的静态局部变量可以在程序启动时初始化。</p>
+<p>没有初始化器或具有非常量表达式初始化器的静态局部变量会在程序启动时先零初始化。具有非常量表达式初始化器的变量在程序第一次执行到定义处时完成初始化；后续调用跳过该定义，不会再次初始化。未显式初始化的静态局部变量最终保持默认的零值。</p>
+<p><strong>最佳实践</strong></p>
+<p>显式初始化静态局部变量。常用 <code>s</code> 或 <code>s_</code> 前缀表明局部变量具有静态存储期。</p>
+<h3>唯一 ID 生成器</h3>
+<pre><code>int generateID()
+{
+    static int s_itemID{ 0 };
+    return s_itemID++;
+}
+</code></pre>
+<p>第一次调用返回 <code>0</code>，第二次返回 <code>1</code>，之后每次递增。状态只能通过该函数改变，其他函数无法直接篡改 <code>s_itemID</code>。这种写法获得了全局变量“持续存在”的特征，同时把可见性限制在函数块内。</p>
+<p>该方案只有在整个程序确实只需要一个永不重置的 ID 序列时才合适。</p>
+<h3>静态局部常量</h3>
+<p>静态局部变量可以声明为 <code>const</code> 或 <code>constexpr</code>。如果函数需要一个创建或初始化成本较高的常量对象，普通局部变量会在每次调用时重复构造；静态局部常量只初始化一次，之后所有调用都复用该对象。</p>
+<p><strong>关键点</strong></p>
+<p>静态局部变量最适合用来避免每次函数调用都重复初始化昂贵的局部对象。静态局部常量通常可以安全使用。</p>
+<h3>不要用静态局部状态改变函数流程</h3>
+<p>非 <code>const</code> 静态局部变量会让函数调用隐式依赖先前调用。例如，用 <code>static bool s_isFirstCall</code> 让第一次调用显示一种提示、以后显示另一种提示，会造成相同参数的两次调用表现不同。调用者仅阅读调用点无法发现这种内部状态。</p>
+<p>这种函数难以复用：内部状态不能由调用者重置；当另一段流程希望重新执行“第一次调用”时，旧状态仍然存在。更好的做法是把差异作为参数传入，让调用者显式控制行为。若需要传入提示文本，<code>std::string_view</code> 参数通常比布尔标记更通用。</p>
+<p><strong>最佳实践</strong></p>
+<ul>
+<li><code>const</code> 静态局部变量通常可以使用。</li>
+<li>非 <code>const</code> 静态局部变量通常应避免。</li>
+<li>确实使用非 <code>const</code> 静态局部变量时，应确认该状态在整个程序中只有唯一实例、永远不需要重置，并且不用于改变控制流。</li>
+<li>需要多个各自保留状态的实例时，应使用函数对象等可实例化方案，而不是单个静态局部变量。</li>
+</ul>
+<h2>7.13 using 声明与 using 指令</h2>
+<p>标准库的名称最初位于全局命名空间，容易与程序名称冲突。命名空间在 1995 年标准化后，标准库功能迁移到 <code>std</code>。为兼容大量使用未限定标准库名称的旧代码，并减少反复书写限定符，C++ 提供了 using 语句。</p>
+<h3>限定名称与未限定名称</h3>
+<p><strong>限定名称</strong>带有关联作用域：</p>
+<pre><code>std::cout // 由命名空间 std 限定
+::foo     // 由全局命名空间限定
+</code></pre>
+<p>名称还可以由类名通过 <code>::</code> 限定，或由类对象、对象指针通过 <code>.</code>、<code>-&gt;</code> 限定：</p>
+<pre><code>C::s_member;
+obj.x;
+ptr-&gt;y;
+</code></pre>
+<p><strong>未限定名称</strong>不带作用域限定符，例如 <code>cout</code> 和 <code>x</code>。</p>
+<h3>using 声明</h3>
+<p><strong>using 声明</strong>让一个限定名称可以通过未限定名称使用：</p>
+<pre><code>int main()
+{
+    using std::cout;
+
+    cout &lt;&lt; "Hello world!\n";
+} // using 声明在此失效
+</code></pre>
+<p><code>using std::cout;</code> 表明当前作用域中的未限定 <code>cout</code> 应解析为 <code>std::cout</code>。若 <code>std::cout</code> 与另一个可见的 <code>cout</code> 发生名称冲突，该 using 声明指定的 <code>std::cout</code> 优先。</p>
+<p>每个名称需要单独的 using 声明，例如 <code>std::cout</code> 与 <code>std::cin</code> 各写一条。using 声明从声明点生效，持续到当前作用域末尾。它不如显式 <code>std::</code> 清晰，但放在源文件中所有 <code>#include</code> 指令之后时通常安全且可接受。</p>
+<h3>using 指令</h3>
+<p><strong>using 指令</strong>使指定命名空间中的所有标识符都可以在作用域内以未限定名称参与查找：</p>
+<pre><code>int main()
+{
+    using namespace std;
+
+    cout &lt;&lt; "Hello world!\n";
+}
+</code></pre>
+<p>从技术上说，using 指令并非真正把新名称声明到当前作用域，而是让这些名称在某个外层作用域中参与查找。实际结果仍是该命名空间的大量名称都成为未限定名称查找的候选项。</p>
+<p>using 指令曾用于让命名空间出现前的旧代码以很小改动继续使用标准库。现代 C++ 中，它节省的输入量通常不足以抵消风险：</p>
+<ol>
+<li>它让命名空间中的所有名称参与未限定查找，包括完全不会使用的名称。</li>
+<li>它不会让该命名空间的名称优先于其他候选名称。</li>
+</ol>
+<p>同时引入 <code>A</code> 与 <code>B</code> 后，若两者都有 <code>x</code>，未限定 <code>x</code> 会产生歧义。可通过删除某条 using 指令、改用 using 声明，或显式写成 <code>A::x</code>、<code>B::x</code> 解决。</p>
+<h3>对未来库版本的脆弱性</h3>
+<p>using 指令即使当前没有冲突，也会让代码暴露给库将来新增的所有名称。</p>
+<p>假设程序有全局 <code>print()</code>，并使用 <code>using namespace Foo;</code>。库升级后新增 <code>Foo::print()</code>，原本正常的 <code>print()</code> 调用可能突然变成歧义并停止编译。</p>
+<p>更隐蔽的情况是库新增同名重载，而且它比原函数更匹配：</p>
+<pre><code>int get(long)
+{
+    return 1;
+}
+
+int main()
+{
+    using namespace Foo;
+    std::cout &lt;&lt; get(0) &lt;&lt; '\n';
+}
+</code></pre>
+<p>若 <code>Foo</code> 后来新增 <code>int get(int)</code>，整型字面量 <code>0</code> 与它精确匹配，优于需要 <code>int</code> 到 <code>long</code> 转换的全局函数。程序无需修改即可从输出 <code>1</code> 变为输出 <code>2</code>。显式限定名称或只引入目标名称的 using 声明不会产生这种扩大候选集的问题。</p>
+<p>using 指令还隐藏名称来源。<code>NS::foo()</code> 明确表明它来自库；未限定的 <code>foo()</code> 无法直接显示它属于库还是程序。个别库头可能把名称放入全局命名空间，因此未限定名称来自程序只是倾向而非保证。</p>
+<h3>using 语句的作用域与位置</h3>
+<p>块内的 using 声明或 using 指令仅在该块内生效，遵循普通块作用域规则。命名空间作用域（包括全局命名空间）中的 using 语句从声明点影响文件剩余部分。</p>
+<p>using 语句不应放在头文件中，也不应放在任何 <code>#include</code> 指令之前。基本原则是：不要把 using 语句放到可能影响其他文件代码的位置，也不要放到其他文件代码可能反过来改变它的位置。</p>
+<ul>
+<li>头文件全局或命名空间作用域中的 using 语句会传播到每个包含该头文件的源文件。</li>
+<li>即使 using 语句位于头文件中定义的函数内部也不安全，因为在它之前包含了哪些头文件由包含者决定。</li>
+<li>using 声明能引入的重载集合取决于声明处此前已经可见的声明，因此具有顺序依赖。</li>
+</ul>
+<p>例如，<code>using Foo::print;</code> 写在 <code>Foo::print(int)</code> 的声明可见之后，会同时引入已知重载并为整数实参选择 <code>print(int)</code>。若把 using 声明移到该头文件之前，当时只可见 <code>print(double)</code>，随后出现的 <code>print(int)</code> 不会自动加入这条 using 声明的候选集合，调用将改为 <code>print(double)</code>。</p>
+<p>using 语句真正安全的位置是源文件中所有 <code>#include</code> 指令之后。</p>
+<h3>不能在同一作用域中取消或替换</h3>
+<p>using 语句一旦在某个作用域中声明，就无法在该作用域内取消，也无法用另一条 using 语句替换。只能从一开始就利用嵌套块限制其作用域；显式使用 <code>::</code> 通常能避免这类管理负担。</p>
+<p><strong>最佳实践</strong></p>
+<ul>
+<li>优先使用显式命名空间限定符，而不是 using 语句。</li>
+<li>避免 using 指令；<code>using namespace std::literals;</code> 为访问 <code>s</code> 与 <code>sv</code> 字面量后缀的常见例外。</li>
+<li>using 声明可放在 <code>.cpp</code> 源文件中，但必须位于所有 <code>#include</code> 指令之后。</li>
+<li>不要在头文件中使用 using 语句，尤其不要在头文件的全局命名空间中使用。</li>
+<li><code>using</code> 还可定义类型别名；类型别名与本节的 using 语句是不同功能。</li>
+</ul>
+<h2>参考来源</h2>
+<ol>
+<li><a href="https://www.learncpp.com/cpp-tutorial/compound-statements-blocks/">7.1 — Compound statements (blocks)</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/user-defined-namespaces-and-the-scope-resolution-operator/">7.2 — User-defined namespaces and the scope resolution operator</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/local-variables/">7.3 — Local variables</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-global-variables/">7.4 — Introduction to global variables</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/variable-shadowing-name-hiding/">7.5 — Variable shadowing (name hiding)</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/static-local-variables/">7.11 — Static local variables</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/using-declarations-and-using-directives/">7.13 — Using declarations and using directives</a></li>
+</ol>
+]]></content>
+    <author>
+      <name>nikonikoni</name>
+    </author>
+    <category term="LearnCpp"></category>
+    <category term="Tutorial"></category>
+  </entry>
+  <entry>
     <title>LearnCpp 类型转换</title>
     <link href="https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/" rel="alternate" type="text/html"/>
     <id>https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/</id>
@@ -1729,500 +2223,6 @@ auto value = uint{ ch };
 <li><a href="https://www.learncpp.com/cpp-tutorial/narrowing-conversions-list-initialization-and-constexpr-initializers/">10.4 — Narrowing conversions, list initialization, and constexpr initializers</a></li>
 <li><a href="https://www.learncpp.com/cpp-tutorial/arithmetic-conversions/">10.5 — Arithmetic conversions</a></li>
 <li><a href="https://www.learncpp.com/cpp-tutorial/explicit-type-conversion-casting-and-static-cast/">10.6 — Explicit type conversion (casting) and static_cast</a></li>
-</ol>
-]]></content>
-    <author>
-      <name>nikonikoni</name>
-    </author>
-    <category term="LearnCpp"></category>
-    <category term="Tutorial"></category>
-  </entry>
-  <entry>
-    <title>LearnCpp 作用域、变量与命名空间</title>
-    <link href="https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/" rel="alternate" type="text/html"/>
-    <id>https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</id>
-    <published>2026-08-19T00:00:00.000Z</published>
-    <updated>2026-08-19T00:00:00.000Z</updated>
-    <summary>LearnCpp 作用域、变量与命名空间笔记，介绍代码块、用户命名空间、局部与全局变量、变量遮蔽、静态局部变量以及 using 语句。</summary>
-    <content type="html"><![CDATA[<h1>LearnCpp 作用域、变量与命名空间</h1>
-<h2>7.1 复合语句（代码块）</h2>
-<p><strong>复合语句</strong>（compound statement）也称为<strong>代码块</strong>（block）或<strong>块语句</strong>（block statement），由零条或多条语句组成，但编译器把整个代码块当作一条语句处理。</p>
-<p>代码块以 <code>{</code> 开始，以 <code>}</code> 结束。凡是语法要求一条语句的地方，都可以放置一个代码块。代码块的右花括号后不需要分号。</p>
-<pre><code>int add(int x, int y)
-{ // 代码块开始
-    return x + y;
-} // 代码块结束，无分号
-
-int main()
-{
-    int value{}; // 这里的花括号用于初始化，不是代码块
-    add(3, 4);
-
-    return 0;
-}
-</code></pre>
-<p>函数体本身就是代码块。用于列表初始化的花括号并不构成代码块。</p>
-<h3>嵌套代码块</h3>
-<p>函数不能定义在另一个函数内部，但代码块可以嵌套在其他代码块中。包含其他代码块的块称为<strong>外层代码块</strong>，被包含的块称为<strong>内层代码块</strong>或<strong>嵌套代码块</strong>。</p>
-<pre><code>int main()
-{ // 外层代码块
-    int value{};
-
-    { // 内层代码块
-        value = 7;
-    }
-
-    return 0;
-}
-</code></pre>
-<p>代码块的常见用途是让 <code>if</code> 或 <code>else</code> 条件控制多条语句。<code>if</code> 默认只控制紧随其后的一条语句；以代码块替代该语句后，块内所有语句会作为一个整体执行。</p>
-<pre><code>if (value &gt;= 0)
-{
-    std::cout &lt;&lt; value &lt;&lt; " is non-negative\n";
-    std::cout &lt;&lt; "Double: " &lt;&lt; value * 2 &lt;&lt; '\n';
-}
-else
-{
-    std::cout &lt;&lt; value &lt;&lt; " is negative\n";
-    std::cout &lt;&lt; "Absolute value: " &lt;&lt; -value &lt;&lt; '\n';
-}
-</code></pre>
-<h3>嵌套层级</h3>
-<p>函数的<strong>嵌套层级</strong>或<strong>嵌套深度</strong>，是执行到函数中某一点时最多能同时位于多少层代码块之内，函数最外层代码块也计入。嵌套层级不是代码块总数：两个并列的三级代码块仍只产生三级深度。</p>
-<p>C++ 标准建议编译器至少支持 256 层嵌套，但并非所有实现都达到这一数量。可编译不等于易读；过深嵌套会使控制关系难以追踪。</p>
-<p><strong>最佳实践</strong></p>
-<p>函数的嵌套层级尽量不超过 3。需要更深嵌套时，通常应把最深处的代码提取为独立函数。</p>
-<h2>7.2 用户定义命名空间与作用域解析运算符</h2>
-<p>当两个相同标识符被引入同一作用域，而编译器无法判断应使用哪一个时，就会发生<strong>命名冲突</strong>（naming collision）。冲突可能由编译器报告，也可能在多个翻译单元链接时由链接器报告。</p>
-<p>同一作用域中的每个名称都可能与其他名称冲突。因此，标识符数量线性增加时，潜在冲突组合会大幅增加。这也是应把标识符定义在最小可用作用域内的重要原因。</p>
-<p>例如，两个源文件都在全局作用域定义 <code>doSomething(int, int)</code>，即使程序从未调用该函数，链接器仍会在处理重复定义时报告错误。直接改名能够消除冲突，却需要同步修改所有调用点。命名空间可以让名称保持不变，同时把它们放入不同作用域。</p>
-<h3>定义命名空间</h3>
-<p>程序定义的命名空间使用 <code>namespace</code> 关键字：</p>
-<pre><code>namespace Foo
-{
-    int doSomething(int x, int y)
-    {
-        return x + y;
-    }
-}
-
-namespace Goo
-{
-    int doSomething(int x, int y)
-    {
-        return x - y;
-    }
-}
-</code></pre>
-<p>命名空间只能定义在全局作用域或另一个命名空间内，不能定义在函数内部。命名空间内容通常缩进一级；右花括号后的分号是可选的。</p>
-<p>历史上，命名空间名通常使用小写，许多风格指南仍采用这种约定。LearnCpp 推荐程序定义的命名空间以大写字母开头，理由包括：</p>
-<ul>
-<li>与程序定义类型的命名约定保持一致；</li>
-<li>降低与系统或库提供的小写名称冲突的概率；</li>
-<li>C++20 标准文本与 C++ Core Guidelines 采用这种风格。</li>
-</ul>
-<p>大写与小写两种风格都有效，项目内保持一致更重要。</p>
-<h3>作用域解析运算符</h3>
-<p>把函数移入 <code>Foo</code> 和 <code>Goo</code> 后，原先位于全局作用域的前置声明不再与它们匹配。编译器可能接受该全局声明，但链接器找不到对应的全局定义。</p>
-<p><strong>作用域解析运算符</strong> <code>::</code> 用于明确指定标识符所在的作用域。左操作数是要查找的作用域，右操作数是该作用域内的标识符。</p>
-<pre><code>std::cout &lt;&lt; Foo::doSomething(4, 3) &lt;&lt; '\n'; // 7
-std::cout &lt;&lt; Goo::doSomething(4, 3) &lt;&lt; '\n'; // 1
-</code></pre>
-<p>显式限定名称能够消除两个同名函数之间的歧义。<code>::name</code> 没有左侧命名空间名时，表示从全局命名空间查找 <code>name</code>：</p>
-<pre><code>void print()
-{
-    std::cout &lt;&lt; "global\n";
-}
-
-namespace Foo
-{
-    void print()
-    {
-        std::cout &lt;&lt; "Foo\n";
-    }
-
-    void callBoth()
-    {
-        print();   // Foo::print()
-        ::print(); // 全局命名空间中的 print()
-    }
-}
-</code></pre>
-<p>在命名空间内部使用未限定名称时，编译器先查找当前命名空间，再依次查找各层外部命名空间，最后查找全局命名空间。<code>::</code> 可以跳过这套逐层查找，直接要求使用全局名称。</p>
-<h3>声明、定义与多个命名空间块</h3>
-<p>命名空间中标识符的前置声明和定义必须位于同一命名空间。头文件中的声明、源文件中的定义以及调用点应保持一致：</p>
-<pre><code>// add.h
-namespace BasicMath
-{
-    int add(int x, int y);
-}
-
-// add.cpp
-#include "add.h"
-
-namespace BasicMath
-{
-    int add(int x, int y)
-    {
-        return x + y;
-    }
-}
-
-// main.cpp
-#include "add.h"
-
-int result{ BasicMath::add(4, 3) };
-</code></pre>
-<p>若声明留在全局命名空间，编译器看不到 <code>BasicMath::add</code> 的声明；若定义留在全局命名空间，链接器找不到 <code>BasicMath::add</code> 的定义。</p>
-<p>同一命名空间可以在同一文件的多个位置或不同文件中反复打开。所有同名命名空间块的声明都属于同一命名空间。标准库头文件正是通过多个 <code>namespace std</code> 块共同组成 <code>std</code>。</p>
-<p><strong>警告</strong></p>
-<p>不要向 <code>std</code> 命名空间添加自定义功能。除标准明确允许的少数情况外，这通常会导致未定义行为。</p>
-<h3>嵌套命名空间</h3>
-<p>命名空间可以嵌套：</p>
-<pre><code>namespace Foo
-{
-    namespace Goo
-    {
-        int add(int x, int y)
-        {
-            return x + y;
-        }
-    }
-}
-
-int sum{ Foo::Goo::add(1, 2) };
-</code></pre>
-<p>C++17 可以使用等价的紧凑语法：</p>
-<pre><code>namespace Foo::Goo
-{
-    int add(int x, int y)
-    {
-        return x + y;
-    }
-}
-</code></pre>
-<p>之后仍可单独重新打开 <code>namespace Foo</code>，向 <code>Foo</code> 而不是 <code>Foo::Goo</code> 添加声明。选择传统嵌套写法还是 C++17 紧凑写法属于风格问题。</p>
-<h3>命名空间别名</h3>
-<p>长命名空间链可以通过别名临时缩短：</p>
-<pre><code>namespace Active = Foo::Goo;
-
-int result{ Active::add(1, 2) };
-</code></pre>
-<p>命名空间别名遵循其声明位置的作用域规则。例如，函数块内声明的 <code>Active</code> 会在该块结束时失效。别名还提供一层间接性：实现迁移到 <code>V2</code> 后，只需把别名改为 <code>namespace Active = V2;</code>，调用点仍可保持 <code>Active::add()</code>。</p>
-<h3>命名空间的使用尺度</h3>
-<p>命名空间的首要目的不是建立信息层次，而是防止命名冲突。标准库主体位于单一顶层命名空间 <code>std</code>；名称较多的新组件也会采用嵌套命名空间，例如 <code>std::ranges</code>。</p>
-<ul>
-<li>小型、仅供个人使用的程序通常不必放入自定义命名空间。</li>
-<li>引入大量第三方库的较大项目可用命名空间降低冲突风险。</li>
-<li>会分发给其他项目使用的代码应放入命名空间；一个独特的顶层命名空间通常已经足够，也便于编辑器自动补全展示库的公开名称。</li>
-<li>多团队项目常采用“项目或库::模块”“组织::项目或库”，或“组织::项目或库::模块”的两至三级结构。</li>
-<li>模块级命名空间可区分可复用代码与应用专用代码；目录结构也能承担一部分组织职责。</li>
-</ul>
-<p>命名空间一般不应嵌套超过 3 层。</p>
-<h2>7.3 局部变量</h2>
-<p>定义在函数内部的变量，包括函数形参，称为<strong>局部变量</strong>。C++ 并不存在一个单独属性来判定“局部”；局部变量的行为由作用域、存储期和链接属性共同构成。</p>
-<h3>块作用域</h3>
-<p>标识符的<strong>作用域</strong>决定源代码中哪些位置可以访问它。能够访问时称为“在作用域内”，不能访问时称为“超出作用域”。作用域是编译期属性；访问超出作用域的标识符会产生编译错误。</p>
-<p>局部变量具有<strong>块作用域</strong>：从定义点开始进入作用域，到所在代码块末尾离开作用域。</p>
-<pre><code>int main()
-{
-    int i{ 5 };      // i 从这里进入作用域
-    double d{ 4.0 }; // d 从这里进入作用域
-
-    return 0;
-} // d 和 i 在这里离开作用域
-</code></pre>
-<p>普通函数的形参虽然写在函数体之前，但通常可以把它们视为处于函数体代码块的作用域中。</p>
-<p>同一作用域中的变量名必须唯一。形参与函数体顶层局部变量属于同一作用域，因此不能重名：</p>
-<pre><code>void someFunction(int x)
-{
-    int x{}; // 错误：与形参 x 冲突
-}
-</code></pre>
-<h3>自动存储期与生命周期</h3>
-<p>变量的<strong>存储期</strong>（storage duration）规定变量何时以及如何创建和销毁；多数情况下，存储期直接决定变量的<strong>生命周期</strong>，即对象从实际创建到实际销毁的时间。</p>
-<p>局部变量默认具有<strong>自动存储期</strong>：执行到定义处时创建，在所在代码块结束时销毁。因此局部变量也称为<strong>自动变量</strong>。</p>
-<p>作用域与生命周期描述不同维度：作用域是名称能否在某段源代码中被使用的编译期属性；生命周期是对象在运行时是否存在。</p>
-<h3>嵌套块中的局部变量</h3>
-<p>内层变量只能从其定义点使用到内层块末尾；离开内层块后，它既超出作用域，也被销毁。外层块的作用域包含其嵌套块，因此外层变量在内层块中仍然可见。</p>
-<pre><code>int main()
-{
-    int x{ 5 };
-
-    {
-        int y{ 7 };
-        std::cout &lt;&lt; x + y &lt;&lt; '\n'; // x 与 y 都在作用域内
-    } // y 离开作用域并被销毁
-
-    // y 在这里不可访问
-    return 0;
-} // x 离开作用域并被销毁
-</code></pre>
-<h3>无链接</h3>
-<p>标识符的<strong>链接属性</strong>决定不同作用域中的同名声明是否指向同一对象或函数。局部变量没有链接属性（no linkage）；每个声明都表示一个独立对象。</p>
-<pre><code>int main()
-{
-    int x{ 2 };
-
-    {
-        int x{ 3 }; // 与外层 x 是不同对象
-    }
-}
-</code></pre>
-<p>作用域回答“单个声明在哪里可见”，链接属性回答“多个声明是否指向同一实体”，二者不能混为一谈。</p>
-<h3>使用最小的现有作用域</h3>
-<p>变量应定义在能够满足使用需求的最小现有作用域内。较小的作用域减少同时活跃的变量数量，也让变量可能被使用的位置更容易辨认。</p>
-<p>如果变量只在嵌套块中使用，就在该块中定义。如果变量离开内层块后仍要使用，则必须在外层块中定义；这种需求可能导致变量早于首次使用声明。</p>
-<p>不应仅为缩短变量作用域而额外创建代码块，因为这会让整个函数变长并增加结构复杂度。若一段代码确实值得形成独立作用域，通常更适合提取为函数。</p>
-<p><strong>最佳实践</strong></p>
-<p>在最小的现有作用域内定义变量。不要创建唯一目的只是限制变量作用域的新代码块。</p>
-<h2>7.4 全局变量简介</h2>
-<p>定义在函数外部的变量称为<strong>全局变量</strong>。按惯例，全局变量放在文件顶部、<code>#include</code> 指令之后。</p>
-<pre><code>#include &lt;iostream&gt;
-
-int g_x{}; // 全局变量
-
-void setValue()
-{
-    g_x = 3;
-}
-
-int main()
-{
-    setValue();
-    std::cout &lt;&lt; g_x &lt;&lt; '\n';
-}
-</code></pre>
-<h3>全局命名空间作用域</h3>
-<p>在全局命名空间中声明的标识符具有<strong>全局命名空间作用域</strong>，常简称为全局作用域，也会被非正式地称为文件作用域。它从声明点持续到所在文件末尾。</p>
-<p>全局变量也可以定义在用户命名空间中：</p>
-<pre><code>namespace Foo
-{
-    int x{};
-}
-
-void setValue()
-{
-    Foo::x = 3;
-}
-</code></pre>
-<p><code>x</code> 的名称受 <code>Foo</code> 限定，但仍可通过 <code>Foo::x</code> 在文件各处访问，所以它仍是全局变量。</p>
-<p><strong>最佳实践</strong></p>
-<p>全局变量优先定义在用户命名空间中，而不是直接放在全局命名空间。</p>
-<h3>静态存储期</h3>
-<p>全局变量具有<strong>静态存储期</strong>：在程序启动时、<code>main()</code> 执行前创建，在程序结束时销毁。具有静态存储期的变量有时也称为静态变量；这里的“静态”描述存储期，不要求变量写出 <code>static</code> 关键字。</p>
-<h3>命名全局变量</h3>
-<p>一些项目使用 <code>g</code> 或 <code>g_</code> 前缀标记全局变量。该前缀可以：</p>
-<ul>
-<li>降低与全局命名空间中其他标识符冲突的概率；</li>
-<li>减少无意遮蔽全局变量的可能；</li>
-<li>表明该变量会在当前函数结束后继续存在，对它的修改也会保留。</li>
-</ul>
-<p>命名空间中的全局变量常省略 <code>g_</code>，因为命名空间限定已经能降低冲突并表明其非局部来源；保留前缀仍可强调其静态存储期。</p>
-<p>用名称前缀编码类型的匈牙利命名法在现代 C++ 中通常价值有限；用 <code>g_</code>、<code>s_</code>、<code>m_</code> 表达作用域或存储期则仍能提供有用信息。</p>
-<p><strong>最佳实践</strong></p>
-<p>尤其对全局命名空间中的变量，可考虑使用 <code>g</code> 或 <code>g_</code> 前缀，将其与局部变量和函数形参区分。</p>
-<h3>初始化</h3>
-<p>具有静态存储期的变量在没有显式初始化器时会默认零初始化，这与默认未初始化的普通局部变量不同：</p>
-<pre><code>int g_x;       // 默认零初始化
-int g_y{};     // 值初始化，结果为零
-int g_z{ 1 };  // 初始化为 1
-</code></pre>
-<p>非常量全局变量可以省略初始化器。<code>const</code> 和 <code>constexpr</code> 全局变量必须初始化：</p>
-<pre><code>const int g_a;          // 错误
-constexpr int g_b;      // 错误
-const int g_c{ 1 };     // 正确
-constexpr int g_d{ 2 }; // 正确
-</code></pre>
-<p><strong>警告</strong></p>
-<p>通常应完全避免使用非常量全局变量。它们让任何可访问位置都能改变共享状态，使函数行为产生难以追踪的隐式依赖。</p>
-<h2>7.5 变量遮蔽（名称隐藏）</h2>
-<p>每个代码块都定义自己的作用域区域。内层块声明与外层变量同名的变量后，在两者作用域重叠的区域中，内层变量会<strong>隐藏</strong>外层变量。这称为<strong>名称隐藏</strong>（name hiding）或<strong>变量遮蔽</strong>（shadowing）。</p>
-<h3>局部变量之间的遮蔽</h3>
-<pre><code>int main()
-{
-    int apples{ 5 };
-
-    {
-        std::cout &lt;&lt; apples &lt;&lt; '\n'; // 外层 apples：5
-
-        int apples{ 0 }; // 从这里开始隐藏外层 apples
-        apples = 10;
-
-        std::cout &lt;&lt; apples &lt;&lt; '\n'; // 内层 apples：10
-    } // 内层 apples 被销毁
-
-    std::cout &lt;&lt; apples &lt;&lt; '\n'; // 外层 apples：5
-}
-</code></pre>
-<p>输出为：</p>
-<pre><code>5
-10
-5
-</code></pre>
-<p>遮蔽不会修改或销毁外层对象。内层声明出现前，未限定名称仍指向外层变量；从内层声明到代码块结束，名称指向内层变量。内层块结束后，外层名称重新可见，其值保持不变。</p>
-<p>如果没有声明内层 <code>apples</code>，内层块中的读取和赋值都会作用于外层变量，输出会是 <code>5</code>、<code>10</code>、<code>10</code>。</p>
-<p>在内层块中，没有语法可以直接访问被同名局部变量遮蔽的外层局部变量。</p>
-<h3>局部变量遮蔽全局变量</h3>
-<p>局部变量也可以遮蔽同名全局变量。局部变量在作用域内时，未限定名称指向局部对象：</p>
-<pre><code>int value{ 5 };
-
-int main()
-{
-    int value{ 7 };
-
-    ++value;     // 局部 value 变为 8
-    --(::value); // 全局 value 变为 4
-
-    std::cout &lt;&lt; value &lt;&lt; '\n';   // 8
-    std::cout &lt;&lt; ::value &lt;&lt; '\n'; // 4
-}
-</code></pre>
-<p>全局变量属于全局命名空间，所以即使被局部变量遮蔽，仍可通过无前缀作用域解析 <code>::value</code> 明确访问。这个办法不适用于被遮蔽的外层局部变量。</p>
-<p><strong>最佳实践</strong></p>
-<p>避免变量遮蔽。遮蔽容易让代码读取或修改错误的对象。为全局变量统一使用 <code>g_</code> 前缀可以简单地避免局部变量与全局变量同名。</p>
-<p>GCC 和 Clang 可用 <code>-Wshadow</code> 启用遮蔽警告，并提供 <code>-Wshadow=global</code>、<code>-Wshadow=local</code>、<code>-Wshadow=compatible-local</code> 等变体。Visual Studio 默认启用相应警告。</p>
-<h2>7.11 静态局部变量</h2>
-<p><code>static</code> 在不同上下文中含义不同：</p>
-<ul>
-<li>全局变量本身具有静态存储期；</li>
-<li><code>static</code> 修饰全局标识符时赋予其内部链接；</li>
-<li><code>static</code> 修饰局部变量时，把它的存储期从自动存储期改为静态存储期。</li>
-</ul>
-<p>本节的 <code>static</code> 指第三种用法。</p>
-<h3>跨函数调用保留值</h3>
-<p>普通局部变量每次执行到定义处都会创建，并在离开代码块时销毁：</p>
-<pre><code>void incrementAndPrint()
-{
-    int value{ 1 };
-    ++value;
-    std::cout &lt;&lt; value &lt;&lt; '\n';
-}
-</code></pre>
-<p>调用三次会输出三次 <code>2</code>。改为静态局部变量后：</p>
-<pre><code>void incrementAndPrint()
-{
-    static int s_value{ 1 };
-    ++s_value;
-    std::cout &lt;&lt; s_value &lt;&lt; '\n';
-}
-</code></pre>
-<p>初始化只发生一次。函数结束时，<code>s_value</code> 离开作用域而暂时不可访问，但对象不会被销毁。三次调用依次输出 <code>2</code>、<code>3</code>、<code>4</code>。</p>
-<p>静态局部变量兼具两类属性：名称具有局部变量的块作用域，对象却具有延续到程序结束的生命周期。它适合需要局部状态在多次函数调用之间保留的场景。</p>
-<h3>初始化规则</h3>
-<p>可零初始化或具有常量表达式初始化器的静态局部变量可以在程序启动时初始化。</p>
-<p>没有初始化器或具有非常量表达式初始化器的静态局部变量会在程序启动时先零初始化。具有非常量表达式初始化器的变量在程序第一次执行到定义处时完成初始化；后续调用跳过该定义，不会再次初始化。未显式初始化的静态局部变量最终保持默认的零值。</p>
-<p><strong>最佳实践</strong></p>
-<p>显式初始化静态局部变量。常用 <code>s</code> 或 <code>s_</code> 前缀表明局部变量具有静态存储期。</p>
-<h3>唯一 ID 生成器</h3>
-<pre><code>int generateID()
-{
-    static int s_itemID{ 0 };
-    return s_itemID++;
-}
-</code></pre>
-<p>第一次调用返回 <code>0</code>，第二次返回 <code>1</code>，之后每次递增。状态只能通过该函数改变，其他函数无法直接篡改 <code>s_itemID</code>。这种写法获得了全局变量“持续存在”的特征，同时把可见性限制在函数块内。</p>
-<p>该方案只有在整个程序确实只需要一个永不重置的 ID 序列时才合适。</p>
-<h3>静态局部常量</h3>
-<p>静态局部变量可以声明为 <code>const</code> 或 <code>constexpr</code>。如果函数需要一个创建或初始化成本较高的常量对象，普通局部变量会在每次调用时重复构造；静态局部常量只初始化一次，之后所有调用都复用该对象。</p>
-<p><strong>关键点</strong></p>
-<p>静态局部变量最适合用来避免每次函数调用都重复初始化昂贵的局部对象。静态局部常量通常可以安全使用。</p>
-<h3>不要用静态局部状态改变函数流程</h3>
-<p>非 <code>const</code> 静态局部变量会让函数调用隐式依赖先前调用。例如，用 <code>static bool s_isFirstCall</code> 让第一次调用显示一种提示、以后显示另一种提示，会造成相同参数的两次调用表现不同。调用者仅阅读调用点无法发现这种内部状态。</p>
-<p>这种函数难以复用：内部状态不能由调用者重置；当另一段流程希望重新执行“第一次调用”时，旧状态仍然存在。更好的做法是把差异作为参数传入，让调用者显式控制行为。若需要传入提示文本，<code>std::string_view</code> 参数通常比布尔标记更通用。</p>
-<p><strong>最佳实践</strong></p>
-<ul>
-<li><code>const</code> 静态局部变量通常可以使用。</li>
-<li>非 <code>const</code> 静态局部变量通常应避免。</li>
-<li>确实使用非 <code>const</code> 静态局部变量时，应确认该状态在整个程序中只有唯一实例、永远不需要重置，并且不用于改变控制流。</li>
-<li>需要多个各自保留状态的实例时，应使用函数对象等可实例化方案，而不是单个静态局部变量。</li>
-</ul>
-<h2>7.13 using 声明与 using 指令</h2>
-<p>标准库的名称最初位于全局命名空间，容易与程序名称冲突。命名空间在 1995 年标准化后，标准库功能迁移到 <code>std</code>。为兼容大量使用未限定标准库名称的旧代码，并减少反复书写限定符，C++ 提供了 using 语句。</p>
-<h3>限定名称与未限定名称</h3>
-<p><strong>限定名称</strong>带有关联作用域：</p>
-<pre><code>std::cout // 由命名空间 std 限定
-::foo     // 由全局命名空间限定
-</code></pre>
-<p>名称还可以由类名通过 <code>::</code> 限定，或由类对象、对象指针通过 <code>.</code>、<code>-&gt;</code> 限定：</p>
-<pre><code>C::s_member;
-obj.x;
-ptr-&gt;y;
-</code></pre>
-<p><strong>未限定名称</strong>不带作用域限定符，例如 <code>cout</code> 和 <code>x</code>。</p>
-<h3>using 声明</h3>
-<p><strong>using 声明</strong>让一个限定名称可以通过未限定名称使用：</p>
-<pre><code>int main()
-{
-    using std::cout;
-
-    cout &lt;&lt; "Hello world!\n";
-} // using 声明在此失效
-</code></pre>
-<p><code>using std::cout;</code> 表明当前作用域中的未限定 <code>cout</code> 应解析为 <code>std::cout</code>。若 <code>std::cout</code> 与另一个可见的 <code>cout</code> 发生名称冲突，该 using 声明指定的 <code>std::cout</code> 优先。</p>
-<p>每个名称需要单独的 using 声明，例如 <code>std::cout</code> 与 <code>std::cin</code> 各写一条。using 声明从声明点生效，持续到当前作用域末尾。它不如显式 <code>std::</code> 清晰，但放在源文件中所有 <code>#include</code> 指令之后时通常安全且可接受。</p>
-<h3>using 指令</h3>
-<p><strong>using 指令</strong>使指定命名空间中的所有标识符都可以在作用域内以未限定名称参与查找：</p>
-<pre><code>int main()
-{
-    using namespace std;
-
-    cout &lt;&lt; "Hello world!\n";
-}
-</code></pre>
-<p>从技术上说，using 指令并非真正把新名称声明到当前作用域，而是让这些名称在某个外层作用域中参与查找。实际结果仍是该命名空间的大量名称都成为未限定名称查找的候选项。</p>
-<p>using 指令曾用于让命名空间出现前的旧代码以很小改动继续使用标准库。现代 C++ 中，它节省的输入量通常不足以抵消风险：</p>
-<ol>
-<li>它让命名空间中的所有名称参与未限定查找，包括完全不会使用的名称。</li>
-<li>它不会让该命名空间的名称优先于其他候选名称。</li>
-</ol>
-<p>同时引入 <code>A</code> 与 <code>B</code> 后，若两者都有 <code>x</code>，未限定 <code>x</code> 会产生歧义。可通过删除某条 using 指令、改用 using 声明，或显式写成 <code>A::x</code>、<code>B::x</code> 解决。</p>
-<h3>对未来库版本的脆弱性</h3>
-<p>using 指令即使当前没有冲突，也会让代码暴露给库将来新增的所有名称。</p>
-<p>假设程序有全局 <code>print()</code>，并使用 <code>using namespace Foo;</code>。库升级后新增 <code>Foo::print()</code>，原本正常的 <code>print()</code> 调用可能突然变成歧义并停止编译。</p>
-<p>更隐蔽的情况是库新增同名重载，而且它比原函数更匹配：</p>
-<pre><code>int get(long)
-{
-    return 1;
-}
-
-int main()
-{
-    using namespace Foo;
-    std::cout &lt;&lt; get(0) &lt;&lt; '\n';
-}
-</code></pre>
-<p>若 <code>Foo</code> 后来新增 <code>int get(int)</code>，整型字面量 <code>0</code> 与它精确匹配，优于需要 <code>int</code> 到 <code>long</code> 转换的全局函数。程序无需修改即可从输出 <code>1</code> 变为输出 <code>2</code>。显式限定名称或只引入目标名称的 using 声明不会产生这种扩大候选集的问题。</p>
-<p>using 指令还隐藏名称来源。<code>NS::foo()</code> 明确表明它来自库；未限定的 <code>foo()</code> 无法直接显示它属于库还是程序。个别库头可能把名称放入全局命名空间，因此未限定名称来自程序只是倾向而非保证。</p>
-<h3>using 语句的作用域与位置</h3>
-<p>块内的 using 声明或 using 指令仅在该块内生效，遵循普通块作用域规则。命名空间作用域（包括全局命名空间）中的 using 语句从声明点影响文件剩余部分。</p>
-<p>using 语句不应放在头文件中，也不应放在任何 <code>#include</code> 指令之前。基本原则是：不要把 using 语句放到可能影响其他文件代码的位置，也不要放到其他文件代码可能反过来改变它的位置。</p>
-<ul>
-<li>头文件全局或命名空间作用域中的 using 语句会传播到每个包含该头文件的源文件。</li>
-<li>即使 using 语句位于头文件中定义的函数内部也不安全，因为在它之前包含了哪些头文件由包含者决定。</li>
-<li>using 声明能引入的重载集合取决于声明处此前已经可见的声明，因此具有顺序依赖。</li>
-</ul>
-<p>例如，<code>using Foo::print;</code> 写在 <code>Foo::print(int)</code> 的声明可见之后，会同时引入已知重载并为整数实参选择 <code>print(int)</code>。若把 using 声明移到该头文件之前，当时只可见 <code>print(double)</code>，随后出现的 <code>print(int)</code> 不会自动加入这条 using 声明的候选集合，调用将改为 <code>print(double)</code>。</p>
-<p>using 语句真正安全的位置是源文件中所有 <code>#include</code> 指令之后。</p>
-<h3>不能在同一作用域中取消或替换</h3>
-<p>using 语句一旦在某个作用域中声明，就无法在该作用域内取消，也无法用另一条 using 语句替换。只能从一开始就利用嵌套块限制其作用域；显式使用 <code>::</code> 通常能避免这类管理负担。</p>
-<p><strong>最佳实践</strong></p>
-<ul>
-<li>优先使用显式命名空间限定符，而不是 using 语句。</li>
-<li>避免 using 指令；<code>using namespace std::literals;</code> 为访问 <code>s</code> 与 <code>sv</code> 字面量后缀的常见例外。</li>
-<li>using 声明可放在 <code>.cpp</code> 源文件中，但必须位于所有 <code>#include</code> 指令之后。</li>
-<li>不要在头文件中使用 using 语句，尤其不要在头文件的全局命名空间中使用。</li>
-<li><code>using</code> 还可定义类型别名；类型别名与本节的 using 语句是不同功能。</li>
-</ul>
-<h2>参考来源</h2>
-<ol>
-<li><a href="https://www.learncpp.com/cpp-tutorial/compound-statements-blocks/">7.1 — Compound statements (blocks)</a></li>
-<li><a href="https://www.learncpp.com/cpp-tutorial/user-defined-namespaces-and-the-scope-resolution-operator/">7.2 — User-defined namespaces and the scope resolution operator</a></li>
-<li><a href="https://www.learncpp.com/cpp-tutorial/local-variables/">7.3 — Local variables</a></li>
-<li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-global-variables/">7.4 — Introduction to global variables</a></li>
-<li><a href="https://www.learncpp.com/cpp-tutorial/variable-shadowing-name-hiding/">7.5 — Variable shadowing (name hiding)</a></li>
-<li><a href="https://www.learncpp.com/cpp-tutorial/static-local-variables/">7.11 — Static local variables</a></li>
-<li><a href="https://www.learncpp.com/cpp-tutorial/using-declarations-and-using-directives/">7.13 — Using declarations and using directives</a></li>
 </ol>
 ]]></content>
     <author>
