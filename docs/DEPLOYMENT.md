@@ -43,12 +43,14 @@ ENABLE_CONTENT_SYNC=false
 | `ENABLE_CONTENT_SYNC` | 否 | 默认 `false`，使用仓库内内容；仅设为 `true` 时启用外部内容同步 |
 | `CONTENT_REPO_URL` | 条件必需 | 启用内容同步时的 Git 仓库地址 |
 | `CONTENT_DIR` | 否 | 外部内容本地目录，默认 `./content` |
-| `UMAMI_API_KEY` | 否 | 构建首页统计时使用的 Umami API 密钥 |
+| `UMAMI_API_KEY` | 否 | 构建时获取 Umami 统计的 API 密钥，不得写入客户端脚本 |
 | `GITHUB_TOKEN` / `GH_TOKEN` | 否 | 提高 GitHub 活动数据请求额度 |
 | `POST_PASSWORDS_JSON` | 条件必需 | 构建加密文章时提供密码映射 |
 | `BCRYPT_SALT_ROUNDS` | 否 | 文章密码哈希轮数，默认 12 |
 
 密钥只放在本地 `.env` 或托管平台的 Secret/Environment Variables 中。不要把真实值提交到仓库。
+
+启用 Umami 时，个人资料卡与旧文章元数据组件在构建阶段获取统计，只输出数字；统计随重新构建刷新，请求失败显示“统计不可用”。现有独立文章访问计数功能不受影响。
 
 ## Vercel
 
@@ -56,9 +58,12 @@ ENABLE_CONTENT_SYNC=false
 
 ## GitHub Actions
 
-- `build.yml`：在 `master` 推送和 Pull Request 上运行 Astro 检查与构建。Astro 检查为非阻断诊断；构建执行 `pnpm astro build`，不包含完整 `pnpm build` 的搜索索引和字体压缩步骤。
-- `biome.yml`：以非阻断诊断方式检查 `src/` 的代码格式和质量。
-- `deploy.yml`：在推送到 `master` 或手动触发时运行完整构建，把 `dist/` 发布到 `pages` 分支。
+- `build.yml`：在 `master` 推送和 Pull Request 上运行 Astro 检查与完整 `pnpm build`，包含搜索索引和字体压缩。Astro 检查仍为非阻断诊断，失败时发出明确警告；作业绿色不代表类型检查无错误。
+- `biome.yml`：以非阻断诊断方式检查 `src/`，固定为与 `package.json` 相同的 Biome 2.3.7，失败时发出明确警告。调整版本时同步更新两处。
+- `deploy.yml`：在推送到 `master` 或手动触发时运行完整构建，把 `dist/` 发布到 `pages` 分支；发布作业串行执行，避免多个运行同时更新该分支。输出保留 Vercel 配置，禁止 `pages` 触发 Preview。
+- Dependabot 每周检查 npm 依赖和 GitHub Actions 更新。
+
+`node --test scripts/repository-regressions.test.mjs` 验证统计密钥不会进入客户端配置，以及命令行禁用内容同步时 `.env` 无法重新启用它。
 
 当前 `deploy.yml` 包含自动推送触发器，并非仅手动备用。连接 Vercel 等托管服务后，也可能由托管端触发部署；实际连接和生产分支以平台配置为准。需要改为手动部署或调整生产入口时，作为独立部署配置变更处理。
 

@@ -6,7 +6,7 @@
 	"homepage": "https://miku.nikonikoni.blog/",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/ldx-ckz/NiKoNiKoNi_blog.git"
+		"url": "https://github.com/ldx-ckz/nikonikoni_blog.git"
 	},
 	"license": "Apache-2.0",
 	"engines": {

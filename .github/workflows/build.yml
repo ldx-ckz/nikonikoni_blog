@@ -40,11 +40,16 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run Astro Check (advisory)
+        id: astro-check
         continue-on-error: true
         run: pnpm astro check
         env:
           # 测试构建时禁用内容同步,使用本地内容
           ENABLE_CONTENT_SYNC: false
+
+      - name: Report Astro diagnostics
+        if: steps.astro-check.outcome == 'failure'
+        run: echo '::warning::Astro check failed. This job is advisory; see the diagnostic step for unresolved errors.'
 
   build:
     strategy:
@@ -71,7 +76,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Astro Build
-        run: pnpm astro build
+      - name: Run repository regression tests
+        run: node --test scripts/repository-regressions.test.mjs
+
+      - name: Run complete site build
+        run: pnpm build
         env:
           ENABLE_CONTENT_SYNC: false

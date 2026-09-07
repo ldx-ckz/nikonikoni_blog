@@ -22,7 +22,9 @@ if (fs.existsSync(envPath)) {
       let value = match[2].trim();
       // 移除引号
       value = value.replace(/^["']|["']$/g, '');
-      process.env[key] = value;
+      if (process.env[key] === undefined) {
+        process.env[key] = value;
+      }
     }
   });
   console.log('Loaded .env configuration file\n');

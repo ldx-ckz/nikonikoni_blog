@@ -2,7 +2,7 @@
 
 我的个人博客，用来记录技术学习、项目实践与日常随笔。
 
-[访问博客](https://miku.nikonikoni.blog/) · [English](./README.en.md) · [问题反馈](https://github.com/ldx-ckz/NiKoNiKoNi_blog/issues)
+[访问博客](https://miku.nikonikoni.blog/) · [English](./README.en.md) · [问题反馈](https://github.com/ldx-ckz/nikonikoni_blog/issues)
 
 ![nikonikoni blog 首页](./docs/images/nikonikoni-home.png)
 

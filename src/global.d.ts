@@ -20,7 +20,7 @@ declare global {
 	}
 }
 
-interface SearchResult {
+export interface SearchResult {
 	url: string;
 	meta: {
 		title: string;

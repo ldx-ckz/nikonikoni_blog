@@ -6,12 +6,11 @@ import ImageWrapper from "../misc/ImageWrapper.astro";
 import TypewriterText from "../TypewriterText.astro";
 
 import { umamiConfig } from '../../config';
+import { getUmamiStats } from '../../utils/umami-stats.server';
 
 // 解析 umami
 const umamiEnabled = umamiConfig.enabled || false;
-const umamiWebsiteId = umamiConfig.scripts.match(/data-website-id="([^"]+)"/)?.[1] || "";
-const umamiApiKey = umamiConfig.apiKey || "";
-const umamiBaseUrl = umamiConfig.baseUrl || "";
+const siteStats = await getUmamiStats(umamiConfig);
 ---
 
 <div class="card-base p-3">
@@ -56,51 +55,8 @@ const umamiBaseUrl = umamiConfig.baseUrl || "";
             <hr class="my-2 border-t border-dashed border-gray-300 dark:border-gray-700" />
             <div class="text-sm text-gray-500 mt-2 text-center">
                 <Icon name="fa6-solid:eye" class="inline-block mr-1 text-gray-400 text-sm align-middle" />
-                <span id="site-stats-display">统计加载中...</span>
+                <span id="site-stats-display">{siteStats ? `浏览量 ${siteStats.pageviews} · 访问次数 ${siteStats.visits}` : "统计不可用"}</span>
             </div>
         )}
     </div>
 </div>
-
-{umamiEnabled && (
-    <script define:vars={{ umamiBaseUrl, umamiApiKey, umamiWebsiteId, umamiConfig }}>
-        // 客户端统计文案生成函数
-        function generateStatsText(pageViews, visits) {
-            return `浏览量 ${pageViews} · 访问次数 ${visits}`;
-        }
-        
-        // 获取访问量统计
-        async function fetchSiteStats(isRetry = false) {
-            if (!umamiConfig.enabled) {
-                return;
-            }
-            
-            try {
-                // 调用全局工具获取 Umami 统计数据
-                const stats = await getUmamiWebsiteStats(umamiBaseUrl, umamiApiKey, umamiWebsiteId);
-                
-                // 从返回的数据中提取页面浏览量和访客数
-                const pageViews = stats.pageviews || 0;
-                const visits = stats.visits || 0;
-                
-                const displayElement = document.getElementById('site-stats-display');
-                if (displayElement) {
-                    displayElement.textContent = generateStatsText(pageViews, visits);
-                }
-            } catch (error) {
-                console.error('Error fetching site stats:', error);
-                const displayElement = document.getElementById('site-stats-display');
-                if (displayElement) {
-                    displayElement.textContent = '统计不可用';
-                }
-            }
-        }
-
-        // 页面加载完成后获取统计数据
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', fetchSiteStats);
-        } else {
-            fetchSiteStats();
-        }
-    </script>
-)}

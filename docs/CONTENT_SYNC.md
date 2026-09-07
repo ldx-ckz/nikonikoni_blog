@@ -21,6 +21,8 @@ public/images/
 
 正常执行 `pnpm dev`、`pnpm check` 或 `pnpm build` 不会同步、替换或链接外部内容。
 
+已设置的进程环境变量优先于 `.env`。验证命令显式设置 `ENABLE_CONTENT_SYNC=false` 时，即使 `.env` 中启用了同步，也会保留本地内容。
+
 ## 外部内容模式
 
 外部仓库使用以下结构：

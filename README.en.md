@@ -2,7 +2,7 @@
 
 My personal blog for documenting technical learning, project work, and everyday thoughts.
 
-[Live site](https://miku.nikonikoni.blog/) · [中文](./README.md) · [Issues](https://github.com/ldx-ckz/NiKoNiKoNi_blog/issues)
+[Live site](https://miku.nikonikoni.blog/) · [中文](./README.md) · [Issues](https://github.com/ldx-ckz/nikonikoni_blog/issues)
 
 ![nikonikoni blog home page](./docs/images/nikonikoni-home.png)
 
