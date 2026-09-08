@@ -1,0 +1,1 @@
+import{o as n,a as r,i as t}from"./lifecycle.D_q2b8cx.js";import{j as s,i as p,a as m,p as f,b as l}from"./template.BsFSHahc.js";import{i as c}from"./if.Btpg6Xgu.js";/* empty css                        */function h(e,a){l(a,!1),n(()=>{}),r(()=>{console.log("Pio Svelte component destroyed (keeping instance alive)")}),t();var o=s(),i=p(o);c(i,d=>{}),m(e,o),f()}export{h as default};
