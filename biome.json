@@ -9,6 +9,7 @@
     "ignoreUnknown": false,
     "includes": [
       "**",
+      "!**/.obsidian/**",
       "!**/src/**/*.css",
       "!**/src/public/**/*",
       "!**/dist/**/*",

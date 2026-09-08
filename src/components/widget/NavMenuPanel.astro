@@ -1,29 +1,29 @@
 ---
 import { Icon } from "astro-icon/components";
-import { type NavBarLink, LinkPreset } from "../../types/config";
 import { LinkPresets } from "../../constants/link-presets";
-import { url } from "../../utils/url-utils";
 import I18nKey from "../../i18n/i18nKey";
 import { i18n } from "../../i18n/translation";
+import { LinkPreset, type NavBarLink } from "../../types/config";
+import { url } from "../../utils/url-utils";
 
 interface Props {
 	links: NavBarLink[];
 }
 
 // 国际化标题映射
-const navTitleMap: Record<string, string> = {
-	"Links": I18nKey.navLinks,
-	"My": I18nKey.navMy,
-	"About": I18nKey.navAbout,
-	"Others": I18nKey.navOthers,
-	"Anime": I18nKey.anime,
-	"Diary": I18nKey.diary,
-	"Gallery": I18nKey.albums,
-	"Devices": I18nKey.devices,
-	"Projects": I18nKey.projects,
-	"Skills": I18nKey.skills,
-	"Timeline": I18nKey.timeline,
-	"Friends": I18nKey.friends,
+const navTitleMap: Record<string, I18nKey> = {
+	Links: I18nKey.navLinks,
+	My: I18nKey.navMy,
+	About: I18nKey.navAbout,
+	Others: I18nKey.navOthers,
+	Anime: I18nKey.anime,
+	Diary: I18nKey.diary,
+	Gallery: I18nKey.albums,
+	Devices: I18nKey.devices,
+	Projects: I18nKey.projects,
+	Skills: I18nKey.skills,
+	Timeline: I18nKey.timeline,
+	Friends: I18nKey.friends,
 };
 
 // 获取国际化的标题
@@ -52,19 +52,15 @@ const getUiName = (name: string) => ({
 });
 
 // 处理links中的LinkPreset转换
-const processedLinks = Astro.props.links.map(
-	(link: NavBarLink): NavBarLink => ({
-		...link,
-		children: link.children?.map(
-			(child: NavBarLink | LinkPreset): NavBarLink => {
-				if (typeof child === "number") {
-					return LinkPresets[child];
-				}
-				return child;
-			},
-		),
+const processedLinks = Astro.props.links.map((link: NavBarLink) => ({
+	...link,
+	children: link.children?.map((child: NavBarLink | LinkPreset): NavBarLink => {
+		if (typeof child === "number") {
+			return LinkPresets[child];
+		}
+		return child;
 	}),
-);
+}));
 ---
 <div id="nav-menu-panel" class:list={["float-panel float-panel-closed absolute transition-all fixed right-4 px-2 py-2 max-h-[80vh] overflow-y-auto"]}>
     {processedLinks.map((link) => (

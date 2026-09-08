@@ -3,10 +3,7 @@ import path from "node:path";
 
 type PostPasswordMap = Record<string, string>;
 
-const localPasswordFile = path.join(
-	process.cwd(),
-	"post-passwords.local.json",
-);
+const localPasswordFile = path.join(process.cwd(), "post-passwords.local.json");
 
 function normalizePostId(postId: string) {
 	return postId

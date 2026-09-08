@@ -1,6 +1,6 @@
 ---
-import { execFileSync } from "node:child_process";
 import { render } from "astro:content";
+import { execFileSync } from "node:child_process";
 import { Icon } from "astro-icon/components";
 import { profileConfig, siteConfig } from "../config";
 import { getSortedPosts } from "../utils/content-utils";
@@ -175,10 +175,7 @@ for (let week = 0; week < activityCells.length / 7; week++) {
 		previousMonthKey = key;
 	}
 }
-if (
-	monthLabels.length > 1 &&
-	monthLabels[1].week - monthLabels[0].week < 3
-) {
+if (monthLabels.length > 1 && monthLabels[1].week - monthLabels[0].week < 3) {
 	monthLabels.shift();
 }
 ---
@@ -186,11 +183,11 @@ if (
 <div class="home-dashboard">
 	<section class="profile-intro" aria-labelledby="profile-name">
 		<div class="profile-avatar-wrap">
-			<ImageWrapper
+			{profileConfig.avatar && <ImageWrapper
 				src={profileConfig.avatar}
 				alt="nikonikoni"
 				class="profile-avatar"
-			/>
+			/>}
 		</div>
 		<div class="profile-copy">
 			<p class="eyebrow">

@@ -133,12 +133,11 @@ const mainPanelTop =
 		: "5.5rem";
 
 // 当默认模式不是 banner 时，主内容区域应该始终从顶栏下面开始
-const finalMainPanelTop =
-	!isHomePage
-		? "5.5rem"
-		: siteConfig.wallpaperMode.defaultMode === "banner"
-			? mainPanelTop
-			: "5.5rem";
+const finalMainPanelTop = !isHomePage
+	? "5.5rem"
+	: siteConfig.wallpaperMode.defaultMode === "banner"
+		? mainPanelTop
+		: "5.5rem";
 
 // 检查侧边栏是否启用，动态调整网格布局
 // 响应式配置：不同设备上的侧边栏显示状态

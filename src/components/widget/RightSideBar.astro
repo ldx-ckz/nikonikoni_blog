@@ -29,7 +29,7 @@ const stickyComponents = rightSidebarComponents.filter(
     {topComponents.map((component, index) => (
       <div class={`sidebar-component ${component.class || ''}`} 
            style={`animation-delay: ${component.animationDelay || 0}ms; ${component.style || ''}`}>
-        {component.type === "stats" && <SiteStats />}
+        {component.type === "site-stats" && <SiteStats />}
         {component.type === "calendar" && <Calendar />}
       </div>
     ))}
@@ -40,7 +40,7 @@ const stickyComponents = rightSidebarComponents.filter(
     {stickyComponents.map((component, index) => (
       <div class={`sidebar-component ${component.class || ''}`} 
            style={`animation-delay: ${component.animationDelay || 0}ms; ${component.style || ''}`}>
-        {component.type === "stats" && <SiteStats />}
+        {component.type === "site-stats" && <SiteStats />}
         {component.type === "calendar" && <Calendar />}
       </div>
     ))}

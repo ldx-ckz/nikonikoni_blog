@@ -1,73 +1,75 @@
 <script lang="ts">
-	import Icon from "@iconify/svelte";
-	import { onMount } from "svelte";
+import Icon from "@iconify/svelte";
+import { onMount } from "svelte";
 
-	type UiLanguage = "zh" | "en";
-	let language: UiLanguage = "zh";
+type UiLanguage = "zh" | "en";
+let language: UiLanguage = "zh";
 
-	function updateDocumentTitle(nextLanguage: UiLanguage) {
-		const titleSource = document.querySelector<HTMLElement>(
+function updateDocumentTitle(nextLanguage: UiLanguage) {
+	const titleSource =
+		document.querySelector<HTMLElement>(
 			"#swup-container[data-ui-title-zh][data-ui-title-en]",
-		) || document.querySelector<HTMLTitleElement>(
+		) ||
+		document.querySelector<HTMLTitleElement>(
 			"title[data-ui-title-zh][data-ui-title-en]",
 		);
-		if (!titleSource) return;
-		const nextTitle =
-			nextLanguage === "en"
-				? titleSource.dataset.uiTitleEn
-				: titleSource.dataset.uiTitleZh;
-		if (nextTitle && document.title !== nextTitle) {
-			document.title = nextTitle;
-		}
+	if (!titleSource) return;
+	const nextTitle =
+		nextLanguage === "en"
+			? titleSource.dataset.uiTitleEn
+			: titleSource.dataset.uiTitleZh;
+	if (nextTitle && document.title !== nextTitle) {
+		document.title = nextTitle;
 	}
+}
 
-	function updateLocalizedAttributes(nextLanguage: UiLanguage) {
-		document
-			.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
-				"[data-ui-placeholder-zh][data-ui-placeholder-en]",
-			)
-			.forEach((element) => {
-				element.placeholder =
-					nextLanguage === "en"
-						? element.dataset.uiPlaceholderEn || ""
-						: element.dataset.uiPlaceholderZh || "";
-			});
+function updateLocalizedAttributes(nextLanguage: UiLanguage) {
+	document
+		.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+			"[data-ui-placeholder-zh][data-ui-placeholder-en]",
+		)
+		.forEach((element) => {
+			element.placeholder =
+				nextLanguage === "en"
+					? element.dataset.uiPlaceholderEn || ""
+					: element.dataset.uiPlaceholderZh || "";
+		});
 
-		document
-			.querySelectorAll<HTMLElement>("[data-ui-tooltip-zh][data-ui-tooltip-en]")
-			.forEach((element) => {
-				element.title =
-					nextLanguage === "en"
-						? element.dataset.uiTooltipEn || ""
-						: element.dataset.uiTooltipZh || "";
-			});
-	}
+	document
+		.querySelectorAll<HTMLElement>("[data-ui-tooltip-zh][data-ui-tooltip-en]")
+		.forEach((element) => {
+			element.title =
+				nextLanguage === "en"
+					? element.dataset.uiTooltipEn || ""
+					: element.dataset.uiTooltipZh || "";
+		});
+}
 
-	function applyLanguage(nextLanguage: UiLanguage) {
-		language = nextLanguage;
-		document.documentElement.dataset.uiLang = nextLanguage;
-		document.documentElement.lang = nextLanguage === "zh" ? "zh-CN" : "en";
-		localStorage.setItem("uiLanguage", nextLanguage);
-		updateDocumentTitle(nextLanguage);
-		updateLocalizedAttributes(nextLanguage);
-	}
+function applyLanguage(nextLanguage: UiLanguage) {
+	language = nextLanguage;
+	document.documentElement.dataset.uiLang = nextLanguage;
+	document.documentElement.lang = nextLanguage === "zh" ? "zh-CN" : "en";
+	localStorage.setItem("uiLanguage", nextLanguage);
+	updateDocumentTitle(nextLanguage);
+	updateLocalizedAttributes(nextLanguage);
+}
 
-	function toggleLanguage() {
-		applyLanguage(language === "zh" ? "en" : "zh");
-	}
+function toggleLanguage() {
+	applyLanguage(language === "zh" ? "en" : "zh");
+}
 
-	onMount(() => {
-		const savedLanguage = localStorage.getItem("uiLanguage");
-		applyLanguage(savedLanguage === "en" ? "en" : "zh");
-		const languageWindow = window as typeof window & {
-			applyUiLanguage?: () => void;
-		};
-		languageWindow.applyUiLanguage = () => applyLanguage(language);
+onMount(() => {
+	const savedLanguage = localStorage.getItem("uiLanguage");
+	applyLanguage(savedLanguage === "en" ? "en" : "zh");
+	const languageWindow = window as typeof window & {
+		applyUiLanguage?: () => void;
+	};
+	languageWindow.applyUiLanguage = () => applyLanguage(language);
 
-		return () => {
-			delete languageWindow.applyUiLanguage;
-		};
-	});
+	return () => {
+		delete languageWindow.applyUiLanguage;
+	};
+});
 </script>
 
 <button

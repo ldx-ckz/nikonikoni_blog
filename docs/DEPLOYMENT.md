@@ -58,12 +58,16 @@ ENABLE_CONTENT_SYNC=false
 
 ## GitHub Actions
 
-- `build.yml`：在 `master` 推送和 Pull Request 上运行 Astro 检查与完整 `pnpm build`，包含搜索索引和字体压缩。Astro 检查仍为非阻断诊断，失败时发出明确警告；作业绿色不代表类型检查无错误。
-- `biome.yml`：以非阻断诊断方式检查 `src/`，固定为与 `package.json` 相同的 Biome 2.3.7，失败时发出明确警告。调整版本时同步更新两处。
+- `build.yml`：在 `master` 推送和 Pull Request 上运行 Astro 检查、回归测试与完整 `pnpm build`，包含搜索索引和字体压缩。类型错误、测试失败或构建失败都会阻断作业。
+- `biome.yml`：检查 `src/`（不检查 Obsidian 编辑器配置），固定为与 `package.json` 相同的 Biome 2.3.7；错误会阻断作业，警告仍会显示。调整版本时同步更新两处。
 - `deploy.yml`：在推送到 `master` 或手动触发时运行完整构建，把 `dist/` 发布到 `pages` 分支；发布作业串行执行，避免多个运行同时更新该分支。输出保留 Vercel 配置，禁止 `pages` 触发 Preview。
 - Dependabot 每周检查 npm 依赖和 GitHub Actions 更新。
 
 `node --test scripts/repository-regressions.test.mjs` 验证统计密钥不会进入客户端配置，以及命令行禁用内容同步时 `.env` 无法重新启用它。
+
+`pnpm test-font-compression` 验证字体子集保留所需字形并生成可读 WOFF2。字体压缩直接使用 `fonteditor-core` 的 WASM 编码器，不再依赖旧版 `fontmin`、`node-gyp` 和 `tar`。
+
+安全审计使用 `pnpm audit --registry=https://registry.npmjs.org`；部分镜像源不提供审计接口。`package.json` 的定向覆盖将旧 `rollup-plugin-terser` 使用的 `serialize-javascript` 更新到修复版本，并统一 Astro 与本站使用的 Sharp 版本；升级上游后应检查是否仍需保留这些覆盖。
 
 当前 `deploy.yml` 包含自动推送触发器，并非仅手动备用。连接 Vercel 等托管服务后，也可能由托管端触发部署；实际连接和生产分支以平台配置为准。需要改为手动部署或调整生产入口时，作为独立部署配置变更处理。
 

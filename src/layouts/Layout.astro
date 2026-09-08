@@ -100,7 +100,7 @@ if (!banner || typeof banner !== "string" || banner.trim() === "") {
 // TODO don't use post cover as banner for now
 banner = getDefaultBanner();
 
-const enableBanner = siteConfig.banner.enable;
+const enableBanner = siteConfig.wallpaperMode.defaultMode === "banner";
 
 let pageTitle: string;
 let pageTitleEn: string;
@@ -139,7 +139,10 @@ const bannerOffset =
 const umamiEnabled = umamiConfig.enabled || false;
 const umamiScripts = umamiConfig.scripts || ""; // 获取Umami scripts配置
 const pageviewCounterEnabled = pageviewCounterConfig.enabled;
-const pageviewCounterEndpoint = pageviewCounterConfig.endpoint.replace(/\/$/, "");
+const pageviewCounterEndpoint = pageviewCounterConfig.endpoint.replace(
+	/\/$/,
+	"",
+);
 
 // 构建字体配置的 CSS 变量
 // ASCII 字体优先级最高（用于英文、数字等），CJK 字体作为回退
@@ -1127,27 +1130,27 @@ import '../scripts/theme-optimizer.js';
 </script>
 
 <script>
-import { Fancybox } from "@fancyapps/ui";
+import { Fancybox, type FancyboxOptions } from "@fancyapps/ui";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
 // 使用单例模式避免重复初始化
-let fancyboxInstances = [];
+let fancyboxBound = false;
 
 function initFancybox() {
   // 不需要关闭所有实例，只需检查是否已经初始化
-  if (fancyboxInstances.length > 0) {
+  if (fancyboxBound) {
     return; // 已经初始化，直接返回
   }
   
   // 通用配置
-  const commonConfig = {
-    Thumbs: {
-      autoStart: true,
-      showOnStart: "yes",
-    },
-    Toolbar: {
+  const commonConfig: Partial<FancyboxOptions> = {
+    Carousel: {
+      infinite: true,
+      transition: "slide",
+      Thumbs: { showOnStart: true },
+      Toolbar: {
       display: {
-        left: ["infobar"],
+        left: ["counter"],
         middle: [
           "zoomIn",
           "zoomOut",
@@ -1157,10 +1160,10 @@ function initFancybox() {
           "flipX",
           "flipY",
         ],
-        right: ["slideshow", "thumbs", "close"],
+        right: ["autoplay", "thumbs", "close"],
+      },
       },
     },
-    animated: true,
     dragToClose: true,
     keyboard: {
       Escape: "close",
@@ -1173,52 +1176,26 @@ function initFancybox() {
       ArrowRight: "next",
       ArrowLeft: "prev",
     },
-    fitToView: true,
-    preload: 3,
-    infinite: true,
-    Panzoom: {
-      maxScale: 3,
-      minScale: 1,
-    },
-    caption: false
   };
   
   // 为相册图片添加 Fancybox 支持
-  fancyboxInstances.push(
     Fancybox.bind(".custom-md img, #post-cover img, .moment-images img", {
       ...commonConfig,
       groupAll: true,
-      Carousel: {
-        transition: "slide",
-        preload: 2,
-      },
-    })
-  );
+    });
   
   // 为相册中的链接添加 Fancybox 支持
-  fancyboxInstances.push(
-    Fancybox.bind(".moment-images a[data-fancybox]", {
-      ...commonConfig,
-      source: (el) => {
-        return el.getAttribute("data-src") || el.getAttribute("href");
-      },
-    })
-  );
+    Fancybox.bind(".moment-images a[data-fancybox]", commonConfig);
   
   // 为单独的 fancybox 图片添加支持
-  fancyboxInstances.push(
-    Fancybox.bind("[data-fancybox]:not(.moment-images a)", commonConfig)
-  );
+    Fancybox.bind("[data-fancybox]:not(.moment-images a)", commonConfig);
+    fancyboxBound = true;
 }
 
 // 清理 Fancybox 实例
 function cleanupFancybox() {
-  fancyboxInstances.forEach(instance => {
-    if (instance && typeof instance.destroy === 'function') {
-      instance.destroy();
-    }
-  });
-  fancyboxInstances = [];
+  Fancybox.destroy();
+  fancyboxBound = false;
 }
 
 const setup = () => {

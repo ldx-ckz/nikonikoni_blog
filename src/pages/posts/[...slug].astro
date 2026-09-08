@@ -1,4 +1,6 @@
 ---
+import type { CollectionEntry } from "astro:content";
+import { render } from "astro:content";
 import path from "node:path";
 import Comment from "@components/comment/index.astro";
 import License from "@components/misc/License.astro";
@@ -9,8 +11,12 @@ import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { getSortedPosts } from "@utils/content-utils";
 import { getPostPassword } from "@utils/post-passwords";
-import { getDir, getPostUrlBySlug, removeFileExtension, getFileDirFromPath } from "@utils/url-utils";
-import { render } from "astro:content";
+import {
+	getDir,
+	getFileDirFromPath,
+	getPostUrlBySlug,
+	removeFileExtension,
+} from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
 import CryptoJS from "crypto-js";
 import dayjs from "dayjs";
@@ -18,31 +24,40 @@ import utc from "dayjs/plugin/utc";
 import { licenseConfig } from "src/config";
 import ImageWrapper from "../../components/misc/ImageWrapper.astro";
 import PostMetadata from "../../components/PostMeta.astro";
-import { commentConfig, pageviewCounterConfig, profileConfig, siteConfig } from "../../config";
+import {
+	commentConfig,
+	pageviewCounterConfig,
+	profileConfig,
+	siteConfig,
+} from "../../config";
 import { formatDateToYYYYMMDD } from "../../utils/date-utils";
-import type { CollectionEntry } from "astro:content";
 
 export async function getStaticPaths() {
 	const blogEntries = await getSortedPosts();
-	const paths: { params: { slug: string }, props: { entry: CollectionEntry<"posts"> } }[] = [];
-	
+	const paths: {
+		params: { slug: string };
+		props: { entry: CollectionEntry<"posts"> };
+	}[] = [];
+
 	for (const entry of blogEntries) {
-        // 将 id 转换为 slug（移除扩展名）以匹配路由参数
-        const slug = removeFileExtension(entry.id);
+		// 将 id 转换为 slug（移除扩展名）以匹配路由参数
+		const slug = removeFileExtension(entry.id);
 
 		// 为每篇文章创建默认的 slug 路径
 		paths.push({
 			params: { slug },
 			props: { entry },
 		});
-		
+
 		// 如果文章有自定义固定链接，也创建对应的路径
 		if (entry.data.permalink) {
 			// 移除开头的斜杠和结尾的斜杠
 			// 同时移除可能的 "posts/" 前缀，避免重复
-			let permalink = entry.data.permalink.replace(/^\/+/, '').replace(/\/+$/, '');
-			if (permalink.startsWith('posts/')) {
-				permalink = permalink.replace(/^posts\//, '');
+			let permalink = entry.data.permalink
+				.replace(/^\/+/, "")
+				.replace(/\/+$/, "");
+			if (permalink.startsWith("posts/")) {
+				permalink = permalink.replace(/^posts\//, "");
 			}
 			paths.push({
 				params: { slug: permalink },
@@ -50,7 +65,7 @@ export async function getStaticPaths() {
 			});
 		}
 	}
-	
+
 	return paths;
 }
 
@@ -214,7 +229,7 @@ const jsonLd = {
             <!-- metadata -->
             <div class="onload-animation">
                 <PostMetadata
-                    class="mb-5"
+                    className="mb-5"
                     published={entry.data.published}
                     updated={entry.data.updated}
                     tags={entry.data.tags}

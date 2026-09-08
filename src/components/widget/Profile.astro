@@ -1,12 +1,10 @@
 ---
 import { Icon } from "astro-icon/components";
-import { profileConfig } from "../../config";
+import { profileConfig, umamiConfig } from "../../config";
+import { getUmamiStats } from "../../utils/umami-stats.server";
 import { url } from "../../utils/url-utils";
 import ImageWrapper from "../misc/ImageWrapper.astro";
 import TypewriterText from "../TypewriterText.astro";
-
-import { umamiConfig } from '../../config';
-import { getUmamiStats } from '../../utils/umami-stats.server';
 
 // 解析 umami
 const umamiEnabled = umamiConfig.enabled || false;
@@ -31,7 +29,7 @@ const siteStats = await getUmamiStats(umamiConfig);
         <div class="text-center text-neutral-400 mb-2.5 transition">
             {profileConfig.typewriter?.enable ? (
                 <TypewriterText 
-                    text={profileConfig.bio}
+                    text={profileConfig.bio || ""}
                     speed={profileConfig.typewriter.speed}
                     class="inline-block"
                 />

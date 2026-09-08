@@ -15,7 +15,7 @@ const calculatePathData = (segment) => {
 	// 外圆起始点和结束点
 	const startAngleRad = ((segment.startAngle - 90) * Math.PI) / 180;
 	const endAngleRad = ((segment.endAngle - 90) * Math.PI) / 180;
-	
+
 	const outerStartX = centerX + outerRadius * Math.cos(startAngleRad);
 	const outerStartY = centerY + outerRadius * Math.sin(startAngleRad);
 	const outerEndX = centerX + outerRadius * Math.cos(endAngleRad);

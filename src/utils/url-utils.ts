@@ -1,13 +1,13 @@
+import type { CollectionEntry } from "astro:content";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
-import type { CollectionEntry } from "astro:content";
 
 /**
  * 移除文件扩展名（.md, .mdx, .markdown）
  * 用于将 Astro v5 Content Layer API 的 id 转换为 URL 友好的 slug
  */
 export function removeFileExtension(id: string): string {
-	return id.replace(/\.(md|mdx|markdown)$/i, '');
+	return id.replace(/\.(md|mdx|markdown)$/i, "");
 }
 
 export function pathsEqual(path1: string, path2: string) {
@@ -29,7 +29,7 @@ export function getPostUrlBySlug(slug: string): string {
 
 export function getPostUrlByPermalink(permalink: string): string {
 	// 移除开头的斜杠并确保固定链接在 /posts/ 路径下
-	const cleanPermalink = permalink.replace(/^\/+/, '');
+	const cleanPermalink = permalink.replace(/^\/+/, "");
 	return url(`/posts/${cleanPermalink}/`);
 }
 
@@ -68,7 +68,7 @@ export function getDir(path: string): string {
 }
 
 export function getFileDirFromPath(filePath: string): string {
-	return filePath.replace(/^src\//, '').replace(/\/[^\/]+$/, '');
+	return filePath.replace(/^src\//, "").replace(/\/[^/]+$/, "");
 }
 
 export function url(path: string) {

@@ -1,10 +1,10 @@
 ---
 import { Icon } from "astro-icon/components";
 import { umamiConfig } from "../config";
-import { getUmamiStats } from "../utils/umami-stats.server";
 import I18nKey from "../i18n/i18nKey";
 import { i18n } from "../i18n/translation";
 import { formatDateToYYYYMMDD } from "../utils/date-utils";
+import { getUmamiStats } from "../utils/umami-stats.server";
 import { getCategoryUrl, getTagUrl } from "../utils/url-utils";
 
 // 解析 umami
@@ -41,9 +41,10 @@ const {
 	minutes,
 	showWordCount = false, // 默认不显示字数统计
 } = Astro.props;
-const pageStats = !isHome && umamiEnabled && id
-    ? await getUmamiStats(umamiConfig, `/posts/${id}/`)
-    : null;
+const pageStats =
+	!isHome && umamiEnabled && id
+		? await getUmamiStats(umamiConfig, `/posts/${id}/`)
+		: null;
 ---
 
 <div class:list={["flex flex-wrap text-neutral-500 dark:text-neutral-400 items-center gap-4 gap-x-4 gap-y-2", className]}>

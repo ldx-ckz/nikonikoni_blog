@@ -20,8 +20,6 @@ const postsCollection = defineCollection({
 		/* Page encryption field (passwords live in post-passwords.local.json) */
 		passwordRequired: z.boolean().optional().default(false),
 
-		
-
 		/* For internal use */
 		prevTitle: z.string().default(""),
 		prevSlug: z.string().default(""),

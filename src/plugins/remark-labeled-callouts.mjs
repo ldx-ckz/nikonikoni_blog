@@ -27,7 +27,8 @@ function getCalloutLabel(node) {
 	if (text?.type !== "text") return null;
 
 	const label = text.value.trim();
-	const type = calloutLabels.get(label) || calloutLabels.get(label.toUpperCase());
+	const type =
+		calloutLabels.get(label) || calloutLabels.get(label.toUpperCase());
 	return type ? { label, type } : null;
 }
 

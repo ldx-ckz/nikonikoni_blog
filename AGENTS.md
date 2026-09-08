@@ -84,11 +84,11 @@ to touched files. Choose checks that can detect a plausible regression:
 - Layout and interaction changes: inspect the affected page and behavior, including desktop and
   mobile when responsive behavior is involved. Save screenshots when useful or requested.
 
-Full Astro, TypeScript, and Biome checks have recorded baseline failures. Use them when relevant
-to the change, not as mandatory debt-clearing steps. Capture a before/after baseline only when
-needed to distinguish a regression. Fix failures introduced by the task; report inherited failures
-separately. A failed check is not a pass, and an existing build failure must be reported if it
-prevents the required build verification. Reuse results until relevant inputs or assumptions change.
+Astro and Biome errors block CI; existing advisory warnings remain visible. Run these checks when
+relevant to the change, and fix introduced failures rather than weakening checks. Capture a
+before/after baseline only when needed to distinguish a regression. A failed check is not a pass,
+and a build failure must be reported if it prevents required verification. Reuse valid results
+until relevant inputs or assumptions change.
 
 Finish with a diff review, `git diff --check`, and `git status --short`. Report what changed,
 meaningful verification results, and remaining limitations. For cleanup, check exact targets and

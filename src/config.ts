@@ -25,7 +25,6 @@ export const siteConfig: SiteConfig = {
 	siteURL: "https://miku.nikonikoni.blog/", // 请替换为你的站点URL，以斜杠结尾
 	siteStartDate: "2026-07-25", // 站点开始运行日期，用于站点统计组件计算运行天数
 
-
 	timeZone: SITE_TIMEZONE,
 
 	lang: SITE_LANG,
@@ -173,7 +172,7 @@ export const siteConfig: SiteConfig = {
 				"Whom grace would again bless",
 				"A Tarnished of no renown",
 				"Cross the fog, to the Lands Between, to stand before the Elden Ring",
-				"And become the Elden Lord"
+				"And become the Elden Lord",
 			],
 			typewriter: {
 				enable: true, // 启用副标题打字机效果
@@ -270,11 +269,6 @@ export const fullscreenWallpaperConfig: FullscreenWallpaperConfig = {
 		enable: true, // 启用轮播
 		interval: 5, // 轮播间隔时间（秒）
 	},
-	waves: {
-		enable: true, // 是否启用水波纹效果(这个功能比较吃性能)
-		performanceMode: false, // 性能模式：减少动画复杂度(性能提升40%)
-		mobileDisable: false, // 移动端禁用
-	},
 	zIndex: -1, // 层级，确保壁纸在背景层
 	opacity: 0.8, // 壁纸透明度
 	blur: 1, // 背景模糊程度
@@ -360,7 +354,8 @@ export const commentConfig: CommentConfig = {
 
 export const announcementConfig: AnnouncementConfig = {
 	title: "Announcement", // 公告标题
-	content: "Welcome to my blog! I will share my study notes and technical articles here.", // 公告内容
+	content:
+		"Welcome to my blog! I will share my study notes and technical articles here.", // 公告内容
 	closable: false, // 允许用户关闭公告
 	link: {
 		enable: false, // 启用链接
@@ -570,7 +565,6 @@ export const sakuraConfig: SakuraConfig = {
 
 // Pio 看板娘配置
 export const pioConfig: import("./types/config").PioConfig = {
-	closable: false,
 	enable: false, // 保持首页内容区域简洁，关闭看板娘
 	models: ["/pio/models/pio/model.json"], // 默认模型路径
 	position: "left", // 默认位置在右侧

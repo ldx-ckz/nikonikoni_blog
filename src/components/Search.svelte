@@ -2,10 +2,10 @@
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import Icon from "@iconify/svelte";
+import { navigateToPage } from "@utils/navigation-utils";
 import { url } from "@utils/url-utils.ts";
 import { onMount } from "svelte";
 import type { SearchResult } from "@/global";
-import { navigateToPage } from "@utils/navigation-utils";
 import { panelManager } from "../utils/panel-manager.js";
 
 let keywordDesktop = "";
@@ -34,16 +34,19 @@ const fakeResult: SearchResult[] = [
 ];
 
 const togglePanel = async () => {
-	await panelManager.togglePanel('search-panel');
+	await panelManager.togglePanel("search-panel");
 };
 
-const setPanelVisibility = async (show: boolean, isDesktop: boolean): Promise<void> => {
+const setPanelVisibility = async (
+	show: boolean,
+	isDesktop: boolean,
+): Promise<void> => {
 	if (!isDesktop) return;
-	await panelManager.togglePanel('search-panel', show);
+	await panelManager.togglePanel("search-panel", show);
 };
 
 const closeSearchPanel = async (): Promise<void> => {
-	await panelManager.closePanel('search-panel');
+	await panelManager.closePanel("search-panel");
 	// 清空搜索关键词和结果
 	keywordDesktop = "";
 	keywordMobile = "";

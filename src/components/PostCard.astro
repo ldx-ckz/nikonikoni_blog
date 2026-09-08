@@ -3,10 +3,10 @@ import type { CollectionEntry } from "astro:content";
 import { render } from "astro:content";
 import * as path from "node:path";
 import { Icon } from "astro-icon/components";
+import { getDir, getFileDirFromPath, getTagUrl } from "@/utils/url-utils";
+import { siteConfig } from "../config";
 import I18nKey from "../i18n/i18nKey";
 import { i18n } from "../i18n/translation";
-import { getDir, getTagUrl, getFileDirFromPath } from "@/utils/url-utils";
-import { siteConfig } from "../config";
 import ImageWrapper from "./misc/ImageWrapper.astro";
 import PostMetadata from "./PostMeta.astro";
 
@@ -77,7 +77,7 @@ const { remarkPluginFrontmatter } = await render(entry);
                     <a 
                         href={getTagUrl(tag)} 
                         class:list={[
-                            siteConfig.tagStyle.useNewStyle 
+                            siteConfig.tagStyle?.useNewStyle
                                 ? "link-lg transition text-50 text-xs font-medium px-2 py-1 rounded-lg hover:text-[var(--primary)] dark:hover:text-[var(--primary)] active:text-[var(--primary)] dark:active:text-[var(--primary)] group/tag whitespace-nowrap"
                                 : "btn-regular h-6 text-xs px-2 rounded-lg"
                         ]}

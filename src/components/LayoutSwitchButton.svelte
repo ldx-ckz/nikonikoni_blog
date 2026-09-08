@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { siteConfig, sidebarLayoutConfig } from "../config";
+import { sidebarLayoutConfig, siteConfig } from "../config";
 
 export let currentLayout: "list" | "grid" = "list";
 

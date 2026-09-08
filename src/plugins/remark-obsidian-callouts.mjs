@@ -8,8 +8,7 @@ export function remarkObsidianCallouts() {
 			const [firstChild, ...remainingChildren] = node.children;
 			const [marker, ...remainingParagraphChildren] =
 				firstChild?.children || [];
-			if (firstChild?.type !== "paragraph" || marker?.type !== "text")
-				return;
+			if (firstChild?.type !== "paragraph" || marker?.type !== "text") return;
 
 			const [declaration, ...remainingText] = marker.value.split("\n");
 			const match = declaration.match(calloutMarker);

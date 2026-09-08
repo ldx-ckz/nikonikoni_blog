@@ -164,11 +164,7 @@ if (ANIME_MODE === "local") {
 		? await processBangumiData(completedData, "completed")
 		: [];
 
-	animeList = [
-		...watchingList,
-		...plannedList,
-		...completedList,
-	];
+	animeList = [...watchingList, ...plannedList, ...completedList];
 }
 
 // 获取状态的翻译文本和样式

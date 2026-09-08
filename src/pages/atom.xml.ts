@@ -4,7 +4,7 @@ import type { APIContext, ImageMetadata } from "astro";
 import MarkdownIt from "markdown-it";
 import { parse as htmlParser } from "node-html-parser";
 import sanitizeHtml from "sanitize-html";
-import { siteConfig, profileConfig } from "@/config";
+import { profileConfig, siteConfig } from "@/config";
 import { getSortedPosts } from "@/utils/content-utils";
 import { getPostUrl } from "@/utils/url-utils";
 
@@ -25,7 +25,7 @@ export async function GET(context: APIContext) {
 	const posts = (await getSortedPosts()).filter(
 		(post) => !post.data.passwordRequired && post.data.draft !== true,
 	);
-	
+
 	// 创建Atom feed头部
 	let atomFeed = `<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
@@ -39,7 +39,7 @@ export async function GET(context: APIContext) {
 
 	for (const post of posts) {
 		// convert markdown to html string, ensure post.body is a string
-        const body = markdownParser.render(String(post.body ?? ""));
+		const body = markdownParser.render(String(post.body ?? ""));
 		// convert html string to DOM-like structure
 		const html = htmlParser.parse(body);
 		// hold all img tags in variable images
@@ -125,14 +125,14 @@ export async function GET(context: APIContext) {
     <author>
       <name>${profileConfig.name}</name>
     </author>`;
-    
-    // 添加分类标签
-    for (const category of post.data.category) {
-      atomFeed += `
+
+		// 添加分类标签
+		for (const category of post.data.category) {
+			atomFeed += `
     <category term="${category}"></category>`;
-    }
-    
-    atomFeed += `
+		}
+
+		atomFeed += `
   </entry>`;
 	}
 
@@ -143,7 +143,6 @@ export async function GET(context: APIContext) {
 	return new Response(atomFeed, {
 		headers: {
 			"Content-Type": "application/atom+xml; charset=utf-8",
-			
 		},
 	});
 }

@@ -1,10 +1,10 @@
 ---
 import { Icon } from "astro-icon/components";
 import { LinkPresets } from "../../constants/link-presets";
-import { LinkPreset, type NavBarLink } from "../../types/config";
-import { url } from "../../utils/url-utils";
 import I18nKey from "../../i18n/i18nKey";
 import { i18n } from "../../i18n/translation";
+import { LinkPreset, type NavBarLink } from "../../types/config";
+import { url } from "../../utils/url-utils";
 
 interface Props {
 	link: NavBarLink;
@@ -14,19 +14,19 @@ interface Props {
 const { link, class: className } = Astro.props;
 
 // 国际化标题映射
-const navTitleMap: Record<string, string> = {
-	"Links": I18nKey.navLinks,
-	"My": I18nKey.navMy,
-	"About": I18nKey.navAbout,
-	"Others": I18nKey.navOthers,
-	"Anime": I18nKey.anime,
-	"Diary": I18nKey.diary,
-	"Gallery": I18nKey.albums,
-	"Devices": I18nKey.devices,
-	"Projects": I18nKey.projects,
-	"Skills": I18nKey.skills,
-	"Timeline": I18nKey.timeline,
-	"Friends": I18nKey.friends,
+const navTitleMap: Record<string, I18nKey> = {
+	Links: I18nKey.navLinks,
+	My: I18nKey.navMy,
+	About: I18nKey.navAbout,
+	Others: I18nKey.navOthers,
+	Anime: I18nKey.anime,
+	Diary: I18nKey.diary,
+	Gallery: I18nKey.albums,
+	Devices: I18nKey.devices,
+	Projects: I18nKey.projects,
+	Skills: I18nKey.skills,
+	Timeline: I18nKey.timeline,
+	Friends: I18nKey.friends,
 };
 
 // 获取国际化的标题
@@ -170,9 +170,9 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 		const dropdowns = document.querySelectorAll('[data-dropdown]');
 		
 		dropdowns.forEach(dropdown => {
-			const trigger = dropdown.querySelector('[data-dropdown-trigger]');
+			const trigger = dropdown.querySelector<HTMLButtonElement>('[data-dropdown-trigger]');
 			const menu = dropdown.querySelector('[data-dropdown-menu]');
-			const items = dropdown.querySelectorAll('.dropdown-item');
+			const items = dropdown.querySelectorAll<HTMLAnchorElement>('.dropdown-item');
 			
 			if (!trigger || !menu) return;
 			
@@ -214,7 +214,7 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 		// 点击外部关闭下拉菜单
 		document.addEventListener('click', function(e) {
 			dropdowns.forEach(dropdown => {
-				if (!dropdown.contains(e.target)) {
+				if (e.target instanceof Node && !dropdown.contains(e.target)) {
 					const trigger = dropdown.querySelector('[data-dropdown-trigger]');
 					const menu = dropdown.querySelector('[data-dropdown-menu]');
 					if (trigger && menu) {

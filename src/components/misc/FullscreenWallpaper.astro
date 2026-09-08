@@ -15,10 +15,7 @@ const getImageSources = async () => {
 	let srcConfig = config.src;
 
 	// 如果启用了图片API，使用API图片
-	if (
-		siteConfig.banner.imageApi?.enable &&
-		siteConfig.banner.imageApi?.url
-	) {
+	if (siteConfig.banner.imageApi?.enable && siteConfig.banner.imageApi?.url) {
 		try {
 			const response = await fetch(siteConfig.banner.imageApi.url);
 			const text = await response.text();
@@ -49,7 +46,7 @@ const getImageSources = async () => {
 	) {
 		const srcObj = srcConfig as {
 			desktop?: string | string[];
-			mobile?: string | string[]
+			mobile?: string | string[];
 		};
 		const desktop = toArray(srcObj.desktop);
 		const mobile = toArray(srcObj.mobile);

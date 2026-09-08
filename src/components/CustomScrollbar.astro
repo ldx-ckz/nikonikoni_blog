@@ -119,7 +119,7 @@ const {
 
 <script>
   // 获取组件元素
-  const scrollbarEl = document.currentScript?.parentElement?.querySelector('.custom-scrollbar');
+  const scrollbarEl = document.currentScript?.parentElement?.querySelector<HTMLElement>('.custom-scrollbar');
   
   if (scrollbarEl) {
     // 创建滚动条轨道和拇指元素
@@ -173,6 +173,7 @@ const {
     
     // 更新滚动条位置和尺寸的函数
     function updateScrollbar() {
+      if (!scrollbarEl) return;
       if (scrollbarEl.dataset.orientation === 'horizontal') {
         const scrollWidth = scrollbarEl.scrollWidth;
         const clientWidth = scrollbarEl.clientWidth;

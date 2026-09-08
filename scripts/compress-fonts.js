@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import Fontmin from "fontmin";
+import { subsetFont } from "./font-subset.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -905,30 +905,10 @@ async function compressFonts() {
 					// TTF/OTF 需要压缩为 woff2
 					console.log(`Compressing ${fontFile}...`);
 
-					const fontmin = new Fontmin()
-						.src(fontSrc)
-						.use(
-							Fontmin.glyph({
-								text: text,
-								hinting: false,
-							}),
-						)
-						.use(
-							Fontmin.ttf2woff2({
-								deflate: true,
-							}),
-						)
-						.dest(distFontDir);
-
-					await new Promise((resolve, reject) => {
-						fontmin.run((err, files) => {
-							if (err) {
-								reject(err);
-							} else {
-								resolve(files);
-							}
-						});
-					});
+					const compressed = await subsetFont(
+						fs.readFileSync(fontSrc), ext.slice(1), text,
+					);
+					fs.writeFileSync(path.join(distFontDir, `${baseName}.woff2`), compressed);
 
 					// 检查压缩结果
 					const compressedFile = path.join(distFontDir, `${baseName}.woff2`);

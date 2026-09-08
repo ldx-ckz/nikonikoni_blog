@@ -55,11 +55,14 @@ export class WidgetManager {
 	 * @param position 组件位置：'top' | 'sticky'
 	 * @param sidebar 侧边栏位置（可选）：'left' | 'right'
 	 */
-	getComponentsByPosition(position: "top" | "sticky", sidebar?: "left" | "right"): WidgetComponentConfig[] {
+	getComponentsByPosition(
+		position: "top" | "sticky",
+		sidebar?: "left" | "right",
+	): WidgetComponentConfig[] {
 		let components = this.enabledComponents.filter(
-			(component) => component.position === position
+			(component) => component.position === position,
 		);
-		
+
 		// 如果指定了侧边栏位置，则进一步过滤
 		if (sidebar) {
 			components = components.filter((component) => {
@@ -67,15 +70,8 @@ export class WidgetManager {
 				const componentSidebar = component.sidebar || "left";
 				return componentSidebar === sidebar;
 			});
-		} else if (this.config.position === "left" || this.config.position === "right") {
-			// 单侧边栏模式下，只显示对应侧的组件
-			const currentSidebar = this.config.position;
-			components = components.filter((component) => {
-				const componentSidebar = component.sidebar || "left";
-				return componentSidebar === currentSidebar;
-			});
 		}
-		
+
 		return components;
 	}
 

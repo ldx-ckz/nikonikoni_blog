@@ -22,21 +22,21 @@ export const projectsData: Project[] = [
 	{
 		id: "copy-as-markdown",
 		title: "Copy as Markdown",
-		description:
-			"一个可以将网页中的文本复制为markdown格式的Edge插件",
+		description: "一个可以将网页中的文本复制为markdown格式的Edge插件",
 		image: "",
 		category: "web",
-		techStack: ["JavaScript","HTML"],
+		techStack: ["JavaScript", "HTML"],
 		status: "completed",
 		sourceCode: "https://github.com/ldx-ckz/copy-as-markdown", // 更改为GitHub链接
 		startDate: "2025-11-29",
 		endDate: "2025-11-30",
-		tags: ["Extensions Documentation","Open Source"],
+		tags: ["Extensions Documentation", "Open Source"],
 	},
 	{
 		id: "nikonikoni-blog",
 		title: "nikonikoni_blog",
-		description: "基于 Astro 构建的个人博客，用于记录学习笔记、技术实践与日常生活。",
+		description:
+			"基于 Astro 构建的个人博客，用于记录学习笔记、技术实践与日常生活。",
 		image: "",
 		category: "web",
 		techStack: ["Astro", "TypeScript", "Tailwind CSS", "Svelte"],

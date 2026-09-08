@@ -135,10 +135,8 @@ const checkIsHomePage = () => {
 	const pathname = window.location.pathname;
 	// 检查是否为首页或首页的分页页面
 	// 分页格式：/, /2/, /3/, 等等
-	isHomePage = 
-		pathname === "/" || 
-		pathname === "" ||
-		/^\/\d+\/?$/.test(pathname);
+	isHomePage =
+		pathname === "/" || pathname === "" || /^\/\d+\/?$/.test(pathname);
 };
 
 const scrollToHeading = (id: string) => {
@@ -215,7 +213,11 @@ const setupIntersectionObserver = () => {
 let swupListenersRegistered = false;
 
 const setupSwupListeners = () => {
-	if (typeof window !== "undefined" && (window as any).swup && !swupListenersRegistered) {
+	if (
+		typeof window !== "undefined" &&
+		(window as any).swup &&
+		!swupListenersRegistered
+	) {
 		const swup = (window as any).swup;
 
 		// 只监听页面视图事件，避免重复触发
@@ -285,30 +287,30 @@ const init = () => {
 	}
 };
 
-	onMount(() => {
-		// 延迟初始化，确保页面内容已加载
-		setTimeout(init, 100);
+onMount(() => {
+	// 延迟初始化，确保页面内容已加载
+	setTimeout(init, 100);
 
-		// 监听滚动事件作为备用
-		window.addEventListener("scroll", updateActiveHeading);
+	// 监听滚动事件作为备用
+	window.addEventListener("scroll", updateActiveHeading);
 
-		return () => {
-			if (observer) {
-				observer.disconnect();
-			}
-			window.removeEventListener("scroll", updateActiveHeading);
+	return () => {
+		if (observer) {
+			observer.disconnect();
+		}
+		window.removeEventListener("scroll", updateActiveHeading);
 
-			// 清理Swup事件监听器
-			if (typeof window !== "undefined" && (window as any).swup) {
-				const swup = (window as any).swup;
-				swup.hooks.off("page:view");
-			}
-			
-			// 清理popstate事件监听器
-			window.removeEventListener("popstate", init);
-			swupListenersRegistered = false;
-		};
-	});
+		// 清理Swup事件监听器
+		if (typeof window !== "undefined" && (window as any).swup) {
+			const swup = (window as any).swup;
+			swup.hooks.off("page:view");
+		}
+
+		// 清理popstate事件监听器
+		window.removeEventListener("popstate", init);
+		swupListenersRegistered = false;
+	};
+});
 
 // 导出初始化函数供外部调用
 if (typeof window !== "undefined") {

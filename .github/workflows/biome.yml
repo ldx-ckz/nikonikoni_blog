@@ -19,11 +19,5 @@ jobs:
         uses: biomejs/setup-biome@f382a98e582959e6aaac8e5f8b17b31749018780 # v2.5.0
         with:
           version: 2.3.7
-      - name: Run Biome (advisory)
-        id: biome-check
-        continue-on-error: true
+      - name: Run Biome
         run: biome ci ./src --reporter=github
-
-      - name: Report Biome diagnostics
-        if: steps.biome-check.outcome == 'failure'
-        run: echo '::warning::Biome check failed. This job is advisory; see the diagnostic step for unresolved errors.'

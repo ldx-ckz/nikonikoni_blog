@@ -11,9 +11,7 @@ export interface FriendItem {
 }
 
 // 友情链接数据
-export const friendsData: FriendItem[] = [
-
-];
+export const friendsData: FriendItem[] = [];
 
 // 获取所有友情链接数据
 export function getFriendsList(): FriendItem[] {

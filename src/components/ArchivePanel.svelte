@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 
-import { getPostUrlBySlug, getPostUrlByPermalink } from "../utils/url-utils";
+import { getPostUrlByPermalink, getPostUrlBySlug } from "../utils/url-utils";
 
 export let tags: string[];
 export let categories: string[];
@@ -62,9 +62,8 @@ onMount(async () => {
 	}
 
 	if (categories.length > 0) {
-		filteredPosts = filteredPosts.filter(
-			(post) =>
-				post.data.category.some((category) => categories.includes(category)),
+		filteredPosts = filteredPosts.filter((post) =>
+			post.data.category.some((category) => categories.includes(category)),
 		);
 	}
 
@@ -75,7 +74,9 @@ onMount(async () => {
 	}
 
 	// 按发布时间倒序排序，确保不受置顶影响
-	filteredPosts = filteredPosts.slice().sort((a, b) => b.data.published.getTime() - a.data.published.getTime());
+	filteredPosts = filteredPosts
+		.slice()
+		.sort((a, b) => b.data.published.getTime() - a.data.published.getTime());
 
 	const grouped = filteredPosts.reduce(
 		(acc, post) => {
