@@ -5,8 +5,393 @@
   <link href="https://miku.nikonikoni.blog/" rel="alternate" type="text/html"/>
   <link href="https://miku.nikonikoni.blog/atom.xml" rel="self" type="application/atom+xml"/>
   <id>https://miku.nikonikoni.blog/</id>
-  <updated>2026-09-08T09:40:47.279Z</updated>
+  <updated>2026-09-09T08:43:05.411Z</updated>
   <language>zh_CN</language>
+  <entry>
+    <title>NumPy Illustrated</title>
+    <link href="https://miku.nikonikoni.blog/posts/numpy-illustrated/" rel="alternate" type="text/html"/>
+    <id>https://miku.nikonikoni.blog/posts/numpy-illustrated/</id>
+    <published>2026-09-09T00:00:00.000Z</published>
+    <updated>2026-09-09T00:00:00.000Z</updated>
+    <summary>通过图解与代码示例，从一维向量到高维数组，介绍 NumPy 的数组创建、索引切片、广播机制与常用运算。</summary>
+    <content type="html"><![CDATA[<h1>NumPy Illustrated</h1>
+<p>原文链接：<a href="https://medium.com/better-programming/numpy-illustrated-the-visual-guide-to-numpy-3b1d4976de1d">NumPy Illustrated: The Visual Guide to NumPy | by Lev Maximov | Better Programming</a></p>
+<hr />
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904166925362.BN-oOikh_1vy3H4.webp" alt="图 1：NumPy 可视化指南" /></p>
+<p><a href="https://numpy.org/">NumPy</a> 是 Python 科学计算的基础库，核心是高效的多维数组及其运算。它与 <a href="https://pandas.pydata.org/">pandas</a>、<a href="https://opencv.org/">OpenCV</a> 等工具密切配合。理解 NumPy 的形状、索引和广播机制，也有助于使用 <a href="https://pytorch.org/">PyTorch</a>、<a href="https://www.tensorflow.org/">TensorFlow</a> 和 <a href="https://keras.io/">Keras</a> 等深度学习框架。</p>
+<p>NumPy 的普通 <code>ndarray</code> 在 CPU 上计算。若要在 <a href="https://stsievert.com/blog/2016/07/01/numpy-gpu">GPU</a> 上运行，可以选择支持 GPU 的数组库或深度学习框架，并处理设备和数据类型转换；相似的数组接口并不意味着 NumPy 数组会自动转到 GPU。不同库之间能否共享内存，取决于设备、布局和互操作接口。<a href="https://numpy.org/doc/stable/user/basics.interoperability.html">NumPy 互操作说明</a></p>
+<p>n 维数组 <code>ndarray</code> 是 NumPy 的核心概念。虽然一维、二维和更高维数组的表现形式不同，创建、索引、逐元素运算和广播等基本规则是统一的。本文依次介绍三个部分：</p>
+<ol>
+<li>向量——一维数组</li>
+<li>矩阵——二维数组</li>
+<li>3维及更高维数组</li>
+</ol>
+<p>本文受 Jay Alammar 的文章 “<a href="http://jalammar.github.io/visual-numpy/">A Visual Intro to NumPy and Data Representation</a>” 启发，结合图示介绍数组操作及其背后的规则。</p>
+<p>阅读时可以在 Python 交互环境中运行示例，统一使用以下导入方式：</p>
+<pre><code>import numpy as np
+</code></pre>
+<p>理解一个数组，先看四个属性：<code>a.ndim</code> 是轴的数量，<code>a.shape</code> 是各轴长度组成的元组，<code>a.size</code> 是元素总数，<code>a.dtype</code> 是元素的数据类型。例如，形状为 <code>(2, 3)</code> 的数组有 2 个轴、6 个元素。</p>
+<h2>NumPy 数组与 Python 列表</h2>
+<p>乍看之下，NumPy 数组与 Python 列表很相似：都可以按整数索引访问元素。但列表是一种可变长容器，尾部追加通常具有摊还 O(1) 的复杂度；普通 NumPy 数组的缓冲区不会像列表一样为追加预留容量。<code>np.append</code> 会创建新数组并复制数据，因此反复追加往往很慢。两者中间位置的插入或删除通常都需要移动或复制数据。</p>
+<p>与 Python 列表相比，NumPy 数组可以直接进行逐元素算术运算：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904266648529.CwmQWkwx_ZiOlmL.webp" alt="图 2：NumPy 数组与 Python 列表" /></p>
+<p>除此之外，numpy数组还具有以下特点：</p>
+<ul>
+<li>对于常规数值类型，数据存储通常比 Python 数字列表更紧凑；内存占用取决于元素数量与 <code>dtype</code>，并不是维数越高就必然越省空间。</li>
+<li>向量化运算把主要循环交给底层实现，通常比逐元素的 Python 循环更快。</li>
+<li>在末尾添加元素时不如列表高效</li>
+<li>一个数组使用统一的 <code>dtype</code>；对象数组可以引用不同类型的 Python 对象，但通常不具备普通数值数组的性能优势。</li>
+</ul>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904275291402.BruZK2cn_2qJty8.webp" alt="图 3：NumPy 数组与 Python 列表" /></p>
+<p>其中，O(N)表示完成操作所需的时间与数组大小成正比（请见<a href="https://www.bigocheatsheet.com/">Big-O Cheat Sheet</a>），O(1)表示操作时间与数组大小无关（详见<a href="https://wiki.python.org/moin/TimeComplexity">Time Complexity</a>）。</p>
+<h2>1. 向量与一维数组</h2>
+<h3>向量初始化</h3>
+<p>通过Python列表可以创建NumPy数组，如下将列表元素转化为一维数组：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904201886544.Co8cGDQU_ZhhaRG.webp" alt="图 4：向量初始化" /></p>
+<p>NumPy 会尝试为所有元素推断一个共同的数据类型：整数与浮点数混合时通常得到浮点数组，数字与字符串混合时可能得到字符串数组，并不是一混合就会变成 <code>object</code>。长度不一致的嵌套序列通常会报 <code>ValueError</code>；确实需要容纳任意 Python 对象时，应明确指定 <code>dtype=object</code>。数值计算建议显式选择合适的类型。<a href="https://numpy.org/doc/stable/reference/generated/numpy.array.html">数组创建文档</a></p>
+<pre><code>import numpy as np
+
+a = np.array([1, 2, 3], dtype=np.float64)
+b = np.array([1, 2.5])                 # 浮点数组
+c = np.array([1, "2"])                # 字符串数组
+objects = np.array([1, None], dtype=object)
+</code></pre>
+<p>NumPy 2.x 调整了 Python 标量参与运算时的类型提升规则，不能再依靠标量的数值大小来猜测结果类型。需要跨平台固定精度时，使用 <code>np.int64</code>、<code>np.float32</code> 或 <code>np.float64</code> 等显式类型；转换数组用 <code>a.astype(...)</code>。固定宽度整数也可能溢出。<a href="https://numpy.org/doc/stable/numpy_2_0_migration_guide.html">NumPy 2.0 迁移指南</a></p>
+<p>由于在数组末尾没有预留空间以快速添加新元素，NumPy数组无法像Python列表那样增长，因此，通常的做法是在变长Python列表中准备好数据，然后将其转换为NumPy数组，或是使用np.zeros或np.empty预先分配必要的空间：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904198769492.knvYXNrf_PTyuc.webp" alt="图 5：向量初始化" /></p>
+<p>通过 <code>zeros_like</code>、<code>ones_like</code>、<code>empty_like</code> 和 <code>full_like</code>，可以创建与另一个数组形状相同、默认数据类型也相同的数组：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904201675071.BBU2H4Tv_1xd2zN.webp" alt="图 6：向量初始化" /></p>
+<p>这些函数既可以创建全零或全一数组，也可以填充指定值。<code>empty</code> 的含义是“不初始化数值缓冲区”，并不是填零或生成随机数；必须先写入元素，再使用它们。<code>*_like</code> 默认继承数据类型，因此对整数数组执行 <code>np.full_like(a, 0.5)</code> 可能丢失小数，应指定 <code>dtype=float</code>。<a href="https://numpy.org/doc/stable/reference/generated/numpy.empty.html">empty 文档</a></p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904275944795.CJ0tta_5_Z1ebzLt.webp" alt="图 7：向量初始化" /></p>
+<p>在NumPy中，还可以通过单调序列初始化数组：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904276725769.brIwc1DS_Z1zEDeA.webp" alt="图 8：向量初始化" /></p>
+<p>如果需要 <code>[0., 1., 2.]</code> 这样的浮点数组，可以写 <code>np.arange(3, dtype=float)</code>。<code>np.arange(3.0)</code> 也会推断为浮点类型，但显式指定 <code>dtype</code> 更能表达意图，且避免先生成整数数组再 <code>astype</code> 的额外转换。</p>
+<p><code>arange</code> 以步长为核心，通常使用左闭右开区间；浮点步长需要留意舍入误差：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904276834726.DflCir2y_8iIBg.webp" alt="图 9：向量初始化" /></p>
+<p>十进制的 <code>0.1</code> 无法用有限位二进制浮点数精确表示，因此以小数作为 <code>arange</code> 的步长时，实际元素数量或末端值可能与直觉不一致。让停止值避开步长的整数倍有时可以绕过问题，但会降低可读性。已知需要多少个采样点时，通常使用 <code>linspace</code>：它保证点数，并可控制是否包含终点，但不会消除浮点数本身的舍入误差。<code>np.linspace(0, 1, 11)</code> 表示 11 个点、10 个间隔；不包含终点时设置 <code>endpoint=False</code>。<a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html">arange 文档</a></p>
+<p>随机数组可以按均匀分布、正态分布等方式生成：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904263924776.B0qX1PIL_2tSjrt.webp" alt="图 10：向量初始化" /></p>
+<p>日常代码推荐创建独立的随机数生成器 <code>Generator</code>。这样可以明确管理状态，不必依赖模块级全局随机状态。<code>integers</code> 的上界默认不包含在内；<code>normal</code> 的 <code>scale</code> 表示标准差，而不是方差。<a href="https://numpy.org/doc/stable/reference/random/generator.html">随机数生成器文档</a></p>
+<pre><code>import numpy as np
+
+rng = np.random.default_rng(42)
+integers = rng.integers(0, 10, size=3)  # 整数，范围 [0, 10)
+uniform = rng.random(3)               # [0, 1) 均匀分布
+normal = rng.normal(5, 2, size=3)      # 均值 5，标准差 2
+</code></pre>
+<p>固定种子有助于复现实验，但不应把它理解为任意 NumPy 版本、算法和调用顺序下都生成同一序列。需要长期精确复现时，还应记录 NumPy 版本、生成器和采样调用方式。</p>
+<h3>向量索引</h3>
+<p>对于数组数据的访问，numpy提供了便捷的访问方式：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904276976566.DU_JImyg_hMe8U.webp" alt="图 11：向量索引" /></p>
+<p>需要区分三种情况：普通数值数组的单个整数索引通常返回 NumPy 标量；基本切片如 <code>a[1:4]</code> 返回共享原缓冲区的视图；整数数组索引与布尔索引属于高级索引，读取时会生成副本。视图保存自己的形状和步幅等元数据，但与原数组共享元素数据，因此任一方修改共享位置，另一方都能看到。<a href="https://numpy.org/doc/stable/user/basics.copies.html">副本与视图</a></p>
+<p>赋值时，<code>a[1:4] = ...</code>、<code>a[[1, 3]] = ...</code> 和 <code>a[mask] = ...</code> 都可以直接修改原数组。但先执行 <code>b = a[[1, 3]]</code> 再修改 <code>b</code>，修改的是副本。<code>a[:]</code> 仍然是视图，需要独立数据时使用 <code>a.copy()</code>：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904201590881.C90IBbiL_1bo515.webp" alt="图 12：向量索引" /></p>
+<pre><code>import numpy as np
+
+a = np.array([10, 20, 30, 40])
+view = a[1:3]
+copied = a[[1, 2]]
+view[0] = 99
+assert a[1] == 99
+assert copied[0] == 20
+
+a[[1, 2]] = 0                        # 直接赋值修改原数组
+assert np.array_equal(a, [10, 0, 0, 40])
+</code></pre>
+<p>如果索引中含重复位置，<code>a[idx] += value</code> 不保证按重复次数累计。需要逐次累加时可用 <code>np.add.at(a, idx, value)</code>。</p>
+<p>此外，还可以通过布尔索引从NumPy数组中获取数据，这意味着可以使用各种逻辑运算符：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904277649608.CYKw81OL_1eBOdP.webp" alt="图 13：向量索引" /></p>
+<p><a href="https://numpy.org/doc/stable/reference/generated/numpy.any.html"><code>any</code></a> 判断是否至少有一个元素为真，<a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html"><code>all</code></a> 判断是否全部为真；对数组可指定 <code>axis</code>。</p>
+<p>逐元素区间判断应写 <code>(a &gt;= 3) &amp; (a &lt;= 5)</code>，每个比较表达式都要加括号。不能用 <code>3 &lt;= a &lt;= 5</code> 这样的链式比较，也不能用 Python 的 <code>and</code>、<code>or</code>、<code>not</code> 代替数组上的 <code>&amp;</code>、<code>|</code>、<code>~</code>。</p>
+<p>布尔索引赋值适合按条件修改元素。<code>np.where(condition, x, y)</code> 根据条件选择值并返回结果数组；<code>np.clip(a, low, high)</code> 把数值限制在区间内，默认也返回结果。需要原地截断时可用 <code>np.clip(a, low, high, out=a)</code>，并确保数据类型合适。</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904292467541.OD3r85ob_ZaX9nq.webp" alt="图 14：向量索引" /></p>
+<h3>向量操作</h3>
+<p>NumPy 的速度优势主要来自将循环和数值运算交给底层实现，减少 Python 逐元素解释的开销。实际速度还取决于数组大小、数据类型、内存布局和临时数组数量。下面这些运算会逐元素执行：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904263929163.DtAddJTl_ZwicxO.webp" alt="图 15：向量操作" /></p>
+<p>在 Python 中，<code>a // b</code> 是向负无穷取整的除法，例如 <code>-3 // 2 == -2</code>；<code>x ** n</code> 表示幂运算 xⁿ。</p>
+<p>浮点数的计算也是如此，numpy能够将标量广播到数组：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904267534306.CZL-x9VC_qwraC.webp" alt="图 16：向量操作" /></p>
+<p>numpy提供了许多数学函数来处理矢量：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904277565788.BVFHLUks_1S8YvD.webp" alt="图 17：向量操作" /></p>
+<p>向量点积与叉积如下。实数一维数组的 <code>a @ b</code> 或 <code>np.dot(a, b)</code> 得到点积；<code>np.cross</code> 计算三维向量叉积。不要将叉积与 <code>np.outer</code> 的外积混淆：外积会得到一个矩阵。</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904275216881.CeAPNM9y_SoAnG.webp" alt="图 18：向量操作" /></p>
+<p>NumPy 2.5 的 <code>np.cross</code> 接受长度为 3 的向量。二维向量需要的有向面积可直接写为 <code>a[..., 0] * b[..., 1] - a[..., 1] * b[..., 0]</code>，或补零扩展为三维向量后计算。复数向量的 <code>np.dot</code> 不会自动对第一个参数取共轭；共轭内积可以用 <code>np.vdot</code>，但它会先把输入展平。<a href="https://numpy.org/doc/stable/reference/generated/numpy.cross.html">cross 文档</a></p>
+<p>NumPy 也提供以下三角函数；角度输入通常使用弧度，可以通过 <code>np.deg2rad</code> 和 <code>np.rad2deg</code> 转换：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904277835698.BMSl_puh_Zz4otQ.webp" alt="图 19：向量操作" /></p>
+<p>数组还可以整体执行取整与舍入：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904358483694.04YKcA-S_2iyki7.webp" alt="图 20：向量操作" /></p>
+<p><code>floor</code> 向负无穷取整，<code>ceil</code> 向正无穷取整，<code>trunc</code> 向零截断。<code>round</code> 舍入到指定小数位；恰好位于中间值时采用“舍入到最近偶数”，如 <code>np.round([0.5, 1.5, 2.5])</code> 得到 <code>[0., 2., 2.]</code>，并非通常口语中的一律“四舍五入”。浮点表示也可能影响十进制舍入结果。<a href="https://numpy.org/doc/stable/reference/generated/numpy.round.html">round 文档</a></p>
+<p><code>np.around</code> 与 <code>np.round</code> 等效，也可以调用 <code>a.round()</code>。通常采用 <code>import numpy as np</code>，这样能清楚区分 NumPy 函数与 Python 内置函数，避免 <code>from numpy import *</code> 带来的名称覆盖。NumPy 2.5 已弃用 <code>np.fix</code>，向零截断统一使用 <code>np.trunc</code>。<a href="https://numpy.org/doc/stable/release/2.5.0-notes.html">NumPy 2.5 发布说明</a></p>
+<p>numpy还可以实现以下功能：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904277507838.D3mIvVIZ_Z1TUb0j.webp" alt="图 21：向量操作" /></p>
+<p>许多统计函数具有忽略 NaN 的版本，例如 <a href="https://numpy.org/doc/stable/reference/generated/numpy.nansum.html"><code>nansum</code></a>、<a href="https://numpy.org/doc/stable/reference/generated/numpy.nanmax.html"><code>nanmax</code></a>、<code>nanmean</code> 和 <code>nanstd</code>。它们并不意味着自动处理一切缺失数据：例如，全为 NaN 的切片调用 <code>nanmax</code> 会返回 NaN 并发出警告，而 <code>nansum</code> 通常返回 0。应根据数据含义选择函数。</p>
+<p>排序时先区分两种行为：<code>a.sort()</code> 原地修改数组，<code>np.sort(a)</code> 返回排序后的副本。NumPy 不提供 Python 列表那样通用的 <code>key=</code> 回调，多字段排序可以用 <code>argsort</code>、<code>lexsort</code> 或结构化数组：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904278782971.D2VMil3H_1gii37.webp" alt="图 22：向量操作" /></p>
+<p>NumPy 2.5 支持 <code>np.sort(a, descending=True)</code> 和 <code>np.argsort(a, descending=True)</code>，可直接降序排序；NaN 在升序和降序中都放在末尾。<code>stable=True</code> 可以保持相等元素原有的相对顺序。反转升序结果仍可写为 <code>np.sort(a)[::-1]</code>，但会把 NaN 移到开头，也会反转相等元素对应的顺序，因此与稳定降序排序不完全相同。<a href="https://numpy.org/doc/stable/reference/generated/numpy.sort.html">sort 文档</a></p>
+<pre><code>import numpy as np
+
+values = np.array([4.0, np.nan, 1.0, 4.0])
+descending = np.sort(values, descending=True)
+# [4., 4., 1., nan]
+indices = np.argsort(values, descending=True, stable=True)
+# [0, 3, 2, 1]
+</code></pre>
+<h3>查找向量中的元素</h3>
+<p>NumPy 数组支持索引操作，但没有 Python 列表的 <code>list.index</code> 方法：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904278123152.mCM7Bjo4_21uoMa.webp" alt="图 23：查找向量中的元素" /></p>
+<p>图中 <code>index</code> 签名的方括号表示可选参数，并不是调用时要写的实际括号。</p>
+<ul>
+<li>
+<p><code>np.where(a == x)[0]</code> 可以得到一维数组中全部匹配位置，<code>np.flatnonzero(a == x)</code> 也很直接。若只需要第一个结果，必须先检查是否找到元素，不能无条件再取 <code>[0]</code>：</p>
+<pre><code>import numpy as np
+
+a = np.array([2, 7, 4, 7])
+hits = np.flatnonzero(a == 7)
+first = int(hits[0]) if hits.size else -1
+assert first == 1
+</code></pre>
+<p>这类向量化比较需要检查整个数组，即使目标恰好在开头也不会提前退出。</p>
+</li>
+<li>
+<p>需要找到第一个匹配后立即停止时，一维数组可用 <code>next((i for i, v in enumerate(a) if v == x), -1)</code>；高维数组可用 <code>np.ndenumerate</code> 返回坐标。它们仍是 Python 层迭代，并不会因为写成生成器就自动获得 <a href="https://numba.pydata.org/">Numba</a> 加速。对性能敏感的大数组，可以把显式循环放进 Numba 编译函数，是否更快应通过实际数据测试。</p>
+</li>
+<li>
+<p>已按升序排列的一维数组适合使用 <code>searchsorted</code>。它通过二分搜索返回插入位置，单次查找通常为 O(log N)，但这个位置可能等于数组长度，且不保证目标真的存在，因此要同时检查边界和元素值。<a href="https://numpy.org/doc/stable/reference/generated/numpy.searchsorted.html">searchsorted 文档</a></p>
+<pre><code>import numpy as np
+
+a = np.array([1, 4, 4, 8])
+x = 10
+pos = int(np.searchsorted(a, x, side="left"))
+found = pos if pos &lt; a.size and a[pos] == x else -1
+assert found == -1
+</code></pre>
+<p>若数组尚未排序，还需考虑排序开销，且排序会改变位置含义；需要原始索引时应保留排序索引。</p>
+</li>
+</ul>
+<p>搜索算法之外，还要明确“相等”的定义。整数和离散标签常用精确比较，浮点测量结果则往往需要容差比较。</p>
+<h3>浮点数比较</h3>
+<p><a href="https://numpy.org/doc/stable/reference/generated/numpy.isclose.html"><code>np.isclose(a, b)</code></a> 逐元素判断浮点数是否接近，<code>np.allclose(a, b)</code> 判断所有元素是否都在容差范围内：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904320932634.CknEi5cN_Z1vqivW.webp" alt="图 24：浮点数比较" /></p>
+<ul>
+<li>
+<p>对于有限数，NumPy 使用以下判据：</p>
+<pre><code>abs(a - b) &lt;= atol + rtol * abs(b)
+</code></pre>
+<p><code>atol</code> 是绝对容差，<code>rtol</code> 是相对容差。默认绝对容差 <code>1e-8</code> 不一定适合接近零的数据。例如比较纳秒量级的值时，应按实际误差预算选择容差，<code>np.allclose(1e-9, 2e-9, atol=1e-17)</code> 为 <code>False</code>。不能机械地把所有任务的默认容差按单位缩放后直接使用。<a href="https://numpy.org/doc/stable/reference/generated/numpy.allclose.html">allclose 文档</a></p>
+</li>
+<li>
+<p>Python 的 <a href="https://docs.python.org/3/library/math.html#math.isclose"><code>math.isclose(a, b, rel_tol=..., abs_tol=...)</code></a> 用于标量，其默认绝对容差为 0。与零比较时通常要明确给出合适的 <code>abs_tol</code>，例如：</p>
+<pre><code>import math
+
+assert math.isclose(0.1 + 0.2, 0.3, abs_tol=1e-8)
+assert math.isclose(0.1 + 0.2 - 0.3, 0.0, abs_tol=1e-8)
+</code></pre>
+</li>
+</ul>
+<p>NumPy 的相对容差以第二个参数 <code>b</code> 为参考，因此极少数边界情况下 <code>np.allclose(a, b)</code> 与 <code>np.allclose(b, a)</code> 可能不同；<code>math.isclose</code> 使用对称判据。另需注意，<code>allclose</code> 会广播输入，形状不同也可能返回 <code>True</code>。需要形状与元素都完全一致时使用 <code>np.array_equal</code>；希望对应位置的 NaN 视为相等时，可设置 <code>equal_nan=True</code>。参见 <a href="https://floating-point-gui.de/errors/comparison/">浮点比较指南</a> 和 <a href="https://github.com/numpy/numpy/issues/10161">NumPy 的相关讨论</a>。</p>
+<h2>2. 矩阵与二维数组</h2>
+<p>NumPy 仍保留专用的 <code>matrix</code> 类供兼容旧代码，但官方不建议在新代码中使用它。下文统一使用普通 <code>ndarray</code>，把“矩阵”理解为二维数组；逐元素乘法用 <code>*</code>，矩阵乘法用 <code>@</code>。<a href="https://numpy.org/doc/stable/reference/generated/numpy.matrix.html">matrix 文档</a></p>
+<p>矩阵的初始化语法与向量类似：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904355989899.BiBcOoLe_Z2oiS07.webp" alt="图 25：2. 矩阵与二维数组" /></p>
+<p>创建二维数组时，写 <code>np.array([[1, 2], [3, 4]])</code>：外层列表包含每一行，内层列表包含该行元素。调用 <code>np.zeros((2, 3))</code> 时，则把形状作为一个元组传入；<code>np.zeros(2, 3)</code> 的第二个位置参数会被当作 <code>dtype</code>，并不是第二个轴的长度。</p>
+<p>随机矩阵的生成与向量类似，把 <code>size</code> 设为形状元组即可：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904368686018.Dy6sRJAl_dxBT0.webp" alt="图 26：2. 矩阵与二维数组" /></p>
+<pre><code>import numpy as np
+
+rng = np.random.default_rng(42)
+a = rng.integers(0, 10, size=(2, 3))
+b = rng.normal(size=(2, 3))
+</code></pre>
+<p>二维数组的索引语法要比嵌套列表更方便：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904313646051.ClhuyZTQ_1EbiBd.webp" alt="图 27：2. 矩阵与二维数组" /></p>
+<p>“view”表示基本切片共享原数组的数据；修改共享的元素会反映到对应切片中。<code>a[i, j]</code> 访问单个数值，<code>a[i, :]</code> 和 <code>a[:, j]</code> 通常得到一维数组；若希望保留二维形状，可写 <code>a[i:i+1, :]</code> 或 <code>a[:, j:j+1]</code>。高级索引读取则会产生副本。</p>
+<h3>轴参数</h3>
+<p><code>axis</code> 表示轴的编号，而不是维度数量。二维数组的 <code>axis=0</code> 是第一个轴，<code>axis=1</code> 是第二个轴，<code>axis=-1</code> 表示最后一个轴。</p>
+<p>对形状为 <code>(行数, 列数)</code> 的数组求和，<code>sum(axis=0)</code> 沿行的索引变化方向累加，得到每一列的和；<code>sum(axis=1)</code> 沿列的索引变化方向累加，得到每一行的和。理解归约操作时，直接看“哪个轴被消去”通常最清楚。</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904336509582.DD6Tq2Wt_mjE7A.webp" alt="图 28：轴参数" /></p>
+<pre><code>import numpy as np
+
+a = np.arange(1, 7).reshape(2, 3)
+assert np.array_equal(a.sum(axis=0), [5, 7, 9])
+assert np.array_equal(a.sum(axis=1), [6, 15])
+row_sum = a.sum(axis=1, keepdims=True)
+assert row_sum.shape == (2, 1)
+normalized = a / row_sum
+assert np.allclose(normalized.sum(axis=1), 1)
+</code></pre>
+<p><code>keepdims=True</code> 保留被归约的轴并将其长度设为 1，使结果能直接广播回原数组。实际做归一化时，还要明确如何处理和为 0 的行。</p>
+<h3>矩阵运算</h3>
+<p>除了+，-，*，/，//和**等数组元素的运算符外，numpy提供了@运算符计算矩阵乘积：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904278183474.kPBMOBZc_Z1S0t9C.webp" alt="图 29：矩阵运算" /></p>
+<p>对 <code>(m, k)</code> 与 <code>(k, n)</code> 两个数组，<code>@</code> 的结果是 <code>(m, n)</code>。处理线性方程 <code>A x = b</code> 时，优先用 <code>np.linalg.solve(A, b)</code>，不必先求逆再相乘；它要求 A 为方阵且满秩。非方阵或最小二乘问题可用 <code>np.linalg.lstsq</code>。<a href="https://numpy.org/doc/stable/reference/generated/numpy.linalg.solve.html">线性方程求解文档</a></p>
+<p>类似前文介绍的标量广播机制，numpy同样可以通过广播机制实现向量与矩阵，或两个向量之间的混合运算：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904288221293.r4mtLM2J_ZtpAsY.webp" alt="图 30：矩阵运算" /></p>
+<p>广播从最右侧的轴开始对齐；对应轴的长度相等，或者其中一个为 1，就可以兼容；缺失的前导轴按长度 1 处理。例如 <code>(3, 1)</code> 与 <code>(1, 4)</code> 得到 <code>(3, 4)</code>，而 <code>(3,)</code> 与 <code>(4,)</code> 不能直接广播。广播本身通常不需要复制输入，但计算结果和中间数组仍可能占用大量内存。<a href="https://numpy.org/doc/stable/user/basics.broadcasting.html">广播规则</a></p>
+<p>广播可以把列向量 <code>(m, 1)</code> 和行向量 <code>(1, n)</code> 的逐元素乘法扩展成 <code>(m, n)</code>，得到外积。矩阵乘法也可写出相同结果：<code>column @ row</code> 得到外积，而长度匹配时 <code>row @ column</code> 得到形状为 <code>(1, 1)</code> 的内积结果。<code>*</code> 满足逐元素乘法的交换性，但 <code>@</code> 一般不能交换顺序，输出形状也可能随顺序改变：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904181749985.BFF4vtdV_NQ8Um.webp" alt="图 31：矩阵运算" /></p>
+<h3>行向量与列向量</h3>
+<p>NumPy 的一维数组形状为 <code>(n,)</code>，没有独立的“行”或“列”方向。二维行向量的形状是 <code>(1, n)</code>，二维列向量的形状是 <code>(n, 1)</code>。</p>
+<p>在与二维数组进行逐元素运算时，<code>(n,)</code> 会从右侧对齐，通常表现得像 <code>(1, n)</code>；但这不能推广到矩阵乘法 <code>@</code>，因为 <code>@</code> 对一维输入有专门的升维和降维规则。一维数组转置后仍是 <code>(n,)</code>，因此 <code>.T</code> 不能把它变成列向量：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904186366472.BgV-Ig8g_Mt08k.webp" alt="图 32：行向量与列向量" /></p>
+<p>使用newaxis更新数组形状和索引可以将1维数组转化为2维列向量：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904279406417.DrYYn_3N_RNPsC.webp" alt="图 33：行向量与列向量" /></p>
+<p><code>reshape</code> 中的 <code>-1</code> 表示根据元素总数推断该轴长度，最多只能使用一次。索引中的 <code>None</code> 等同于 <code>np.newaxis</code>，会在指定位置添加一个长度为 1 的轴，并不是添加长度为 0 的轴。</p>
+<p>因此，日常计算中需要区分一维数组、二维行向量和二维列向量三种形状。它们之间的转换如下：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904182534590.DjS6mESa_ZyNKFJ.webp" alt="图 34：行向量与列向量" /></p>
+<p>在适用的逐元素广播运算中，<code>(n,)</code> 与 <code>(1, n)</code> 通常可以产生相同的结果，因此图中阴影区域的转换常可省略；需要明确保留二维形状或进行矩阵乘法时，仍应认真检查输出形状。</p>
+<p>一个数组也可以只有一个长度不为 1 的轴，例如 <code>a.shape == (1, 1, 1, 5, 1, 1)</code>。<code>np.reshape</code> 可构造这种形状，<code>np.squeeze</code> 可以移除长度为 1 的轴；指定 <code>axis</code> 能避免误删需要保留的轴。</p>
+<p><code>reshape</code> 在可行时返回视图，否则可能复制数据；<code>np.reshape(a, shape, copy=False)</code> 要求不复制，无法满足时会报错。<code>squeeze</code> 返回原数组或共享数据的视图。NumPy 2.5 不推荐再直接赋值 <code>a.shape = ...</code>，应使用 <code>reshape</code> 返回目标形状的数组。<a href="https://numpy.org/doc/stable/reference/generated/numpy.reshape.html">reshape 文档</a>、<a href="https://numpy.org/doc/stable/release/2.5.0-notes.html">NumPy 2.5 发布说明</a></p>
+<h3>矩阵操作</h3>
+<p>矩阵的拼接有以下两种方式：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904328878885.DliYGuxD_Z1uXcMI.webp" alt="图 35：矩阵操作" /></p>
+<p>对二维数组，<a href="https://numpy.org/doc/stable/reference/generated/numpy.vstack.html"><code>vstack</code></a> 沿轴 0 拼接，<a href="https://numpy.org/doc/stable/reference/generated/numpy.hstack.html"><code>hstack</code></a> 沿轴 1 拼接。一维数组传给 <code>vstack</code> 时会按行处理；<code>hstack</code> 则会直接拼接多个一维数组，但不能直接混合一维和二维输入。若要把一维数组作为新列拼到矩阵旁边，应先用 <code>v[:, None]</code> 转成列向量，或使用 <a href="https://numpy.org/doc/stable/reference/generated/numpy.column_stack.html"><code>column_stack</code></a>：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904279617552.C_QihknZ_2onR1T.webp" alt="图 36：矩阵操作" /></p>
+<p>更通用的 <code>concatenate</code> 沿已有轴拼接，<code>stack</code> 则插入一个新轴。例如两个形状为 <code>(2, 3)</code> 的数组沿轴 0 拼接会得到 <code>(4, 3)</code>，沿新轴堆叠则可得到 <code>(2, 2, 3)</code>。除拼接轴之外的尺寸必须匹配，<code>stack</code> 的各输入形状必须一致。</p>
+<p>拆分数组可以用 <code>split</code>、<code>hsplit</code> 和 <code>vsplit</code>。按份数平均拆分时，<code>split</code> 要求整除；不能整除但希望尽量均分时使用 <code>array_split</code>：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904280933878.43ZmXWGP_1sTfvl.webp" alt="图 37：矩阵操作" /></p>
+<p><a href="https://numpy.org/doc/stable/reference/generated/numpy.tile.html"><code>tile</code></a> 按块重复整个数组，<a href="https://numpy.org/doc/stable/reference/generated/numpy.repeat.html"><code>repeat</code></a> 按元素重复；指定 <code>axis</code> 后，<code>repeat</code> 可以重复行或列。二者会实际扩展数据，单纯为运算对齐形状时，应先考虑广播。</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904317209107.DzT1RibG_1Cb9Dk.webp" alt="图 38：矩阵操作" /></p>
+<p><a href="https://numpy.org/doc/stable/reference/generated/numpy.delete.html"><code>np.delete</code></a> 返回删除指定行或列后的新数组，并不原地删除：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904310122789.BqgGBSXk_1V9Nl4.webp" alt="图 39：矩阵操作" /></p>
+<p>相应的 <a href="https://numpy.org/doc/stable/reference/generated/numpy.insert.html"><code>np.insert</code></a> 返回插入后的新数组；索引传入标量还是列表，也可能影响插入值的形状解释：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904280242562.CMaHi1b8_Z1Mw4dV.webp" alt="图 40：矩阵操作" /></p>
+<p><a href="https://numpy.org/doc/stable/reference/generated/numpy.append.html"><code>np.append</code></a> 同样返回新数组，省略 <code>axis</code> 时会先展平输入。指定轴时，需要满足维数与其他轴长度要求；增加一列通常用 <code>v[:, None]</code> 配合 <code>concatenate</code>，或直接使用 <code>column_stack</code>：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904183987661.BkNLy8_a_Z1g7OkQ.webp" alt="图 41：矩阵操作" /></p>
+<p>如果仅仅是向数组的边界添加常量值，<a href="https://numpy.org/doc/stable/reference/generated/numpy.pad.html">pad</a>函数是足够的：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904183554221.DFaZjSjN_Z2sPvuS.webp" alt="图 42：矩阵操作" /></p>
+<h3>网格坐标（Meshgrids）</h3>
+<p>广播机制使得meshgrids变得容易。例如需要下图所示（但尺寸大得多）的矩阵：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904181429299.BgMUtAS2_Z7T40X.webp" alt="图 43：网格坐标（Meshgrids）" /></p>
+<p>上述两种方法由于使用了循环，因此都比较慢。<a href="https://www.mathworks.com/products/matlab.html">MATLAB</a>通过构建meshgrid处理这种问题。</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904182314821.qDHvDu-F_ZGMTAr.webp" alt="图 44：网格坐标（Meshgrids）" /></p>
+<p><code>meshgrid</code> 可以把多个坐标向量扩展为网格坐标；<a href="https://numpy.org/doc/stable/reference/generated/numpy.mgrid.html"><code>mgrid</code></a> 用切片语法生成稠密网格，<a href="https://numpy.org/doc/stable/reference/generated/numpy.indices.html"><code>indices</code></a> 按给定形状生成索引网格。<a href="https://numpy.org/doc/stable/reference/generated/numpy.fromfunction.html"><code>fromfunction</code></a> 将各轴坐标数组传入函数，函数需要能对数组运算，并不是自动加速任意 Python 标量回调。</p>
+<p>也可以只保存形状为 <code>(m, 1)</code> 和 <code>(1, n)</code> 的坐标，再通过广播计算网格值。<code>meshgrid</code> 默认 <code>copy=True, sparse=False</code>，会生成稠密坐标数组；设置 <code>sparse=True</code>，或使用 <code>ogrid</code>，可减少坐标数组的内存占用。<code>copy=False</code> 可能得到共享内存的非连续数组，需要谨慎修改。即使坐标是稀疏的，广播后得到的 <code>(m, n)</code> 结果通常仍需要完整内存。<a href="https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html">meshgrid 文档</a></p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904184956232.BxwyVWTx_1zSCvP.webp" alt="图 45：网格坐标（Meshgrids）" /></p>
+<p><code>meshgrid(x, y, indexing="xy")</code> 默认采用笛卡尔坐标约定，二维输出形状为 <code>(len(y), len(x))</code>；使用 <code>indexing="ij"</code> 时，输出形状为 <code>(len(x), len(y))</code>，与矩阵索引更一致。它改变的是前两个轴的布局，不应简单理解为任意交换参数。</p>
+<pre><code>import numpy as np
+
+i = np.arange(3)
+j = np.arange(4)
+I, J = np.meshgrid(i, j, indexing="ij", sparse=True)
+grid = 10 * I + J
+assert grid.shape == (3, 4)
+assert np.array_equal(grid, i[:, None] * 10 + j[None, :])
+</code></pre>
+<p>除了在二维或三维网格上初始化函数外，网格还可以用于索引数组：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904322553603.C9N9nOvL_16vIoq.webp" alt="图 46：网格坐标（Meshgrids）" /></p>
+<pre><code>import numpy as np
+
+a = np.arange(20).reshape(4, 5)
+rows = [0, 2]
+cols = [1, 3]
+paired = a[rows, cols]                # [1, 13]
+submatrix = a[np.ix_(rows, cols)]     # [[1, 3], [11, 13]]
+assert paired.shape == (2,)
+assert submatrix.shape == (2, 2)
+</code></pre>
+<p>通过 <code>np.ix_(rows, cols)</code> 可以选取指定行与指定列的笛卡尔积；直接写 <code>a[rows, cols]</code> 则是配对取元素。稀疏网格也能用于广播索引，但这类整数数组索引读取会返回副本。</p>
+<h3>矩阵统计</h3>
+<p>就像sum函数，numpy提供了矩阵不同轴上的<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.min.html">min</a>/<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.max.html">max</a>, <a href="https://numpy.org/doc/stable/reference/generated/numpy.argmin.html">argmin</a>/<a href="https://numpy.org/doc/stable/reference/generated/numpy.argmax.html">argmax</a>, <a href="https://numpy.org/doc/stable/reference/generated/numpy.mean.html">mean</a>/<a href="https://numpy.org/doc/stable/reference/generated/numpy.median.html">median</a>/<a href="https://numpy.org/doc/stable/reference/generated/numpy.percentile.html">percentile</a>, <a href="https://numpy.org/doc/stable/reference/generated/numpy.std.html">std</a>/<a href="https://numpy.org/doc/stable/reference/generated/numpy.var.html">var</a>等函数。</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904331724654.CKo5tYwj_2itcuX.webp" alt="图 47：矩阵统计" /></p>
+<p><a href="https://numpy.org/doc/stable/reference/generated/numpy.amin.html"><code>np.amin</code></a> 与 <code>np.min</code> 等效，<code>np.amax</code> 与 <code>np.max</code> 等效。采用 <code>np.</code> 前缀即可避免与 Python 内置名称混淆。<code>std</code> 和 <code>var</code> 默认 <code>ddof=0</code>，除数为 N；需要通常的样本方差估计时用 <code>ddof=1</code>，除数为 N−1，并确保有效样本数大于 1。<a href="https://numpy.org/doc/stable/reference/generated/numpy.std.html">std 文档</a></p>
+<p>对二维或更高维数组，不指定 <code>axis</code> 的 <code>argmin</code>、<code>argmax</code> 返回展平后的索引，可用 <code>np.unravel_index(index, a.shape)</code> 转回坐标。指定 <code>axis</code> 时，返回的是沿该轴的局部位置，而不是全数组的扁平索引：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904184139950.DV4z3DmX_Z2rRkE3.webp" alt="图 48：矩阵统计" /></p>
+<p><a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html">all</a>和<a href="https://numpy.org/doc/stable/reference/generated/numpy.any.html">any</a>同样也可作用于特定维度：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904185881172._MjJM4tL_Zmszqk.webp" alt="图 49：矩阵统计" /></p>
+<h3>矩阵排序</h3>
+<p>排序中的 <code>axis</code> 决定沿哪一个轴独立排列元素：二维数组按 <code>axis=0</code> 排序会分别重排各列，按 <code>axis=1</code> 排序会分别重排各行；这通常会破坏一整行作为一条记录时的字段对应关系。<code>axis=None</code> 则展平后排序：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904170373492.CiPdS_td_Z17vwE4.webp" alt="图 50：矩阵排序" /></p>
+<p>若每一行代表一条记录，需要根据某些列生成行索引，再用这些索引移动整行。<code>axis</code> 并不能替代排序键，但以下方法可以实现：</p>
+<p>第一种方法：<code>a[np.argsort(a[:, 0], stable=True)]</code> 按索引为 0 的列排列整行：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904183690309.gs_jJFth_21fcqB.webp" alt="图 51：矩阵排序" /></p>
+<p>其中，argsort返回排序后的原始数组的索引数组。</p>
+<p>多轮稳定排序必须从最低优先级的键开始，逐步排到最高优先级的键。例如先按第 2 列，再按第 1 列，最后按第 0 列，使第 0 列成为主键（列编号从 0 开始）：</p>
+<pre><code>import numpy as np
+
+a = np.array([[2, 1, 0], [1, 2, 1], [1, 1, 3], [1, 1, 2]])
+a = a[np.argsort(a[:, 2], stable=True)]
+a = a[np.argsort(a[:, 1], stable=True)]
+a = a[np.argsort(a[:, 0], stable=True)]
+</code></pre>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904169822608.BYbpK8CJ_2iLrBj.webp" alt="图 52：矩阵排序" /></p>
+<p>第二种方法：<code>lexsort</code> 直接执行多键稳定排序，传入的最后一个键优先级最高。它按键数组工作，而不是固定“按行”理解；为了排列二维表的整行，可以把所需列作为多个一维键传入。<a href="https://numpy.org/doc/stable/reference/generated/numpy.lexsort.html">lexsort 文档</a></p>
+<p>例如，先按索引为 2 的列、再按索引为 5 的列排序，写作 <code>a[np.lexsort((a[:, 5], a[:, 2]))]</code>，或 <code>a[np.lexsort(a[:, [2, 5]].T[::-1])]</code>。注意 <code>a[:, [2, 5]]</code> 才是选取两列，<code>a[2, 5]</code> 只选取一个元素。按从左到右的所有列排序，可写 <code>a[np.lexsort(a.T[::-1])]</code>：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904270866507.CQMSlXwl_ZqhY4.webp" alt="图 53：矩阵排序" /></p>
+<pre><code>import numpy as np
+
+a = np.array([[2, 0, 1], [1, 9, 2], [1, 4, 1], [1, 4, 0]])
+order = np.lexsort((a[:, 1], a[:, 0]))  # 第 0 列为主键，第 1 列为次键
+sorted_rows = a[order]
+assert np.array_equal(sorted_rows[:, 0], [1, 1, 1, 2])
+</code></pre>
+<p><a href="https://numpy.org/doc/stable/reference/generated/numpy.flipud.html"><code>flipud(a)</code></a> 沿轴 0 翻转，相当于 <code>a[::-1, ...]</code>；<code>fliplr(a)</code> 沿轴 1 翻转，要求输入至少是二维数组。对一维数组直接使用 <code>a[::-1]</code> 或 <code>np.flip(a)</code>。<a href="https://numpy.org/doc/stable/reference/generated/numpy.fliplr.html">fliplr 文档</a></p>
+<p>第三种方法：结构化数组可以通过 <code>np.sort(a, order=["字段名1", "字段名2"])</code> 按命名字段排序。普通二维数值数组没有这些字段，通常使用 <a href="https://numpy.org/doc/stable/reference/generated/numpy.argsort.html"><code>argsort</code></a> 或 <code>lexsort</code> 更直观。</p>
+<p>第四种方法：若数据本身是表格，pandas 的 <code>DataFrame.sort_values</code> 可以明确指定排序列：</p>
+<ul>
+<li>
+<p><code>pd.DataFrame(a).sort_values(by=[2, 5]).to_numpy()</code>：先按索引为 2 的列排序，再按索引为 5 的列排序。</p>
+</li>
+<li>
+<p><code>pd.DataFrame(a).sort_values(by=list(range(a.shape[1]))).to_numpy()</code>：依次按从左到右的所有列排序。<code>DataFrame.sort_values</code> 需要提供 <code>by</code>，不能无参数调用。</p>
+</li>
+</ul>
+<p>使用前先执行 <code>import pandas as pd</code>；pandas 是单独的依赖。<a href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.sort_values.html">pandas 排序文档</a></p>
+<h2>3. 三维及更高维数组</h2>
+<p>三维数组可以由一维数据 <code>reshape</code> 得到，也可以从规则的嵌套列表创建。若把形状理解为 <code>(平面数, 行数, 列数)</code>，索引就可记为 <code>(z, y, x)</code>：<code>z</code> 选择平面，<code>(y, x)</code> 在平面内定位。这是应用中的一种约定，NumPy 本身并不会给各轴赋予空间含义：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904281893573.zuR3nDQG_Z1IySCi.webp" alt="图 54：3. 三维及更高维数组" /></p>
+<p>这种布局适合保存一组灰度图像：形状为 <code>(张数, 高度, 宽度)</code> 时，<code>a[i]</code> 就是第 i 张图像。</p>
+<p>处理一张彩色图像时，常见布局则是 <code>(高度, 宽度, 通道数)</code>，也就是 <code>(y, x, channel)</code>。通道不是几何深度：<a href="https://matplotlib.org/">Matplotlib</a> 常用 RGB 顺序，OpenCV 的常见彩色读图接口使用 BGR 顺序：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904176242217.Dji7x51p_1lFh7I.webp" alt="图 55：3. 三维及更高维数组" /></p>
+<p>在这种布局中，<code>a[i, j]</code> 给出像素 <code>(i, j)</code> 的通道值向量；若为 RGB 图像且有三个通道，它的形状就是 <code>(3,)</code>。</p>
+<p>因此，几何形状的创建实际取决于你对域的约定：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904182633852.qkng0Zb4_ZM6V45.webp" alt="图 56：3. 三维及更高维数组" /></p>
+<p><code>hstack</code>、<code>vstack</code>、<code>dstack</code> 只按固定的轴规则工作，并不识别图像的空间或颜色语义。对三维数组，它们分别沿轴 1、轴 0、轴 2 拼接；恰好在 <code>(高度, 宽度, 通道数)</code> 布局下对应横向、纵向和通道方向：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904186643859.Cb7afc58_ZSN1mm.webp" alt="图 57：3. 三维及更高维数组" /></p>
+<p>如果数据不是这样的布局，使用concatenate命令可以方便的堆叠图像，并通过axis参数提供索引号：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904186103756.CZZBlb5B_1C04tc.webp" alt="图 58：3. 三维及更高维数组" /></p>
+<p>也可以先用 <code>np.moveaxis</code> 把目标轴移动到适当位置，完成堆叠后再移回：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904347219716.CPZRm7p-_Z1g5MLk.webp" alt="图 59：3. 三维及更高维数组" /></p>
+<p>对普通 <code>ndarray</code>，<code>moveaxis</code>、<code>swapaxes</code> 和 <code>transpose</code> 主要通过重排形状与步幅返回共享数据的视图，不必复制整块元素；不过，随后的拼接会分配输出数组，转成连续内存布局时也可能发生复制。</p>
+<p>交换图像的高宽轴时，先检查数据布局。对 <code>(平面数, 高度, 宽度)</code>，使用 <code>a.swapaxes(1, 2)</code>；对 <code>(高度, 宽度, 通道数)</code>，使用 <code>a.swapaxes(0, 1)</code>：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904300483631.CpivfozA_GRdqf.webp" alt="图 60：3. 三维及更高维数组" /></p>
+<p><a href="https://numpy.org/doc/stable/reference/generated/numpy.transpose.html"><code>transpose</code></a> 不指定轴时会逆转全部轴顺序，<code>.T</code> 也是如此。对形状 <code>(2, 3, 4)</code> 的数组，<code>.T</code> 得到 <code>(4, 3, 2)</code>，并不等同于只交换两个空间轴。处理一批矩阵时，<code>np.swapaxes(a, -1, -2)</code> 可以只交换最后两个轴。</p>
+<p>广播机制同样适用于更高维数组。例如形状 <code>(batch, height, width, channels)</code> 的图像批次，可以直接减去形状为 <code>(channels,)</code> 的通道均值。始终从最后一个轴向左检查形状，必要时用 <code>None</code> 显式插入长度为 1 的轴。更多示例可参阅“<a href="https://towardsdatascience.com/broadcasting-in-numpy-58856f926d73?sk=d3f8527b160fba2ad87e201369279e52">NumPy 中的广播</a>”。</p>
+<p>最后介绍<a href="https://numpy.org/doc/stable/reference/generated/numpy.einsum.html">einsum</a>(Einstein summation)函数，这将使你在处理多维数组时避免很多Python循环，代码更为简洁：</p>
+<p><img src="https://miku.nikonikoni.blog/_astro/1609904306908487.BoGsngC2_Z1bLHDG.webp" alt="图 61：3. 三维及更高维数组" /></p>
+<p><code>einsum</code> 用下标表达逐元素乘法、轴排列与求和收缩。在显式形式中，<code>-&gt;</code> 左侧描述输入轴，右侧指定保留的输出轴；未出现在输出中的标签会被求和，同一输入中的重复标签可以取对角线。例如 <code>np.einsum("ij,jk-&gt;ik", a, b)</code> 对 j 求和，就是矩阵乘法。<a href="https://numpy.org/doc/stable/reference/generated/numpy.einsum.html">einsum 文档</a></p>
+<pre><code>import numpy as np
+
+a = np.arange(6).reshape(2, 3)
+b = np.arange(12).reshape(3, 4)
+product = np.einsum("ij,jk-&gt;ik", a, b, optimize=True)
+assert np.array_equal(product, a @ b)
+
+u = np.arange(24).reshape(2, 3, 4)
+v = np.arange(40).reshape(4, 2, 5)
+contracted = np.einsum("ijk,klm-&gt;ijlm", u, v, optimize=True)
+assert np.array_equal(contracted, np.tensordot(u, v, axes=1))
+</code></pre>
+<p><code>np.tensordot(a, b, axes=1)</code> 收缩第一个数组的最后一轴与第二个数组的第一轴，参数名是 <code>axes</code>。更复杂的对应关系可以显式传入轴列表。<code>einsum</code> 并不保证比 <code>@</code> 或 <code>tensordot</code> 更快；收缩顺序、内存布局与中间数组都会影响性能，可用 <code>optimize=True</code> 或 <code>np.einsum_path</code> 优化并实测。<a href="https://numpy.org/doc/stable/reference/generated/numpy.tensordot.html">tensordot 文档</a></p>
+<h2>参考</h2>
+<ol>
+<li>Scott Sievert, <a href="https://stsievert.com/blog/2016/07/01/numpy-gpu">NumPy GPU acceleration</a></li>
+<li>Jay Alammar, <a href="http://jalammar.github.io/visual-numpy/">A Visual Intro to NumPy and Data Representation</a></li>
+<li><a href="https://www.bigocheatsheet.com/">Big-O Cheat Sheet site</a></li>
+<li><a href="https://wiki.python.org/moin/TimeComplexity">Python Time Complexity wiki page</a></li>
+<li>NumPy Issue #14989, <a href="https://github.com/numpy/numpy/pull/14989">Reverse param in ordering functions</a></li>
+<li>NumPy Issue #2269, <a href="https://github.com/numpy/numpy/issues/2269">First nonzero element</a></li>
+<li><a href="https://numba.pydata.org/">Numba library homepage</a></li>
+<li><a href="https://floating-point-gui.de/errors/comparison/">The Floating-Point Guide, Comparison</a></li>
+<li>NumPy Issue #10161, <a href="https://github.com/numpy/numpy/issues/10161">numpy.isclose vs math.isclose</a></li>
+<li><a href="https://github.com/rougier/numpy-100">100 NumPy exercises on GitHub</a></li>
+</ol>
+]]></content>
+    <author>
+      <name>nikonikoni</name>
+    </author>
+    <category term="LearnPy"></category>
+    <category term="Tutorial"></category>
+  </entry>
   <entry>
     <title>LearnCpp 类</title>
     <link href="https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB/" rel="alternate" type="text/html"/>
@@ -1187,6 +1572,500 @@ void print(T value)
     <category term="Tutorial"></category>
   </entry>
   <entry>
+    <title>LearnCpp 作用域、变量与命名空间</title>
+    <link href="https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/" rel="alternate" type="text/html"/>
+    <id>https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</id>
+    <published>2026-08-19T00:00:00.000Z</published>
+    <updated>2026-08-19T00:00:00.000Z</updated>
+    <summary>LearnCpp 作用域、变量与命名空间笔记，介绍代码块、用户命名空间、局部与全局变量、变量遮蔽、静态局部变量以及 using 语句。</summary>
+    <content type="html"><![CDATA[<h1>LearnCpp 作用域、变量与命名空间</h1>
+<h2>7.1 复合语句（代码块）</h2>
+<p><strong>复合语句</strong>（compound statement）也称为<strong>代码块</strong>（block）或<strong>块语句</strong>（block statement），由零条或多条语句组成，但编译器把整个代码块当作一条语句处理。</p>
+<p>代码块以 <code>{</code> 开始，以 <code>}</code> 结束。凡是语法要求一条语句的地方，都可以放置一个代码块。代码块的右花括号后不需要分号。</p>
+<pre><code>int add(int x, int y)
+{ // 代码块开始
+    return x + y;
+} // 代码块结束，无分号
+
+int main()
+{
+    int value{}; // 这里的花括号用于初始化，不是代码块
+    add(3, 4);
+
+    return 0;
+}
+</code></pre>
+<p>函数体本身就是代码块。用于列表初始化的花括号并不构成代码块。</p>
+<h3>嵌套代码块</h3>
+<p>函数不能定义在另一个函数内部，但代码块可以嵌套在其他代码块中。包含其他代码块的块称为<strong>外层代码块</strong>，被包含的块称为<strong>内层代码块</strong>或<strong>嵌套代码块</strong>。</p>
+<pre><code>int main()
+{ // 外层代码块
+    int value{};
+
+    { // 内层代码块
+        value = 7;
+    }
+
+    return 0;
+}
+</code></pre>
+<p>代码块的常见用途是让 <code>if</code> 或 <code>else</code> 条件控制多条语句。<code>if</code> 默认只控制紧随其后的一条语句；以代码块替代该语句后，块内所有语句会作为一个整体执行。</p>
+<pre><code>if (value &gt;= 0)
+{
+    std::cout &lt;&lt; value &lt;&lt; " is non-negative\n";
+    std::cout &lt;&lt; "Double: " &lt;&lt; value * 2 &lt;&lt; '\n';
+}
+else
+{
+    std::cout &lt;&lt; value &lt;&lt; " is negative\n";
+    std::cout &lt;&lt; "Absolute value: " &lt;&lt; -value &lt;&lt; '\n';
+}
+</code></pre>
+<h3>嵌套层级</h3>
+<p>函数的<strong>嵌套层级</strong>或<strong>嵌套深度</strong>，是执行到函数中某一点时最多能同时位于多少层代码块之内，函数最外层代码块也计入。嵌套层级不是代码块总数：两个并列的三级代码块仍只产生三级深度。</p>
+<p>C++ 标准建议编译器至少支持 256 层嵌套，但并非所有实现都达到这一数量。可编译不等于易读；过深嵌套会使控制关系难以追踪。</p>
+<p><strong>最佳实践</strong></p>
+<p>函数的嵌套层级尽量不超过 3。需要更深嵌套时，通常应把最深处的代码提取为独立函数。</p>
+<h2>7.2 用户定义命名空间与作用域解析运算符</h2>
+<p>当两个相同标识符被引入同一作用域，而编译器无法判断应使用哪一个时，就会发生<strong>命名冲突</strong>（naming collision）。冲突可能由编译器报告，也可能在多个翻译单元链接时由链接器报告。</p>
+<p>同一作用域中的每个名称都可能与其他名称冲突。因此，标识符数量线性增加时，潜在冲突组合会大幅增加。这也是应把标识符定义在最小可用作用域内的重要原因。</p>
+<p>例如，两个源文件都在全局作用域定义 <code>doSomething(int, int)</code>，即使程序从未调用该函数，链接器仍会在处理重复定义时报告错误。直接改名能够消除冲突，却需要同步修改所有调用点。命名空间可以让名称保持不变，同时把它们放入不同作用域。</p>
+<h3>定义命名空间</h3>
+<p>程序定义的命名空间使用 <code>namespace</code> 关键字：</p>
+<pre><code>namespace Foo
+{
+    int doSomething(int x, int y)
+    {
+        return x + y;
+    }
+}
+
+namespace Goo
+{
+    int doSomething(int x, int y)
+    {
+        return x - y;
+    }
+}
+</code></pre>
+<p>命名空间只能定义在全局作用域或另一个命名空间内，不能定义在函数内部。命名空间内容通常缩进一级；右花括号后的分号是可选的。</p>
+<p>历史上，命名空间名通常使用小写，许多风格指南仍采用这种约定。LearnCpp 推荐程序定义的命名空间以大写字母开头，理由包括：</p>
+<ul>
+<li>与程序定义类型的命名约定保持一致；</li>
+<li>降低与系统或库提供的小写名称冲突的概率；</li>
+<li>C++20 标准文本与 C++ Core Guidelines 采用这种风格。</li>
+</ul>
+<p>大写与小写两种风格都有效，项目内保持一致更重要。</p>
+<h3>作用域解析运算符</h3>
+<p>把函数移入 <code>Foo</code> 和 <code>Goo</code> 后，原先位于全局作用域的前置声明不再与它们匹配。编译器可能接受该全局声明，但链接器找不到对应的全局定义。</p>
+<p><strong>作用域解析运算符</strong> <code>::</code> 用于明确指定标识符所在的作用域。左操作数是要查找的作用域，右操作数是该作用域内的标识符。</p>
+<pre><code>std::cout &lt;&lt; Foo::doSomething(4, 3) &lt;&lt; '\n'; // 7
+std::cout &lt;&lt; Goo::doSomething(4, 3) &lt;&lt; '\n'; // 1
+</code></pre>
+<p>显式限定名称能够消除两个同名函数之间的歧义。<code>::name</code> 没有左侧命名空间名时，表示从全局命名空间查找 <code>name</code>：</p>
+<pre><code>void print()
+{
+    std::cout &lt;&lt; "global\n";
+}
+
+namespace Foo
+{
+    void print()
+    {
+        std::cout &lt;&lt; "Foo\n";
+    }
+
+    void callBoth()
+    {
+        print();   // Foo::print()
+        ::print(); // 全局命名空间中的 print()
+    }
+}
+</code></pre>
+<p>在命名空间内部使用未限定名称时，编译器先查找当前命名空间，再依次查找各层外部命名空间，最后查找全局命名空间。<code>::</code> 可以跳过这套逐层查找，直接要求使用全局名称。</p>
+<h3>声明、定义与多个命名空间块</h3>
+<p>命名空间中标识符的前置声明和定义必须位于同一命名空间。头文件中的声明、源文件中的定义以及调用点应保持一致：</p>
+<pre><code>// add.h
+namespace BasicMath
+{
+    int add(int x, int y);
+}
+
+// add.cpp
+#include "add.h"
+
+namespace BasicMath
+{
+    int add(int x, int y)
+    {
+        return x + y;
+    }
+}
+
+// main.cpp
+#include "add.h"
+
+int result{ BasicMath::add(4, 3) };
+</code></pre>
+<p>若声明留在全局命名空间，编译器看不到 <code>BasicMath::add</code> 的声明；若定义留在全局命名空间，链接器找不到 <code>BasicMath::add</code> 的定义。</p>
+<p>同一命名空间可以在同一文件的多个位置或不同文件中反复打开。所有同名命名空间块的声明都属于同一命名空间。标准库头文件正是通过多个 <code>namespace std</code> 块共同组成 <code>std</code>。</p>
+<p><strong>警告</strong></p>
+<p>不要向 <code>std</code> 命名空间添加自定义功能。除标准明确允许的少数情况外，这通常会导致未定义行为。</p>
+<h3>嵌套命名空间</h3>
+<p>命名空间可以嵌套：</p>
+<pre><code>namespace Foo
+{
+    namespace Goo
+    {
+        int add(int x, int y)
+        {
+            return x + y;
+        }
+    }
+}
+
+int sum{ Foo::Goo::add(1, 2) };
+</code></pre>
+<p>C++17 可以使用等价的紧凑语法：</p>
+<pre><code>namespace Foo::Goo
+{
+    int add(int x, int y)
+    {
+        return x + y;
+    }
+}
+</code></pre>
+<p>之后仍可单独重新打开 <code>namespace Foo</code>，向 <code>Foo</code> 而不是 <code>Foo::Goo</code> 添加声明。选择传统嵌套写法还是 C++17 紧凑写法属于风格问题。</p>
+<h3>命名空间别名</h3>
+<p>长命名空间链可以通过别名临时缩短：</p>
+<pre><code>namespace Active = Foo::Goo;
+
+int result{ Active::add(1, 2) };
+</code></pre>
+<p>命名空间别名遵循其声明位置的作用域规则。例如，函数块内声明的 <code>Active</code> 会在该块结束时失效。别名还提供一层间接性：实现迁移到 <code>V2</code> 后，只需把别名改为 <code>namespace Active = V2;</code>，调用点仍可保持 <code>Active::add()</code>。</p>
+<h3>命名空间的使用尺度</h3>
+<p>命名空间的首要目的不是建立信息层次，而是防止命名冲突。标准库主体位于单一顶层命名空间 <code>std</code>；名称较多的新组件也会采用嵌套命名空间，例如 <code>std::ranges</code>。</p>
+<ul>
+<li>小型、仅供个人使用的程序通常不必放入自定义命名空间。</li>
+<li>引入大量第三方库的较大项目可用命名空间降低冲突风险。</li>
+<li>会分发给其他项目使用的代码应放入命名空间；一个独特的顶层命名空间通常已经足够，也便于编辑器自动补全展示库的公开名称。</li>
+<li>多团队项目常采用“项目或库::模块”“组织::项目或库”，或“组织::项目或库::模块”的两至三级结构。</li>
+<li>模块级命名空间可区分可复用代码与应用专用代码；目录结构也能承担一部分组织职责。</li>
+</ul>
+<p>命名空间一般不应嵌套超过 3 层。</p>
+<h2>7.3 局部变量</h2>
+<p>定义在函数内部的变量，包括函数形参，称为<strong>局部变量</strong>。C++ 并不存在一个单独属性来判定“局部”；局部变量的行为由作用域、存储期和链接属性共同构成。</p>
+<h3>块作用域</h3>
+<p>标识符的<strong>作用域</strong>决定源代码中哪些位置可以访问它。能够访问时称为“在作用域内”，不能访问时称为“超出作用域”。作用域是编译期属性；访问超出作用域的标识符会产生编译错误。</p>
+<p>局部变量具有<strong>块作用域</strong>：从定义点开始进入作用域，到所在代码块末尾离开作用域。</p>
+<pre><code>int main()
+{
+    int i{ 5 };      // i 从这里进入作用域
+    double d{ 4.0 }; // d 从这里进入作用域
+
+    return 0;
+} // d 和 i 在这里离开作用域
+</code></pre>
+<p>普通函数的形参虽然写在函数体之前，但通常可以把它们视为处于函数体代码块的作用域中。</p>
+<p>同一作用域中的变量名必须唯一。形参与函数体顶层局部变量属于同一作用域，因此不能重名：</p>
+<pre><code>void someFunction(int x)
+{
+    int x{}; // 错误：与形参 x 冲突
+}
+</code></pre>
+<h3>自动存储期与生命周期</h3>
+<p>变量的<strong>存储期</strong>（storage duration）规定变量何时以及如何创建和销毁；多数情况下，存储期直接决定变量的<strong>生命周期</strong>，即对象从实际创建到实际销毁的时间。</p>
+<p>局部变量默认具有<strong>自动存储期</strong>：执行到定义处时创建，在所在代码块结束时销毁。因此局部变量也称为<strong>自动变量</strong>。</p>
+<p>作用域与生命周期描述不同维度：作用域是名称能否在某段源代码中被使用的编译期属性；生命周期是对象在运行时是否存在。</p>
+<h3>嵌套块中的局部变量</h3>
+<p>内层变量只能从其定义点使用到内层块末尾；离开内层块后，它既超出作用域，也被销毁。外层块的作用域包含其嵌套块，因此外层变量在内层块中仍然可见。</p>
+<pre><code>int main()
+{
+    int x{ 5 };
+
+    {
+        int y{ 7 };
+        std::cout &lt;&lt; x + y &lt;&lt; '\n'; // x 与 y 都在作用域内
+    } // y 离开作用域并被销毁
+
+    // y 在这里不可访问
+    return 0;
+} // x 离开作用域并被销毁
+</code></pre>
+<h3>无链接</h3>
+<p>标识符的<strong>链接属性</strong>决定不同作用域中的同名声明是否指向同一对象或函数。局部变量没有链接属性（no linkage）；每个声明都表示一个独立对象。</p>
+<pre><code>int main()
+{
+    int x{ 2 };
+
+    {
+        int x{ 3 }; // 与外层 x 是不同对象
+    }
+}
+</code></pre>
+<p>作用域回答“单个声明在哪里可见”，链接属性回答“多个声明是否指向同一实体”，二者不能混为一谈。</p>
+<h3>使用最小的现有作用域</h3>
+<p>变量应定义在能够满足使用需求的最小现有作用域内。较小的作用域减少同时活跃的变量数量，也让变量可能被使用的位置更容易辨认。</p>
+<p>如果变量只在嵌套块中使用，就在该块中定义。如果变量离开内层块后仍要使用，则必须在外层块中定义；这种需求可能导致变量早于首次使用声明。</p>
+<p>不应仅为缩短变量作用域而额外创建代码块，因为这会让整个函数变长并增加结构复杂度。若一段代码确实值得形成独立作用域，通常更适合提取为函数。</p>
+<p><strong>最佳实践</strong></p>
+<p>在最小的现有作用域内定义变量。不要创建唯一目的只是限制变量作用域的新代码块。</p>
+<h2>7.4 全局变量简介</h2>
+<p>定义在函数外部的变量称为<strong>全局变量</strong>。按惯例，全局变量放在文件顶部、<code>#include</code> 指令之后。</p>
+<pre><code>#include &lt;iostream&gt;
+
+int g_x{}; // 全局变量
+
+void setValue()
+{
+    g_x = 3;
+}
+
+int main()
+{
+    setValue();
+    std::cout &lt;&lt; g_x &lt;&lt; '\n';
+}
+</code></pre>
+<h3>全局命名空间作用域</h3>
+<p>在全局命名空间中声明的标识符具有<strong>全局命名空间作用域</strong>，常简称为全局作用域，也会被非正式地称为文件作用域。它从声明点持续到所在文件末尾。</p>
+<p>全局变量也可以定义在用户命名空间中：</p>
+<pre><code>namespace Foo
+{
+    int x{};
+}
+
+void setValue()
+{
+    Foo::x = 3;
+}
+</code></pre>
+<p><code>x</code> 的名称受 <code>Foo</code> 限定，但仍可通过 <code>Foo::x</code> 在文件各处访问，所以它仍是全局变量。</p>
+<p><strong>最佳实践</strong></p>
+<p>全局变量优先定义在用户命名空间中，而不是直接放在全局命名空间。</p>
+<h3>静态存储期</h3>
+<p>全局变量具有<strong>静态存储期</strong>：在程序启动时、<code>main()</code> 执行前创建，在程序结束时销毁。具有静态存储期的变量有时也称为静态变量；这里的“静态”描述存储期，不要求变量写出 <code>static</code> 关键字。</p>
+<h3>命名全局变量</h3>
+<p>一些项目使用 <code>g</code> 或 <code>g_</code> 前缀标记全局变量。该前缀可以：</p>
+<ul>
+<li>降低与全局命名空间中其他标识符冲突的概率；</li>
+<li>减少无意遮蔽全局变量的可能；</li>
+<li>表明该变量会在当前函数结束后继续存在，对它的修改也会保留。</li>
+</ul>
+<p>命名空间中的全局变量常省略 <code>g_</code>，因为命名空间限定已经能降低冲突并表明其非局部来源；保留前缀仍可强调其静态存储期。</p>
+<p>用名称前缀编码类型的匈牙利命名法在现代 C++ 中通常价值有限；用 <code>g_</code>、<code>s_</code>、<code>m_</code> 表达作用域或存储期则仍能提供有用信息。</p>
+<p><strong>最佳实践</strong></p>
+<p>尤其对全局命名空间中的变量，可考虑使用 <code>g</code> 或 <code>g_</code> 前缀，将其与局部变量和函数形参区分。</p>
+<h3>初始化</h3>
+<p>具有静态存储期的变量在没有显式初始化器时会默认零初始化，这与默认未初始化的普通局部变量不同：</p>
+<pre><code>int g_x;       // 默认零初始化
+int g_y{};     // 值初始化，结果为零
+int g_z{ 1 };  // 初始化为 1
+</code></pre>
+<p>非常量全局变量可以省略初始化器。<code>const</code> 和 <code>constexpr</code> 全局变量必须初始化：</p>
+<pre><code>const int g_a;          // 错误
+constexpr int g_b;      // 错误
+const int g_c{ 1 };     // 正确
+constexpr int g_d{ 2 }; // 正确
+</code></pre>
+<p><strong>警告</strong></p>
+<p>通常应完全避免使用非常量全局变量。它们让任何可访问位置都能改变共享状态，使函数行为产生难以追踪的隐式依赖。</p>
+<h2>7.5 变量遮蔽（名称隐藏）</h2>
+<p>每个代码块都定义自己的作用域区域。内层块声明与外层变量同名的变量后，在两者作用域重叠的区域中，内层变量会<strong>隐藏</strong>外层变量。这称为<strong>名称隐藏</strong>（name hiding）或<strong>变量遮蔽</strong>（shadowing）。</p>
+<h3>局部变量之间的遮蔽</h3>
+<pre><code>int main()
+{
+    int apples{ 5 };
+
+    {
+        std::cout &lt;&lt; apples &lt;&lt; '\n'; // 外层 apples：5
+
+        int apples{ 0 }; // 从这里开始隐藏外层 apples
+        apples = 10;
+
+        std::cout &lt;&lt; apples &lt;&lt; '\n'; // 内层 apples：10
+    } // 内层 apples 被销毁
+
+    std::cout &lt;&lt; apples &lt;&lt; '\n'; // 外层 apples：5
+}
+</code></pre>
+<p>输出为：</p>
+<pre><code>5
+10
+5
+</code></pre>
+<p>遮蔽不会修改或销毁外层对象。内层声明出现前，未限定名称仍指向外层变量；从内层声明到代码块结束，名称指向内层变量。内层块结束后，外层名称重新可见，其值保持不变。</p>
+<p>如果没有声明内层 <code>apples</code>，内层块中的读取和赋值都会作用于外层变量，输出会是 <code>5</code>、<code>10</code>、<code>10</code>。</p>
+<p>在内层块中，没有语法可以直接访问被同名局部变量遮蔽的外层局部变量。</p>
+<h3>局部变量遮蔽全局变量</h3>
+<p>局部变量也可以遮蔽同名全局变量。局部变量在作用域内时，未限定名称指向局部对象：</p>
+<pre><code>int value{ 5 };
+
+int main()
+{
+    int value{ 7 };
+
+    ++value;     // 局部 value 变为 8
+    --(::value); // 全局 value 变为 4
+
+    std::cout &lt;&lt; value &lt;&lt; '\n';   // 8
+    std::cout &lt;&lt; ::value &lt;&lt; '\n'; // 4
+}
+</code></pre>
+<p>全局变量属于全局命名空间，所以即使被局部变量遮蔽，仍可通过无前缀作用域解析 <code>::value</code> 明确访问。这个办法不适用于被遮蔽的外层局部变量。</p>
+<p><strong>最佳实践</strong></p>
+<p>避免变量遮蔽。遮蔽容易让代码读取或修改错误的对象。为全局变量统一使用 <code>g_</code> 前缀可以简单地避免局部变量与全局变量同名。</p>
+<p>GCC 和 Clang 可用 <code>-Wshadow</code> 启用遮蔽警告，并提供 <code>-Wshadow=global</code>、<code>-Wshadow=local</code>、<code>-Wshadow=compatible-local</code> 等变体。Visual Studio 默认启用相应警告。</p>
+<h2>7.11 静态局部变量</h2>
+<p><code>static</code> 在不同上下文中含义不同：</p>
+<ul>
+<li>全局变量本身具有静态存储期；</li>
+<li><code>static</code> 修饰全局标识符时赋予其内部链接；</li>
+<li><code>static</code> 修饰局部变量时，把它的存储期从自动存储期改为静态存储期。</li>
+</ul>
+<p>本节的 <code>static</code> 指第三种用法。</p>
+<h3>跨函数调用保留值</h3>
+<p>普通局部变量每次执行到定义处都会创建，并在离开代码块时销毁：</p>
+<pre><code>void incrementAndPrint()
+{
+    int value{ 1 };
+    ++value;
+    std::cout &lt;&lt; value &lt;&lt; '\n';
+}
+</code></pre>
+<p>调用三次会输出三次 <code>2</code>。改为静态局部变量后：</p>
+<pre><code>void incrementAndPrint()
+{
+    static int s_value{ 1 };
+    ++s_value;
+    std::cout &lt;&lt; s_value &lt;&lt; '\n';
+}
+</code></pre>
+<p>初始化只发生一次。函数结束时，<code>s_value</code> 离开作用域而暂时不可访问，但对象不会被销毁。三次调用依次输出 <code>2</code>、<code>3</code>、<code>4</code>。</p>
+<p>静态局部变量兼具两类属性：名称具有局部变量的块作用域，对象却具有延续到程序结束的生命周期。它适合需要局部状态在多次函数调用之间保留的场景。</p>
+<h3>初始化规则</h3>
+<p>可零初始化或具有常量表达式初始化器的静态局部变量可以在程序启动时初始化。</p>
+<p>没有初始化器或具有非常量表达式初始化器的静态局部变量会在程序启动时先零初始化。具有非常量表达式初始化器的变量在程序第一次执行到定义处时完成初始化；后续调用跳过该定义，不会再次初始化。未显式初始化的静态局部变量最终保持默认的零值。</p>
+<p><strong>最佳实践</strong></p>
+<p>显式初始化静态局部变量。常用 <code>s</code> 或 <code>s_</code> 前缀表明局部变量具有静态存储期。</p>
+<h3>唯一 ID 生成器</h3>
+<pre><code>int generateID()
+{
+    static int s_itemID{ 0 };
+    return s_itemID++;
+}
+</code></pre>
+<p>第一次调用返回 <code>0</code>，第二次返回 <code>1</code>，之后每次递增。状态只能通过该函数改变，其他函数无法直接篡改 <code>s_itemID</code>。这种写法获得了全局变量“持续存在”的特征，同时把可见性限制在函数块内。</p>
+<p>该方案只有在整个程序确实只需要一个永不重置的 ID 序列时才合适。</p>
+<h3>静态局部常量</h3>
+<p>静态局部变量可以声明为 <code>const</code> 或 <code>constexpr</code>。如果函数需要一个创建或初始化成本较高的常量对象，普通局部变量会在每次调用时重复构造；静态局部常量只初始化一次，之后所有调用都复用该对象。</p>
+<p><strong>关键点</strong></p>
+<p>静态局部变量最适合用来避免每次函数调用都重复初始化昂贵的局部对象。静态局部常量通常可以安全使用。</p>
+<h3>不要用静态局部状态改变函数流程</h3>
+<p>非 <code>const</code> 静态局部变量会让函数调用隐式依赖先前调用。例如，用 <code>static bool s_isFirstCall</code> 让第一次调用显示一种提示、以后显示另一种提示，会造成相同参数的两次调用表现不同。调用者仅阅读调用点无法发现这种内部状态。</p>
+<p>这种函数难以复用：内部状态不能由调用者重置；当另一段流程希望重新执行“第一次调用”时，旧状态仍然存在。更好的做法是把差异作为参数传入，让调用者显式控制行为。若需要传入提示文本，<code>std::string_view</code> 参数通常比布尔标记更通用。</p>
+<p><strong>最佳实践</strong></p>
+<ul>
+<li><code>const</code> 静态局部变量通常可以使用。</li>
+<li>非 <code>const</code> 静态局部变量通常应避免。</li>
+<li>确实使用非 <code>const</code> 静态局部变量时，应确认该状态在整个程序中只有唯一实例、永远不需要重置，并且不用于改变控制流。</li>
+<li>需要多个各自保留状态的实例时，应使用函数对象等可实例化方案，而不是单个静态局部变量。</li>
+</ul>
+<h2>7.13 using 声明与 using 指令</h2>
+<p>标准库的名称最初位于全局命名空间，容易与程序名称冲突。命名空间在 1995 年标准化后，标准库功能迁移到 <code>std</code>。为兼容大量使用未限定标准库名称的旧代码，并减少反复书写限定符，C++ 提供了 using 语句。</p>
+<h3>限定名称与未限定名称</h3>
+<p><strong>限定名称</strong>带有关联作用域：</p>
+<pre><code>std::cout // 由命名空间 std 限定
+::foo     // 由全局命名空间限定
+</code></pre>
+<p>名称还可以由类名通过 <code>::</code> 限定，或由类对象、对象指针通过 <code>.</code>、<code>-&gt;</code> 限定：</p>
+<pre><code>C::s_member;
+obj.x;
+ptr-&gt;y;
+</code></pre>
+<p><strong>未限定名称</strong>不带作用域限定符，例如 <code>cout</code> 和 <code>x</code>。</p>
+<h3>using 声明</h3>
+<p><strong>using 声明</strong>让一个限定名称可以通过未限定名称使用：</p>
+<pre><code>int main()
+{
+    using std::cout;
+
+    cout &lt;&lt; "Hello world!\n";
+} // using 声明在此失效
+</code></pre>
+<p><code>using std::cout;</code> 表明当前作用域中的未限定 <code>cout</code> 应解析为 <code>std::cout</code>。若 <code>std::cout</code> 与另一个可见的 <code>cout</code> 发生名称冲突，该 using 声明指定的 <code>std::cout</code> 优先。</p>
+<p>每个名称需要单独的 using 声明，例如 <code>std::cout</code> 与 <code>std::cin</code> 各写一条。using 声明从声明点生效，持续到当前作用域末尾。它不如显式 <code>std::</code> 清晰，但放在源文件中所有 <code>#include</code> 指令之后时通常安全且可接受。</p>
+<h3>using 指令</h3>
+<p><strong>using 指令</strong>使指定命名空间中的所有标识符都可以在作用域内以未限定名称参与查找：</p>
+<pre><code>int main()
+{
+    using namespace std;
+
+    cout &lt;&lt; "Hello world!\n";
+}
+</code></pre>
+<p>从技术上说，using 指令并非真正把新名称声明到当前作用域，而是让这些名称在某个外层作用域中参与查找。实际结果仍是该命名空间的大量名称都成为未限定名称查找的候选项。</p>
+<p>using 指令曾用于让命名空间出现前的旧代码以很小改动继续使用标准库。现代 C++ 中，它节省的输入量通常不足以抵消风险：</p>
+<ol>
+<li>它让命名空间中的所有名称参与未限定查找，包括完全不会使用的名称。</li>
+<li>它不会让该命名空间的名称优先于其他候选名称。</li>
+</ol>
+<p>同时引入 <code>A</code> 与 <code>B</code> 后，若两者都有 <code>x</code>，未限定 <code>x</code> 会产生歧义。可通过删除某条 using 指令、改用 using 声明，或显式写成 <code>A::x</code>、<code>B::x</code> 解决。</p>
+<h3>对未来库版本的脆弱性</h3>
+<p>using 指令即使当前没有冲突，也会让代码暴露给库将来新增的所有名称。</p>
+<p>假设程序有全局 <code>print()</code>，并使用 <code>using namespace Foo;</code>。库升级后新增 <code>Foo::print()</code>，原本正常的 <code>print()</code> 调用可能突然变成歧义并停止编译。</p>
+<p>更隐蔽的情况是库新增同名重载，而且它比原函数更匹配：</p>
+<pre><code>int get(long)
+{
+    return 1;
+}
+
+int main()
+{
+    using namespace Foo;
+    std::cout &lt;&lt; get(0) &lt;&lt; '\n';
+}
+</code></pre>
+<p>若 <code>Foo</code> 后来新增 <code>int get(int)</code>，整型字面量 <code>0</code> 与它精确匹配，优于需要 <code>int</code> 到 <code>long</code> 转换的全局函数。程序无需修改即可从输出 <code>1</code> 变为输出 <code>2</code>。显式限定名称或只引入目标名称的 using 声明不会产生这种扩大候选集的问题。</p>
+<p>using 指令还隐藏名称来源。<code>NS::foo()</code> 明确表明它来自库；未限定的 <code>foo()</code> 无法直接显示它属于库还是程序。个别库头可能把名称放入全局命名空间，因此未限定名称来自程序只是倾向而非保证。</p>
+<h3>using 语句的作用域与位置</h3>
+<p>块内的 using 声明或 using 指令仅在该块内生效，遵循普通块作用域规则。命名空间作用域（包括全局命名空间）中的 using 语句从声明点影响文件剩余部分。</p>
+<p>using 语句不应放在头文件中，也不应放在任何 <code>#include</code> 指令之前。基本原则是：不要把 using 语句放到可能影响其他文件代码的位置，也不要放到其他文件代码可能反过来改变它的位置。</p>
+<ul>
+<li>头文件全局或命名空间作用域中的 using 语句会传播到每个包含该头文件的源文件。</li>
+<li>即使 using 语句位于头文件中定义的函数内部也不安全，因为在它之前包含了哪些头文件由包含者决定。</li>
+<li>using 声明能引入的重载集合取决于声明处此前已经可见的声明，因此具有顺序依赖。</li>
+</ul>
+<p>例如，<code>using Foo::print;</code> 写在 <code>Foo::print(int)</code> 的声明可见之后，会同时引入已知重载并为整数实参选择 <code>print(int)</code>。若把 using 声明移到该头文件之前，当时只可见 <code>print(double)</code>，随后出现的 <code>print(int)</code> 不会自动加入这条 using 声明的候选集合，调用将改为 <code>print(double)</code>。</p>
+<p>using 语句真正安全的位置是源文件中所有 <code>#include</code> 指令之后。</p>
+<h3>不能在同一作用域中取消或替换</h3>
+<p>using 语句一旦在某个作用域中声明，就无法在该作用域内取消，也无法用另一条 using 语句替换。只能从一开始就利用嵌套块限制其作用域；显式使用 <code>::</code> 通常能避免这类管理负担。</p>
+<p><strong>最佳实践</strong></p>
+<ul>
+<li>优先使用显式命名空间限定符，而不是 using 语句。</li>
+<li>避免 using 指令；<code>using namespace std::literals;</code> 为访问 <code>s</code> 与 <code>sv</code> 字面量后缀的常见例外。</li>
+<li>using 声明可放在 <code>.cpp</code> 源文件中，但必须位于所有 <code>#include</code> 指令之后。</li>
+<li>不要在头文件中使用 using 语句，尤其不要在头文件的全局命名空间中使用。</li>
+<li><code>using</code> 还可定义类型别名；类型别名与本节的 using 语句是不同功能。</li>
+</ul>
+<h2>参考来源</h2>
+<ol>
+<li><a href="https://www.learncpp.com/cpp-tutorial/compound-statements-blocks/">7.1 — Compound statements (blocks)</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/user-defined-namespaces-and-the-scope-resolution-operator/">7.2 — User-defined namespaces and the scope resolution operator</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/local-variables/">7.3 — Local variables</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-global-variables/">7.4 — Introduction to global variables</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/variable-shadowing-name-hiding/">7.5 — Variable shadowing (name hiding)</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/static-local-variables/">7.11 — Static local variables</a></li>
+<li><a href="https://www.learncpp.com/cpp-tutorial/using-declarations-and-using-directives/">7.13 — Using declarations and using directives</a></li>
+</ol>
+]]></content>
+    <author>
+      <name>nikonikoni</name>
+    </author>
+    <category term="LearnCpp"></category>
+    <category term="Tutorial"></category>
+  </entry>
+  <entry>
     <title>LearnCpp 类型转换</title>
     <link href="https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/" rel="alternate" type="text/html"/>
     <id>https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/</id>
@@ -1730,500 +2609,6 @@ auto value = uint{ ch };
 <li><a href="https://www.learncpp.com/cpp-tutorial/narrowing-conversions-list-initialization-and-constexpr-initializers/">10.4 — Narrowing conversions, list initialization, and constexpr initializers</a></li>
 <li><a href="https://www.learncpp.com/cpp-tutorial/arithmetic-conversions/">10.5 — Arithmetic conversions</a></li>
 <li><a href="https://www.learncpp.com/cpp-tutorial/explicit-type-conversion-casting-and-static-cast/">10.6 — Explicit type conversion (casting) and static_cast</a></li>
-</ol>
-]]></content>
-    <author>
-      <name>nikonikoni</name>
-    </author>
-    <category term="LearnCpp"></category>
-    <category term="Tutorial"></category>
-  </entry>
-  <entry>
-    <title>LearnCpp 作用域、变量与命名空间</title>
-    <link href="https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/" rel="alternate" type="text/html"/>
-    <id>https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</id>
-    <published>2026-08-19T00:00:00.000Z</published>
-    <updated>2026-08-19T00:00:00.000Z</updated>
-    <summary>LearnCpp 作用域、变量与命名空间笔记，介绍代码块、用户命名空间、局部与全局变量、变量遮蔽、静态局部变量以及 using 语句。</summary>
-    <content type="html"><![CDATA[<h1>LearnCpp 作用域、变量与命名空间</h1>
-<h2>7.1 复合语句（代码块）</h2>
-<p><strong>复合语句</strong>（compound statement）也称为<strong>代码块</strong>（block）或<strong>块语句</strong>（block statement），由零条或多条语句组成，但编译器把整个代码块当作一条语句处理。</p>
-<p>代码块以 <code>{</code> 开始，以 <code>}</code> 结束。凡是语法要求一条语句的地方，都可以放置一个代码块。代码块的右花括号后不需要分号。</p>
-<pre><code>int add(int x, int y)
-{ // 代码块开始
-    return x + y;
-} // 代码块结束，无分号
-
-int main()
-{
-    int value{}; // 这里的花括号用于初始化，不是代码块
-    add(3, 4);
-
-    return 0;
-}
-</code></pre>
-<p>函数体本身就是代码块。用于列表初始化的花括号并不构成代码块。</p>
-<h3>嵌套代码块</h3>
-<p>函数不能定义在另一个函数内部，但代码块可以嵌套在其他代码块中。包含其他代码块的块称为<strong>外层代码块</strong>，被包含的块称为<strong>内层代码块</strong>或<strong>嵌套代码块</strong>。</p>
-<pre><code>int main()
-{ // 外层代码块
-    int value{};
-
-    { // 内层代码块
-        value = 7;
-    }
-
-    return 0;
-}
-</code></pre>
-<p>代码块的常见用途是让 <code>if</code> 或 <code>else</code> 条件控制多条语句。<code>if</code> 默认只控制紧随其后的一条语句；以代码块替代该语句后，块内所有语句会作为一个整体执行。</p>
-<pre><code>if (value &gt;= 0)
-{
-    std::cout &lt;&lt; value &lt;&lt; " is non-negative\n";
-    std::cout &lt;&lt; "Double: " &lt;&lt; value * 2 &lt;&lt; '\n';
-}
-else
-{
-    std::cout &lt;&lt; value &lt;&lt; " is negative\n";
-    std::cout &lt;&lt; "Absolute value: " &lt;&lt; -value &lt;&lt; '\n';
-}
-</code></pre>
-<h3>嵌套层级</h3>
-<p>函数的<strong>嵌套层级</strong>或<strong>嵌套深度</strong>，是执行到函数中某一点时最多能同时位于多少层代码块之内，函数最外层代码块也计入。嵌套层级不是代码块总数：两个并列的三级代码块仍只产生三级深度。</p>
-<p>C++ 标准建议编译器至少支持 256 层嵌套，但并非所有实现都达到这一数量。可编译不等于易读；过深嵌套会使控制关系难以追踪。</p>
-<p><strong>最佳实践</strong></p>
-<p>函数的嵌套层级尽量不超过 3。需要更深嵌套时，通常应把最深处的代码提取为独立函数。</p>
-<h2>7.2 用户定义命名空间与作用域解析运算符</h2>
-<p>当两个相同标识符被引入同一作用域，而编译器无法判断应使用哪一个时，就会发生<strong>命名冲突</strong>（naming collision）。冲突可能由编译器报告，也可能在多个翻译单元链接时由链接器报告。</p>
-<p>同一作用域中的每个名称都可能与其他名称冲突。因此，标识符数量线性增加时，潜在冲突组合会大幅增加。这也是应把标识符定义在最小可用作用域内的重要原因。</p>
-<p>例如，两个源文件都在全局作用域定义 <code>doSomething(int, int)</code>，即使程序从未调用该函数，链接器仍会在处理重复定义时报告错误。直接改名能够消除冲突，却需要同步修改所有调用点。命名空间可以让名称保持不变，同时把它们放入不同作用域。</p>
-<h3>定义命名空间</h3>
-<p>程序定义的命名空间使用 <code>namespace</code> 关键字：</p>
-<pre><code>namespace Foo
-{
-    int doSomething(int x, int y)
-    {
-        return x + y;
-    }
-}
-
-namespace Goo
-{
-    int doSomething(int x, int y)
-    {
-        return x - y;
-    }
-}
-</code></pre>
-<p>命名空间只能定义在全局作用域或另一个命名空间内，不能定义在函数内部。命名空间内容通常缩进一级；右花括号后的分号是可选的。</p>
-<p>历史上，命名空间名通常使用小写，许多风格指南仍采用这种约定。LearnCpp 推荐程序定义的命名空间以大写字母开头，理由包括：</p>
-<ul>
-<li>与程序定义类型的命名约定保持一致；</li>
-<li>降低与系统或库提供的小写名称冲突的概率；</li>
-<li>C++20 标准文本与 C++ Core Guidelines 采用这种风格。</li>
-</ul>
-<p>大写与小写两种风格都有效，项目内保持一致更重要。</p>
-<h3>作用域解析运算符</h3>
-<p>把函数移入 <code>Foo</code> 和 <code>Goo</code> 后，原先位于全局作用域的前置声明不再与它们匹配。编译器可能接受该全局声明，但链接器找不到对应的全局定义。</p>
-<p><strong>作用域解析运算符</strong> <code>::</code> 用于明确指定标识符所在的作用域。左操作数是要查找的作用域，右操作数是该作用域内的标识符。</p>
-<pre><code>std::cout &lt;&lt; Foo::doSomething(4, 3) &lt;&lt; '\n'; // 7
-std::cout &lt;&lt; Goo::doSomething(4, 3) &lt;&lt; '\n'; // 1
-</code></pre>
-<p>显式限定名称能够消除两个同名函数之间的歧义。<code>::name</code> 没有左侧命名空间名时，表示从全局命名空间查找 <code>name</code>：</p>
-<pre><code>void print()
-{
-    std::cout &lt;&lt; "global\n";
-}
-
-namespace Foo
-{
-    void print()
-    {
-        std::cout &lt;&lt; "Foo\n";
-    }
-
-    void callBoth()
-    {
-        print();   // Foo::print()
-        ::print(); // 全局命名空间中的 print()
-    }
-}
-</code></pre>
-<p>在命名空间内部使用未限定名称时，编译器先查找当前命名空间，再依次查找各层外部命名空间，最后查找全局命名空间。<code>::</code> 可以跳过这套逐层查找，直接要求使用全局名称。</p>
-<h3>声明、定义与多个命名空间块</h3>
-<p>命名空间中标识符的前置声明和定义必须位于同一命名空间。头文件中的声明、源文件中的定义以及调用点应保持一致：</p>
-<pre><code>// add.h
-namespace BasicMath
-{
-    int add(int x, int y);
-}
-
-// add.cpp
-#include "add.h"
-
-namespace BasicMath
-{
-    int add(int x, int y)
-    {
-        return x + y;
-    }
-}
-
-// main.cpp
-#include "add.h"
-
-int result{ BasicMath::add(4, 3) };
-</code></pre>
-<p>若声明留在全局命名空间，编译器看不到 <code>BasicMath::add</code> 的声明；若定义留在全局命名空间，链接器找不到 <code>BasicMath::add</code> 的定义。</p>
-<p>同一命名空间可以在同一文件的多个位置或不同文件中反复打开。所有同名命名空间块的声明都属于同一命名空间。标准库头文件正是通过多个 <code>namespace std</code> 块共同组成 <code>std</code>。</p>
-<p><strong>警告</strong></p>
-<p>不要向 <code>std</code> 命名空间添加自定义功能。除标准明确允许的少数情况外，这通常会导致未定义行为。</p>
-<h3>嵌套命名空间</h3>
-<p>命名空间可以嵌套：</p>
-<pre><code>namespace Foo
-{
-    namespace Goo
-    {
-        int add(int x, int y)
-        {
-            return x + y;
-        }
-    }
-}
-
-int sum{ Foo::Goo::add(1, 2) };
-</code></pre>
-<p>C++17 可以使用等价的紧凑语法：</p>
-<pre><code>namespace Foo::Goo
-{
-    int add(int x, int y)
-    {
-        return x + y;
-    }
-}
-</code></pre>
-<p>之后仍可单独重新打开 <code>namespace Foo</code>，向 <code>Foo</code> 而不是 <code>Foo::Goo</code> 添加声明。选择传统嵌套写法还是 C++17 紧凑写法属于风格问题。</p>
-<h3>命名空间别名</h3>
-<p>长命名空间链可以通过别名临时缩短：</p>
-<pre><code>namespace Active = Foo::Goo;
-
-int result{ Active::add(1, 2) };
-</code></pre>
-<p>命名空间别名遵循其声明位置的作用域规则。例如，函数块内声明的 <code>Active</code> 会在该块结束时失效。别名还提供一层间接性：实现迁移到 <code>V2</code> 后，只需把别名改为 <code>namespace Active = V2;</code>，调用点仍可保持 <code>Active::add()</code>。</p>
-<h3>命名空间的使用尺度</h3>
-<p>命名空间的首要目的不是建立信息层次，而是防止命名冲突。标准库主体位于单一顶层命名空间 <code>std</code>；名称较多的新组件也会采用嵌套命名空间，例如 <code>std::ranges</code>。</p>
-<ul>
-<li>小型、仅供个人使用的程序通常不必放入自定义命名空间。</li>
-<li>引入大量第三方库的较大项目可用命名空间降低冲突风险。</li>
-<li>会分发给其他项目使用的代码应放入命名空间；一个独特的顶层命名空间通常已经足够，也便于编辑器自动补全展示库的公开名称。</li>
-<li>多团队项目常采用“项目或库::模块”“组织::项目或库”，或“组织::项目或库::模块”的两至三级结构。</li>
-<li>模块级命名空间可区分可复用代码与应用专用代码；目录结构也能承担一部分组织职责。</li>
-</ul>
-<p>命名空间一般不应嵌套超过 3 层。</p>
-<h2>7.3 局部变量</h2>
-<p>定义在函数内部的变量，包括函数形参，称为<strong>局部变量</strong>。C++ 并不存在一个单独属性来判定“局部”；局部变量的行为由作用域、存储期和链接属性共同构成。</p>
-<h3>块作用域</h3>
-<p>标识符的<strong>作用域</strong>决定源代码中哪些位置可以访问它。能够访问时称为“在作用域内”，不能访问时称为“超出作用域”。作用域是编译期属性；访问超出作用域的标识符会产生编译错误。</p>
-<p>局部变量具有<strong>块作用域</strong>：从定义点开始进入作用域，到所在代码块末尾离开作用域。</p>
-<pre><code>int main()
-{
-    int i{ 5 };      // i 从这里进入作用域
-    double d{ 4.0 }; // d 从这里进入作用域
-
-    return 0;
-} // d 和 i 在这里离开作用域
-</code></pre>
-<p>普通函数的形参虽然写在函数体之前，但通常可以把它们视为处于函数体代码块的作用域中。</p>
-<p>同一作用域中的变量名必须唯一。形参与函数体顶层局部变量属于同一作用域，因此不能重名：</p>
-<pre><code>void someFunction(int x)
-{
-    int x{}; // 错误：与形参 x 冲突
-}
-</code></pre>
-<h3>自动存储期与生命周期</h3>
-<p>变量的<strong>存储期</strong>（storage duration）规定变量何时以及如何创建和销毁；多数情况下，存储期直接决定变量的<strong>生命周期</strong>，即对象从实际创建到实际销毁的时间。</p>
-<p>局部变量默认具有<strong>自动存储期</strong>：执行到定义处时创建，在所在代码块结束时销毁。因此局部变量也称为<strong>自动变量</strong>。</p>
-<p>作用域与生命周期描述不同维度：作用域是名称能否在某段源代码中被使用的编译期属性；生命周期是对象在运行时是否存在。</p>
-<h3>嵌套块中的局部变量</h3>
-<p>内层变量只能从其定义点使用到内层块末尾；离开内层块后，它既超出作用域，也被销毁。外层块的作用域包含其嵌套块，因此外层变量在内层块中仍然可见。</p>
-<pre><code>int main()
-{
-    int x{ 5 };
-
-    {
-        int y{ 7 };
-        std::cout &lt;&lt; x + y &lt;&lt; '\n'; // x 与 y 都在作用域内
-    } // y 离开作用域并被销毁
-
-    // y 在这里不可访问
-    return 0;
-} // x 离开作用域并被销毁
-</code></pre>
-<h3>无链接</h3>
-<p>标识符的<strong>链接属性</strong>决定不同作用域中的同名声明是否指向同一对象或函数。局部变量没有链接属性（no linkage）；每个声明都表示一个独立对象。</p>
-<pre><code>int main()
-{
-    int x{ 2 };
-
-    {
-        int x{ 3 }; // 与外层 x 是不同对象
-    }
-}
-</code></pre>
-<p>作用域回答“单个声明在哪里可见”，链接属性回答“多个声明是否指向同一实体”，二者不能混为一谈。</p>
-<h3>使用最小的现有作用域</h3>
-<p>变量应定义在能够满足使用需求的最小现有作用域内。较小的作用域减少同时活跃的变量数量，也让变量可能被使用的位置更容易辨认。</p>
-<p>如果变量只在嵌套块中使用，就在该块中定义。如果变量离开内层块后仍要使用，则必须在外层块中定义；这种需求可能导致变量早于首次使用声明。</p>
-<p>不应仅为缩短变量作用域而额外创建代码块，因为这会让整个函数变长并增加结构复杂度。若一段代码确实值得形成独立作用域，通常更适合提取为函数。</p>
-<p><strong>最佳实践</strong></p>
-<p>在最小的现有作用域内定义变量。不要创建唯一目的只是限制变量作用域的新代码块。</p>
-<h2>7.4 全局变量简介</h2>
-<p>定义在函数外部的变量称为<strong>全局变量</strong>。按惯例，全局变量放在文件顶部、<code>#include</code> 指令之后。</p>
-<pre><code>#include &lt;iostream&gt;
-
-int g_x{}; // 全局变量
-
-void setValue()
-{
-    g_x = 3;
-}
-
-int main()
-{
-    setValue();
-    std::cout &lt;&lt; g_x &lt;&lt; '\n';
-}
-</code></pre>
-<h3>全局命名空间作用域</h3>
-<p>在全局命名空间中声明的标识符具有<strong>全局命名空间作用域</strong>，常简称为全局作用域，也会被非正式地称为文件作用域。它从声明点持续到所在文件末尾。</p>
-<p>全局变量也可以定义在用户命名空间中：</p>
-<pre><code>namespace Foo
-{
-    int x{};
-}
-
-void setValue()
-{
-    Foo::x = 3;
-}
-</code></pre>
-<p><code>x</code> 的名称受 <code>Foo</code> 限定，但仍可通过 <code>Foo::x</code> 在文件各处访问，所以它仍是全局变量。</p>
-<p><strong>最佳实践</strong></p>
-<p>全局变量优先定义在用户命名空间中，而不是直接放在全局命名空间。</p>
-<h3>静态存储期</h3>
-<p>全局变量具有<strong>静态存储期</strong>：在程序启动时、<code>main()</code> 执行前创建，在程序结束时销毁。具有静态存储期的变量有时也称为静态变量；这里的“静态”描述存储期，不要求变量写出 <code>static</code> 关键字。</p>
-<h3>命名全局变量</h3>
-<p>一些项目使用 <code>g</code> 或 <code>g_</code> 前缀标记全局变量。该前缀可以：</p>
-<ul>
-<li>降低与全局命名空间中其他标识符冲突的概率；</li>
-<li>减少无意遮蔽全局变量的可能；</li>
-<li>表明该变量会在当前函数结束后继续存在，对它的修改也会保留。</li>
-</ul>
-<p>命名空间中的全局变量常省略 <code>g_</code>，因为命名空间限定已经能降低冲突并表明其非局部来源；保留前缀仍可强调其静态存储期。</p>
-<p>用名称前缀编码类型的匈牙利命名法在现代 C++ 中通常价值有限；用 <code>g_</code>、<code>s_</code>、<code>m_</code> 表达作用域或存储期则仍能提供有用信息。</p>
-<p><strong>最佳实践</strong></p>
-<p>尤其对全局命名空间中的变量，可考虑使用 <code>g</code> 或 <code>g_</code> 前缀，将其与局部变量和函数形参区分。</p>
-<h3>初始化</h3>
-<p>具有静态存储期的变量在没有显式初始化器时会默认零初始化，这与默认未初始化的普通局部变量不同：</p>
-<pre><code>int g_x;       // 默认零初始化
-int g_y{};     // 值初始化，结果为零
-int g_z{ 1 };  // 初始化为 1
-</code></pre>
-<p>非常量全局变量可以省略初始化器。<code>const</code> 和 <code>constexpr</code> 全局变量必须初始化：</p>
-<pre><code>const int g_a;          // 错误
-constexpr int g_b;      // 错误
-const int g_c{ 1 };     // 正确
-constexpr int g_d{ 2 }; // 正确
-</code></pre>
-<p><strong>警告</strong></p>
-<p>通常应完全避免使用非常量全局变量。它们让任何可访问位置都能改变共享状态，使函数行为产生难以追踪的隐式依赖。</p>
-<h2>7.5 变量遮蔽（名称隐藏）</h2>
-<p>每个代码块都定义自己的作用域区域。内层块声明与外层变量同名的变量后，在两者作用域重叠的区域中，内层变量会<strong>隐藏</strong>外层变量。这称为<strong>名称隐藏</strong>（name hiding）或<strong>变量遮蔽</strong>（shadowing）。</p>
-<h3>局部变量之间的遮蔽</h3>
-<pre><code>int main()
-{
-    int apples{ 5 };
-
-    {
-        std::cout &lt;&lt; apples &lt;&lt; '\n'; // 外层 apples：5
-
-        int apples{ 0 }; // 从这里开始隐藏外层 apples
-        apples = 10;
-
-        std::cout &lt;&lt; apples &lt;&lt; '\n'; // 内层 apples：10
-    } // 内层 apples 被销毁
-
-    std::cout &lt;&lt; apples &lt;&lt; '\n'; // 外层 apples：5
-}
-</code></pre>
-<p>输出为：</p>
-<pre><code>5
-10
-5
-</code></pre>
-<p>遮蔽不会修改或销毁外层对象。内层声明出现前，未限定名称仍指向外层变量；从内层声明到代码块结束，名称指向内层变量。内层块结束后，外层名称重新可见，其值保持不变。</p>
-<p>如果没有声明内层 <code>apples</code>，内层块中的读取和赋值都会作用于外层变量，输出会是 <code>5</code>、<code>10</code>、<code>10</code>。</p>
-<p>在内层块中，没有语法可以直接访问被同名局部变量遮蔽的外层局部变量。</p>
-<h3>局部变量遮蔽全局变量</h3>
-<p>局部变量也可以遮蔽同名全局变量。局部变量在作用域内时，未限定名称指向局部对象：</p>
-<pre><code>int value{ 5 };
-
-int main()
-{
-    int value{ 7 };
-
-    ++value;     // 局部 value 变为 8
-    --(::value); // 全局 value 变为 4
-
-    std::cout &lt;&lt; value &lt;&lt; '\n';   // 8
-    std::cout &lt;&lt; ::value &lt;&lt; '\n'; // 4
-}
-</code></pre>
-<p>全局变量属于全局命名空间，所以即使被局部变量遮蔽，仍可通过无前缀作用域解析 <code>::value</code> 明确访问。这个办法不适用于被遮蔽的外层局部变量。</p>
-<p><strong>最佳实践</strong></p>
-<p>避免变量遮蔽。遮蔽容易让代码读取或修改错误的对象。为全局变量统一使用 <code>g_</code> 前缀可以简单地避免局部变量与全局变量同名。</p>
-<p>GCC 和 Clang 可用 <code>-Wshadow</code> 启用遮蔽警告，并提供 <code>-Wshadow=global</code>、<code>-Wshadow=local</code>、<code>-Wshadow=compatible-local</code> 等变体。Visual Studio 默认启用相应警告。</p>
-<h2>7.11 静态局部变量</h2>
-<p><code>static</code> 在不同上下文中含义不同：</p>
-<ul>
-<li>全局变量本身具有静态存储期；</li>
-<li><code>static</code> 修饰全局标识符时赋予其内部链接；</li>
-<li><code>static</code> 修饰局部变量时，把它的存储期从自动存储期改为静态存储期。</li>
-</ul>
-<p>本节的 <code>static</code> 指第三种用法。</p>
-<h3>跨函数调用保留值</h3>
-<p>普通局部变量每次执行到定义处都会创建，并在离开代码块时销毁：</p>
-<pre><code>void incrementAndPrint()
-{
-    int value{ 1 };
-    ++value;
-    std::cout &lt;&lt; value &lt;&lt; '\n';
-}
-</code></pre>
-<p>调用三次会输出三次 <code>2</code>。改为静态局部变量后：</p>
-<pre><code>void incrementAndPrint()
-{
-    static int s_value{ 1 };
-    ++s_value;
-    std::cout &lt;&lt; s_value &lt;&lt; '\n';
-}
-</code></pre>
-<p>初始化只发生一次。函数结束时，<code>s_value</code> 离开作用域而暂时不可访问，但对象不会被销毁。三次调用依次输出 <code>2</code>、<code>3</code>、<code>4</code>。</p>
-<p>静态局部变量兼具两类属性：名称具有局部变量的块作用域，对象却具有延续到程序结束的生命周期。它适合需要局部状态在多次函数调用之间保留的场景。</p>
-<h3>初始化规则</h3>
-<p>可零初始化或具有常量表达式初始化器的静态局部变量可以在程序启动时初始化。</p>
-<p>没有初始化器或具有非常量表达式初始化器的静态局部变量会在程序启动时先零初始化。具有非常量表达式初始化器的变量在程序第一次执行到定义处时完成初始化；后续调用跳过该定义，不会再次初始化。未显式初始化的静态局部变量最终保持默认的零值。</p>
-<p><strong>最佳实践</strong></p>
-<p>显式初始化静态局部变量。常用 <code>s</code> 或 <code>s_</code> 前缀表明局部变量具有静态存储期。</p>
-<h3>唯一 ID 生成器</h3>
-<pre><code>int generateID()
-{
-    static int s_itemID{ 0 };
-    return s_itemID++;
-}
-</code></pre>
-<p>第一次调用返回 <code>0</code>，第二次返回 <code>1</code>，之后每次递增。状态只能通过该函数改变，其他函数无法直接篡改 <code>s_itemID</code>。这种写法获得了全局变量“持续存在”的特征，同时把可见性限制在函数块内。</p>
-<p>该方案只有在整个程序确实只需要一个永不重置的 ID 序列时才合适。</p>
-<h3>静态局部常量</h3>
-<p>静态局部变量可以声明为 <code>const</code> 或 <code>constexpr</code>。如果函数需要一个创建或初始化成本较高的常量对象，普通局部变量会在每次调用时重复构造；静态局部常量只初始化一次，之后所有调用都复用该对象。</p>
-<p><strong>关键点</strong></p>
-<p>静态局部变量最适合用来避免每次函数调用都重复初始化昂贵的局部对象。静态局部常量通常可以安全使用。</p>
-<h3>不要用静态局部状态改变函数流程</h3>
-<p>非 <code>const</code> 静态局部变量会让函数调用隐式依赖先前调用。例如，用 <code>static bool s_isFirstCall</code> 让第一次调用显示一种提示、以后显示另一种提示，会造成相同参数的两次调用表现不同。调用者仅阅读调用点无法发现这种内部状态。</p>
-<p>这种函数难以复用：内部状态不能由调用者重置；当另一段流程希望重新执行“第一次调用”时，旧状态仍然存在。更好的做法是把差异作为参数传入，让调用者显式控制行为。若需要传入提示文本，<code>std::string_view</code> 参数通常比布尔标记更通用。</p>
-<p><strong>最佳实践</strong></p>
-<ul>
-<li><code>const</code> 静态局部变量通常可以使用。</li>
-<li>非 <code>const</code> 静态局部变量通常应避免。</li>
-<li>确实使用非 <code>const</code> 静态局部变量时，应确认该状态在整个程序中只有唯一实例、永远不需要重置，并且不用于改变控制流。</li>
-<li>需要多个各自保留状态的实例时，应使用函数对象等可实例化方案，而不是单个静态局部变量。</li>
-</ul>
-<h2>7.13 using 声明与 using 指令</h2>
-<p>标准库的名称最初位于全局命名空间，容易与程序名称冲突。命名空间在 1995 年标准化后，标准库功能迁移到 <code>std</code>。为兼容大量使用未限定标准库名称的旧代码，并减少反复书写限定符，C++ 提供了 using 语句。</p>
-<h3>限定名称与未限定名称</h3>
-<p><strong>限定名称</strong>带有关联作用域：</p>
-<pre><code>std::cout // 由命名空间 std 限定
-::foo     // 由全局命名空间限定
-</code></pre>
-<p>名称还可以由类名通过 <code>::</code> 限定，或由类对象、对象指针通过 <code>.</code>、<code>-&gt;</code> 限定：</p>
-<pre><code>C::s_member;
-obj.x;
-ptr-&gt;y;
-</code></pre>
-<p><strong>未限定名称</strong>不带作用域限定符，例如 <code>cout</code> 和 <code>x</code>。</p>
-<h3>using 声明</h3>
-<p><strong>using 声明</strong>让一个限定名称可以通过未限定名称使用：</p>
-<pre><code>int main()
-{
-    using std::cout;
-
-    cout &lt;&lt; "Hello world!\n";
-} // using 声明在此失效
-</code></pre>
-<p><code>using std::cout;</code> 表明当前作用域中的未限定 <code>cout</code> 应解析为 <code>std::cout</code>。若 <code>std::cout</code> 与另一个可见的 <code>cout</code> 发生名称冲突，该 using 声明指定的 <code>std::cout</code> 优先。</p>
-<p>每个名称需要单独的 using 声明，例如 <code>std::cout</code> 与 <code>std::cin</code> 各写一条。using 声明从声明点生效，持续到当前作用域末尾。它不如显式 <code>std::</code> 清晰，但放在源文件中所有 <code>#include</code> 指令之后时通常安全且可接受。</p>
-<h3>using 指令</h3>
-<p><strong>using 指令</strong>使指定命名空间中的所有标识符都可以在作用域内以未限定名称参与查找：</p>
-<pre><code>int main()
-{
-    using namespace std;
-
-    cout &lt;&lt; "Hello world!\n";
-}
-</code></pre>
-<p>从技术上说，using 指令并非真正把新名称声明到当前作用域，而是让这些名称在某个外层作用域中参与查找。实际结果仍是该命名空间的大量名称都成为未限定名称查找的候选项。</p>
-<p>using 指令曾用于让命名空间出现前的旧代码以很小改动继续使用标准库。现代 C++ 中，它节省的输入量通常不足以抵消风险：</p>
-<ol>
-<li>它让命名空间中的所有名称参与未限定查找，包括完全不会使用的名称。</li>
-<li>它不会让该命名空间的名称优先于其他候选名称。</li>
-</ol>
-<p>同时引入 <code>A</code> 与 <code>B</code> 后，若两者都有 <code>x</code>，未限定 <code>x</code> 会产生歧义。可通过删除某条 using 指令、改用 using 声明，或显式写成 <code>A::x</code>、<code>B::x</code> 解决。</p>
-<h3>对未来库版本的脆弱性</h3>
-<p>using 指令即使当前没有冲突，也会让代码暴露给库将来新增的所有名称。</p>
-<p>假设程序有全局 <code>print()</code>，并使用 <code>using namespace Foo;</code>。库升级后新增 <code>Foo::print()</code>，原本正常的 <code>print()</code> 调用可能突然变成歧义并停止编译。</p>
-<p>更隐蔽的情况是库新增同名重载，而且它比原函数更匹配：</p>
-<pre><code>int get(long)
-{
-    return 1;
-}
-
-int main()
-{
-    using namespace Foo;
-    std::cout &lt;&lt; get(0) &lt;&lt; '\n';
-}
-</code></pre>
-<p>若 <code>Foo</code> 后来新增 <code>int get(int)</code>，整型字面量 <code>0</code> 与它精确匹配，优于需要 <code>int</code> 到 <code>long</code> 转换的全局函数。程序无需修改即可从输出 <code>1</code> 变为输出 <code>2</code>。显式限定名称或只引入目标名称的 using 声明不会产生这种扩大候选集的问题。</p>
-<p>using 指令还隐藏名称来源。<code>NS::foo()</code> 明确表明它来自库；未限定的 <code>foo()</code> 无法直接显示它属于库还是程序。个别库头可能把名称放入全局命名空间，因此未限定名称来自程序只是倾向而非保证。</p>
-<h3>using 语句的作用域与位置</h3>
-<p>块内的 using 声明或 using 指令仅在该块内生效，遵循普通块作用域规则。命名空间作用域（包括全局命名空间）中的 using 语句从声明点影响文件剩余部分。</p>
-<p>using 语句不应放在头文件中，也不应放在任何 <code>#include</code> 指令之前。基本原则是：不要把 using 语句放到可能影响其他文件代码的位置，也不要放到其他文件代码可能反过来改变它的位置。</p>
-<ul>
-<li>头文件全局或命名空间作用域中的 using 语句会传播到每个包含该头文件的源文件。</li>
-<li>即使 using 语句位于头文件中定义的函数内部也不安全，因为在它之前包含了哪些头文件由包含者决定。</li>
-<li>using 声明能引入的重载集合取决于声明处此前已经可见的声明，因此具有顺序依赖。</li>
-</ul>
-<p>例如，<code>using Foo::print;</code> 写在 <code>Foo::print(int)</code> 的声明可见之后，会同时引入已知重载并为整数实参选择 <code>print(int)</code>。若把 using 声明移到该头文件之前，当时只可见 <code>print(double)</code>，随后出现的 <code>print(int)</code> 不会自动加入这条 using 声明的候选集合，调用将改为 <code>print(double)</code>。</p>
-<p>using 语句真正安全的位置是源文件中所有 <code>#include</code> 指令之后。</p>
-<h3>不能在同一作用域中取消或替换</h3>
-<p>using 语句一旦在某个作用域中声明，就无法在该作用域内取消，也无法用另一条 using 语句替换。只能从一开始就利用嵌套块限制其作用域；显式使用 <code>::</code> 通常能避免这类管理负担。</p>
-<p><strong>最佳实践</strong></p>
-<ul>
-<li>优先使用显式命名空间限定符，而不是 using 语句。</li>
-<li>避免 using 指令；<code>using namespace std::literals;</code> 为访问 <code>s</code> 与 <code>sv</code> 字面量后缀的常见例外。</li>
-<li>using 声明可放在 <code>.cpp</code> 源文件中，但必须位于所有 <code>#include</code> 指令之后。</li>
-<li>不要在头文件中使用 using 语句，尤其不要在头文件的全局命名空间中使用。</li>
-<li><code>using</code> 还可定义类型别名；类型别名与本节的 using 语句是不同功能。</li>
-</ul>
-<h2>参考来源</h2>
-<ol>
-<li><a href="https://www.learncpp.com/cpp-tutorial/compound-statements-blocks/">7.1 — Compound statements (blocks)</a></li>
-<li><a href="https://www.learncpp.com/cpp-tutorial/user-defined-namespaces-and-the-scope-resolution-operator/">7.2 — User-defined namespaces and the scope resolution operator</a></li>
-<li><a href="https://www.learncpp.com/cpp-tutorial/local-variables/">7.3 — Local variables</a></li>
-<li><a href="https://www.learncpp.com/cpp-tutorial/introduction-to-global-variables/">7.4 — Introduction to global variables</a></li>
-<li><a href="https://www.learncpp.com/cpp-tutorial/variable-shadowing-name-hiding/">7.5 — Variable shadowing (name hiding)</a></li>
-<li><a href="https://www.learncpp.com/cpp-tutorial/static-local-variables/">7.11 — Static local variables</a></li>
-<li><a href="https://www.learncpp.com/cpp-tutorial/using-declarations-and-using-directives/">7.13 — Using declarations and using directives</a></li>
 </ol>
 ]]></content>
     <author>
