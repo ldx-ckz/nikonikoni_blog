@@ -369,6 +369,1778 @@ assert np.array_equal(contracted, np.tensordot(u, v, axes=1))
 &lt;li&gt;NumPy Issue #10161, &lt;a href=&quot;https://github.com/numpy/numpy/issues/10161&quot;&gt;numpy.isclose vs math.isclose&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://github.com/rougier/numpy-100&quot;&gt;100 NumPy exercises on GitHub&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;
+</content:encoded></item><item><title>Python简要入门</title><link>https://miku.nikonikoni.blog/posts/python%E7%AE%80%E8%A6%81%E5%85%A5%E9%97%A8/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/python%E7%AE%80%E8%A6%81%E5%85%A5%E9%97%A8/</guid><description>简要介绍 Python 基础、函数、迭代、模块、类、异常测试、IO 和虚拟环境。</description><pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;Python简要入门&lt;/h1&gt;
+&lt;h2&gt;1. Python 基础&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;# 缩进划分代码块，统一 4 个空格；冒号后开始代码块
+score = 85
+if score &amp;gt;= 60:
+    print(&quot;pass&quot;)
+
+# 名称区分大小写；= 赋值，== 比较值，is 比较身份
+name, Name = &quot;a&quot;, &quot;b&quot;
+a = [1]
+b = [1]
+c = a
+print(a == b, a is b, a is c)  # True False True
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;1.1 数据类型和变量&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;基本类型与命名&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;integer = 10_000                 # int；下划线只提高可读性
+hexadecimal = 0xff               # 255
+big = 10 ** 100                  # 任意精度整数，受内存限制
+decimal = 1.25                   # float
+scientific = 2.5e-3              # 0.0025
+text = &quot;hello&quot;                  # str，单引号也可以
+enabled = True                   # bool：True / False
+missing = None                   # 表示没有值
+print(missing is None)           # True
+print(None == 0, None == &quot;&quot;)    # False False
+
+item_2 = 2                      # 字母、数字、下划线；不能数字开头
+数量 = 3                         # 合规的 Unicode 标识符也可以
+PI = 3.14                       # 全大写只是常量约定，仍可重新赋值
+# 2item = 2                     # SyntaxError
+# class = 1                     # 不能使用关键字
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;算术与浮点数&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;print(7 + 3, 7 - 3, 7 * 3)      # 10 4 21
+print(9 / 3, 7 // 3, 7 % 3)     # 3.0 2 1
+print(2 ** 3)                   # 8，乘方
+print(-7 // 3, -7 % 3)          # -3 2：地板除向负无穷取整
+print(7.0 // 3)                 # 2.0：结果不一定为 int
+print(int(-1.9))                # -1：int 转换向零截断
+
+import math
+print(0.1 + 0.2 == 0.3)         # False，浮点运算有舍入误差
+print(math.isclose(0.1 + 0.2, 0.3))  # True
+print(float(&quot;inf&quot;))            # inf；有限浮点值的范围有限
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;字符串、转义和多行文本&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;print(&quot;I&apos;m OK&quot;)
+print(&apos;He said &quot;OK&quot;&apos;)
+print(&quot;a\nb\tc\\d&quot;)         # \n 换行，\t 制表，\\ 反斜杠
+raw = r&quot;C:\notes\new&quot;          # 原始字符串保留反斜杠
+multiline = &quot;&quot;&quot;line 1
+line 2&quot;&quot;&quot;
+# raw = r&quot;C:\&quot;                 # 错误：不能以奇数个反斜杠结束
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;引用、重新绑定与共享修改&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;a = &quot;old&quot;
+b = a
+a = &quot;new&quot;
+print(b)                        # old：重新绑定 a 不影响 b
+
+a = [1]
+b = a                           # 不复制列表
+a.append(2)
+print(b)                        # [1, 2]：修改的是共享对象
+a = [9]
+print(b)                        # [1, 2]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;真值与短路&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;print(bool(0), bool(&quot;&quot;), bool([]), bool(None))  # 全为 False
+print(bool(&quot;0&quot;), bool(&quot;False&quot;), bool([0]))    # 全为 True
+print(True and False, True or False, not True)  # False True False
+print(&quot;&quot; or &quot;default&quot;)         # default
+print(&quot;hello&quot; and 7)            # 7；and/or 返回操作数，不一定是 bool
+print(False and (1 / 0))         # False；右侧不会执行
+print(True or (1 / 0))           # True；右侧不会执行
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;1.2 字符串和编码&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;码点、字节与长度&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;print(ord(&quot;A&quot;), chr(65))        # 65 A；ASCII 定义 128 个字符
+print(ord(&quot;中&quot;), &quot;\u4e2d&quot;)    # 20013 中；Unicode 为字符分配码点
+print(type(&quot;abc&quot;), type(b&quot;abc&quot;))  # str 与 bytes
+
+text = &quot;中文&quot;
+data = text.encode(&quot;utf-8&quot;)     # str -&amp;gt; bytes
+print(data.decode(&quot;utf-8&quot;))     # 中文；bytes -&amp;gt; str
+print(len(text), len(data))      # 2 6：码点数与字节数
+print(len(&quot;e\u0301&quot;))          # 2：一个视觉字符可包含多个码点
+print(b&quot;ABC&quot;[0])                # 65：bytes 索引取得整数
+
+# UTF-8 每个 Unicode 标量值占 1–4 字节；ASCII 内容编码兼容
+print([len(c.encode(&quot;utf-8&quot;)) for c in [&quot;A&quot;, &quot;é&quot;, &quot;中&quot;, &quot;😀&quot;]])
+# [1, 2, 3, 4]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;编码匹配与错误处理&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;data = &quot;中文&quot;.encode(&quot;gbk&quot;)
+print(data.decode(&quot;gbk&quot;))       # 中文；按数据的真实编码解码
+# data.decode(&quot;utf-8&quot;)          # UnicodeDecodeError
+# &quot;中文&quot;.encode(&quot;ascii&quot;)        # UnicodeEncodeError
+print(b&quot;A\xffB&quot;.decode(&quot;utf-8&quot;, errors=&quot;ignore&quot;))   # AB，丢弃错误字节
+print(b&quot;A\xffB&quot;.decode(&quot;utf-8&quot;, errors=&quot;replace&quot;))  # A�B
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;源文件编码与解释器&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# Python 3 源码默认 UTF-8；编码声明不会转换文件实际编码
+# 第一行用于 Unix 类系统直接执行脚本时选择解释器
+print(&quot;你好&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;# 将上面的代码保存为 hello.py；Unix 类系统还需执行权限
+chmod +x hello.py
+./hello.py
+# 显式指定解释器运行，不依赖脚本执行权限
+python3 hello.py
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;三种格式化写法&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;print(&quot;%s: %d, %.2f, %x&quot; % (&quot;item&quot;, 7, 2.718, 255))  # item: 7, 2.72, ff
+print(&quot;[%2d] [%02d]&quot; % (3, 3))   # [ 3] [03]：最小宽度与补零
+print(&quot;%d%%&quot; % 80)              # 80%
+print(&quot;{0}: {1:.2f}&quot;.format(&quot;value&quot;, 2.718))  # value: 2.72
+name, value = &quot;value&quot;, 2.718
+print(f&quot;{name}: {value:.2f}&quot;)    # value: 2.72
+print(f&quot;{{result}}={2 + 3}&quot;)    # {result}=5；表达式与字面花括号
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;1.3 list 和 tuple&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;列表的访问、增删与嵌套&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;items = [&quot;a&quot;, &quot;b&quot;, &quot;a&quot;]        # 有序、可重复、可修改
+print(items[0], items[-1], len(items))  # a a 3
+items[1] = &quot;B&quot;
+items.append(&quot;c&quot;)
+items.insert(1, &quot;x&quot;)
+print(items)                    # [&apos;a&apos;, &apos;x&apos;, &apos;B&apos;, &apos;a&apos;, &apos;c&apos;]
+print(items.pop())               # c，删除并返回末项
+print(items.pop(1))              # x，删除并返回索引 1 的项
+# items[99]                     # IndexError；负索引也可能越界
+
+nested = [1, &quot;two&quot;, [3, 4]]      # 允许混合类型与嵌套
+print(len(nested), nested[2][1]) # 3 4；len 只数最外层
+print(len([]))                  # 0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;元组不可变的是元素引用&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;empty = ()
+single = (1,)                   # 单元素元组必须有逗号
+number = (1)                    # 整数 1
+t = (1, 2, 2)
+print(t[0], t[-1], len(t))       # 1 2 3
+# t[0] = 9                      # TypeError
+# t.append(3)                   # AttributeError
+
+t = (1, [2])
+t[1].append(3)                  # 内部列表仍能修改
+print(t)                        # (1, [2, 3])
+# hash(t)                       # TypeError：含不可哈希元素
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;1.4 条件判断&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;score = 85
+if score &amp;gt;= 90:                 # 严格条件在前，只执行首个成立分支
+    grade = &quot;A&quot;
+elif score &amp;gt;= 60:
+    grade = &quot;B&quot;
+else:
+    grade = &quot;C&quot;
+print(grade, 0 &amp;lt;= score &amp;lt;= 100)  # B True；支持连续比较
+
+if &quot;0&quot;:                        # 非空字符串为真
+    print(&quot;nonempty&quot;)
+
+# text = input(&quot;年龄：&quot;)         # input 返回 str，实际交互时取消注释
+text = &quot;18&quot;
+age = int(text)                 # 计算前转换
+print(age &amp;gt;= 18)                # True
+# int(&quot;eighteen&quot;)               # ValueError
+# &quot;18&quot; &amp;gt;= 18                    # TypeError
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;1.5 模式匹配&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;# Python 3.10+；首个模式与守卫均匹配时执行，不会贯穿后续分支
+def classify(value):
+    match value:
+        case x if x &amp;lt; 0:        # 捕获 x，再检查守卫
+            return &quot;negative&quot;
+        case 0:
+            return &quot;zero&quot;
+        case 1 | 2:
+            return &quot;small&quot;
+        case _:                 # 无条件兜底必须放最后
+            return &quot;other&quot;
+
+print(classify(-1), classify(2), classify(8))  # negative small other
+
+value = 7
+match value:
+    case captured:              # 裸名称是绑定变量，不是与旧值比较
+        print(captured)         # 7
+
+command = [&quot;run&quot;, &quot;main.py&quot;, &quot;extra.py&quot;]
+match command:
+    case [&quot;run&quot;, first, *rest]: # 至少两个元素；rest 是列表
+        print(first, rest)      # main.py [&apos;extra.py&apos;]
+    case [&quot;stop&quot;]:
+        print(&quot;stopped&quot;)
+    case _:
+        print(&quot;unknown&quot;)
+
+match &quot;unknown&quot;:
+    case &quot;known&quot;:
+        print(&quot;不会执行&quot;)       # 没有匹配且没有兜底：什么也不做
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;1.6 循环&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;for、range 与 while&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;total = 0                       # 累加初值 0，不用 sum 作变量名
+product = 1                     # 累乘初值 1
+for n in range(1, 5):            # 包含起点、不含终点
+    total += n
+    product *= n
+print(total, product)           # 10 24
+print(list(range(3)))            # [0, 1, 2]
+print(list(range(5, 0, -2)))      # [5, 3, 1]；步长可负，不能为 0
+
+n = 3
+while n &amp;gt; 0:
+    print(n)                    # 3、2、1
+    n -= 1                      # 推进状态，避免死循环；Ctrl+C 可中断
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;break、continue、return、pass&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;n = 0
+while n &amp;lt; 10:
+    n += 1                      # 放在 continue 前，保证每轮都更新
+    if n % 2 == 0:
+        continue                # 跳过本轮剩余代码
+    if n &amp;gt; 5:
+        break                   # 退出当前循环
+    print(n)                    # 1、3、5
+
+for row in range(2):
+    for col in range(3):
+        break                   # 仅退出内层
+    print(row)                  # 0、1
+
+def first_positive(values):
+    for value in values:
+        if value &amp;gt; 0:
+            return value        # 退出整个函数
+    return None
+
+def unfinished():
+    pass                        # 占位，什么也不做
+
+print(first_positive([-1, 3, 4]), unfinished())  # 3 None
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;1.7 dict 和 set&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;字典：增删、查询与顺序&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;d = {&quot;a&quot;: 1, &quot;b&quot;: 2}
+d[&quot;a&quot;] = 9                     # 同键覆盖，不移动位置
+d[&quot;c&quot;] = 3
+print(d[&quot;a&quot;], &quot;b&quot; in d)        # 9 True；in 检查键
+print(d.get(&quot;x&quot;), d.get(&quot;x&quot;, -1))  # None -1，不插入 x
+# d[&quot;x&quot;]                       # KeyError
+print(d.pop(&quot;b&quot;))               # 2，删除并返回值
+d[&quot;b&quot;] = 20                    # 删除后重插排在末尾
+print(list(d))                  # [&apos;a&apos;, &apos;c&apos;, &apos;b&apos;]；Python 3.7+ 保证插入顺序
+
+# 按位置取值用 list；按键频繁查询用 dict
+values = [10, 20, 30]
+print(values[1], values.index(20))  # 20 1；按值查找通常需遍历
+print({&quot;item&quot;: 20}[&quot;item&quot;])    # 20；哈希表平均查找高效，但有空间开销
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;集合与可哈希要求&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;print(type({}), type(set()))     # dict、set；空集合必须 set()
+s = set([1, 1, 2])
+s.add(3)
+s.add(3)                        # 重复添加无效果
+print(s == {1, 2, 3}, 2 in s)    # True True；不依赖集合显示顺序
+s.remove(3)
+s.discard(99)                   # 不存在也不报错
+# s.remove(99)                  # KeyError
+# s[0]                          # TypeError：集合无位置索引
+print(s &amp;amp; {2, 3})               # {2}，交集
+print(s | {2, 3})               # {1, 2, 3}，并集
+print(s - {2, 3})               # {1}，差集
+
+# 字典键、集合元素必须可哈希；相等对象须有相等哈希值
+mapping = {&quot;name&quot;: 1, 2: &quot;two&quot;, (3, 4): &quot;pair&quot;}
+print(hash((3, 4)) == hash((3, 4)))  # True
+# mapping[[1, 2]] = 3           # TypeError：list 不可哈希
+# {(1, [2])}                    # TypeError：tuple 中含 list
+# {set(), {}}                   # TypeError：set、dict 不可哈希
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;原地修改与返回新值&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;items = [3, 1, 2]
+result = items.sort()
+print(items, result)            # [1, 2, 3] None
+s = &quot;abc&quot;
+t = s.replace(&quot;a&quot;, &quot;A&quot;)
+print(s, t)                     # abc Abc；原字符串不变
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;2. 函数&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;# 用一个接口复用逻辑，修改实现时无需改动所有调用处
+def rectangle_area(width, height):
+    return width * height
+
+print(rectangle_area(2, 3), rectangle_area(4, 5))  # 6 20
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;2.1 调用函数&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;f = abs                         # 保存函数对象
+value = f(-4)                   # 调用并保存结果
+print(value)                    # 4
+# help(abs)                     # 查看函数签名与文档
+# abs(1, 2)                     # TypeError：参数数量错误
+# abs(&quot;a&quot;)                     # TypeError：类型不支持
+
+print(min(3, 1), max([3, 1]), sum([3, 1]))  # 1 3 4
+print(hex(255))                 # 0xff，返回字符串
+print(int(&quot;12&quot;), float(&quot;1.2&quot;), str(12), bool([]))  # 12 1.2 12 False
+print(int(1.9), int(-1.9))       # 1 -1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;2.2 定义函数&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;def absolute(x):
+    &quot;&quot;&quot;返回数字的绝对值。&quot;&quot;&quot;     # 首个字符串为 docstring
+    if not isinstance(x, (int, float)):
+        raise TypeError(&quot;需要数字&quot;)
+    return x if x &amp;gt;= 0 else -x  # return 后不再执行函数体
+
+print(absolute(-3), absolute.__doc__)
+print(isinstance(True, int))    # True；若不接受 bool，需要单独排除
+# absolute(&quot;3&quot;)                # TypeError
+
+def pair():
+    return 1, 2                 # 实际返回一个 tuple
+
+x, y = pair()                   # 按位置拆包，数量须匹配
+print((x, y))                   # (1, 2)
+
+def display():
+    print(&quot;hello&quot;)              # print 输出不等于返回值
+
+def stop():
+    return                      # 裸 return 返回 None
+
+print(display(), stop())        # 先 hello，再 None None
+
+import math
+print(math.sqrt(9), math.sin(math.pi / 2), math.cos(0))  # 3.0 1.0 1.0
+# 三角函数使用弧度；自定义函数的模块导入见第 5 节
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;2.3 函数的参数&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;普通参数、默认值、仅关键字参数与收集&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def power(x, n=2):
+    return x ** n
+
+print(power(3), power(3, 3), power(n=3, x=2))  # 9 27 8
+
+def describe(a, b=2, *args, mode, flag=True, **kwargs):
+    return a, b, args, mode, flag, kwargs
+
+print(describe(1, 3, 5, 7, mode=&quot;fast&quot;, debug=True))
+# (1, 3, (5, 7), &apos;fast&apos;, True, {&apos;debug&apos;: True})
+# args 收集多余位置参数 -&amp;gt; tuple；kwargs 收集多余关键字参数 -&amp;gt; dict
+
+def connect(host, *, port=80, timeout):
+    return host, port, timeout
+
+print(connect(&quot;localhost&quot;, timeout=3))  # (&apos;localhost&apos;, 80, 3)
+# 裸 * 或 *args 后的参数只能按名称传入，必填项可排在默认项后
+# connect(&quot;localhost&quot;, 80, 3)           # TypeError
+# def bad(a=1, b): pass                 # SyntaxError：普通必填参数不能放此处
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;调用时拆包与冲突&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def add(a, b):
+    return a + b
+
+values = [2, 3]
+options = {&quot;a&quot;: 2, &quot;b&quot;: 3}
+print(add(*values), add(**options))      # 5 5
+# 定义时 * / ** 收集；调用时 * / ** 拆包，之后仍须符合签名
+# add(1, a=2, b=3)                     # TypeError：a 被赋值两次
+# add(**{&quot;a&quot;: 1, &quot;b&quot;: 2, &quot;c&quot;: 3})      # TypeError：不接受 c
+# add(1)                               # TypeError：缺少 b
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;默认容器只创建一次&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def bad_append(x, items=[]):
+    items.append(x)
+    return items
+
+print(bad_append(1))             # [1]
+print(bad_append(2))             # [1, 2]：共享定义时创建的默认列表
+
+def append_new(x, items=None):
+    if items is None:
+        items = []              # 每次省略参数时创建新列表
+    items.append(x)
+    return items
+
+print(append_new(1), append_new(2))  # [1] [2]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;传参绑定引用；kwargs 只复制外层字典&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def modify(items):
+    items.append(2)              # 修改调用方共享对象
+    items = [9]                 # 只重新绑定局部变量
+
+items = [1]
+modify(items)
+print(items)                    # [1, 2]
+
+def edit(**kwargs):
+    kwargs[&quot;new&quot;] = 1           # 仅修改新字典
+    kwargs[&quot;items&quot;].append(2)   # 嵌套列表仍共享
+
+options = {&quot;items&quot;: [1]}
+edit(**options)
+print(options)                  # {&apos;items&apos;: [1, 2]}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;2.4 递归函数&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;终止条件、缩小规模与迭代替代&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def factorial(n):
+    if type(n) is not int:
+        raise TypeError(&quot;需要整数&quot;)
+    if n &amp;lt; 0:
+        raise ValueError(&quot;需要非负数&quot;)
+    if n &amp;lt;= 1:
+        return 1                # 0! = 1! = 1，终止条件
+    return n * factorial(n - 1) # 问题规模减小
+
+def factorial_loop(n):
+    result = 1
+    for value in range(2, n + 1):  # 此处约定 n 为非负整数
+        result *= value
+    return result
+
+print(factorial(5), factorial_loop(5))  # 120 120
+# factorial(-1)                 # ValueError
+# factorial(10000)              # 通常 RecursionError；每层调用保存状态
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;尾递归与汉诺塔&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def factorial_tail(n, result=1): # 约定 n 为非负整数
+    if n &amp;lt;= 1:
+        return result
+    return factorial_tail(n - 1, result * n)
+    # 直接返回递归结果；CPython 不消除尾调用，仍可能超出递归深度
+
+def hanoi(n, source, helper, target):  # 约定 n &amp;gt;= 1
+    if n == 1:
+        print(source, &quot;-&amp;gt;&quot;, target)
+        return
+    hanoi(n - 1, source, target, helper)
+    print(source, &quot;-&amp;gt;&quot;, target)
+    hanoi(n - 1, helper, source, target)
+
+print(factorial_tail(5))         # 120
+hanoi(2, &quot;A&quot;, &quot;B&quot;, &quot;C&quot;)       # A -&amp;gt; B；A -&amp;gt; C；B -&amp;gt; C
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;3. 高级特性&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;values = list(range(6))
+print(values[:3])                # 取子序列：[0, 1, 2]
+print([x * x for x in values])   # 立即变换：[0, 1, 4, 9, 16, 25]
+stream = (x * x for x in values) # 按需生产
+print(next(stream))             # 0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;3.1 切片&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;a = [0, 1, 2, 3, 4]
+# seq[start:stop:step]：含起点、不含终点
+print(a[:3], a[-3:], a[1:4])     # [0, 1, 2] [2, 3, 4] [1, 2, 3]
+print(a[::2], a[::-1])           # [0, 2, 4] [4, 3, 2, 1, 0]
+print(a[:99], a[99:])            # [0, 1, 2, 3, 4] []：边界自动裁剪
+print(a[:-1:-1])                 # []：显式 -1 与省略反向终点不同
+# a[::0]                        # ValueError：步长不能为 0
+print((1, 2, 3)[:2], &quot;hello&quot;[::2])  # (1, 2) hlo
+
+a = [[1], [2]]
+b = a[:]                        # list 浅拷贝，内部对象仍共享
+print(a is b, a[0] is b[0])      # False True
+b[0].append(9)
+print(a)                        # [[1, 9], [2]]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;3.2 迭代&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;d = {&quot;a&quot;: 1, &quot;b&quot;: 2}
+print(list(d), list(d.values()), list(d.items()))
+# [&apos;a&apos;, &apos;b&apos;] [1, 2] [(&apos;a&apos;, 1), (&apos;b&apos;, 2)]
+for key, value in d.items():
+    print(key, value)
+for index, value in enumerate([&quot;x&quot;, &quot;y&quot;], start=1):
+    print(index, value)         # 1 x；2 y
+for x, y in [(1, 2), (3, 4)]:
+    print(x + y)               # 3；7
+print(list(&quot;abc&quot;))             # [&apos;a&apos;, &apos;b&apos;, &apos;c&apos;]；可迭代不要求整数下标
+
+from collections.abc import Iterable
+print(isinstance([], Iterable), isinstance(3, Iterable))  # True False
+# iter(3)                       # TypeError；实际是否可迭代以 iter 为准
+
+# 筛选时建立新容器，避免遍历时直接增删原容器
+positive = {k: v for k, v in d.items() if v &amp;gt; 1}
+print(positive)                 # {&apos;b&apos;: 2}
+
+def extremes(values):
+    if not values:
+        return None, None
+    low = high = values[0]      # 用真实元素初始化，不假定全为正数
+    for value in values[1:]:
+        low, high = min(low, value), max(high, value)
+    return low, high
+
+print(extremes([-3, -1]), extremes([]))  # (-3, -1) (None, None)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;3.3 列表生成式&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;print([x * x for x in range(4)])                  # [0, 1, 4, 9]
+print([x * x for x in range(6) if x % 2 == 0])    # [0, 4, 16]
+print([x if x &amp;gt;= 0 else -x for x in [-2, 3]])     # [2, 3]
+# for 后的 if 是筛选，不带 else；for 前的 if...else 必须两种结果齐全
+
+print([(x, y) for x in [1, 2] for y in [3, 4]])
+# [(1, 3), (1, 4), (2, 3), (2, 4)]；前一个 for 是外层
+
+values = [&quot;Hi&quot;, 3, None, &quot;PYTHON&quot;]
+print([s.lower() for s in values if isinstance(s, str)])  # [&apos;hi&apos;, &apos;python&apos;]
+print([f&quot;{k}={v}&quot; for k, v in {&quot;a&quot;: 1, &quot;b&quot;: 2}.items()])
+# [&apos;a=1&apos;, &apos;b=2&apos;]；推导式立即创建整个 list
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;3.4 生成器&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;创建、暂停、恢复与耗尽&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;g = (x * x for x in range(3))
+print(next(g), list(g), list(g)) # 0 [1, 4] []：只能向前消费
+
+def steps():
+    print(&quot;start&quot;)
+    yield 1                     # 交出值并保存当前位置和局部状态
+    yield 2
+    return &quot;done&quot;
+
+g = steps()                     # 此时不执行函数体，不输出 start
+print(next(g))                  # 输出 start，再输出 1
+print(next(g))                  # 2，从上次 yield 后继续
+try:
+    next(g)
+except StopIteration as exc:
+    print(exc.value)            # done；return 值存在异常中
+
+print(list(steps()))            # 输出 start 与 [1, 2]；for/list 自动处理结束
+print(next(steps()), next(steps()))  # 两个新生成器，均从第一项开始
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;递推状态与无限流&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def fibonacci(count):
+    a, b = 0, 1
+    for _ in range(count):
+        yield b
+        a, b = b, a + b         # 先计算整个右侧，再分别赋值
+
+print(list(fibonacci(5)))        # [1, 1, 2, 3, 5]
+
+def naturals():
+    n = 0
+    while True:
+        yield n
+        n += 1
+
+for n in naturals():
+    if n == 3:
+        break                   # 无限生成器由消费端限制
+    print(n)                    # 0、1、2
+# 只保存当前递推状态，不保存完整序列；局部状态本身仍占内存
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;3.5 迭代器&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;from collections.abc import Iterable, Iterator
+
+a = [10, 20]
+it = iter(a)                    # 不复制整个列表
+g = (x for x in a)
+print(isinstance(a, Iterable), isinstance(a, Iterator))  # True False
+print(isinstance(it, Iterator), isinstance(g, Iterator)) # True True
+print(iter(it) is it)            # True：迭代器的 __iter__ 返回自身
+print(next(it), next(it))        # 10 20
+print(next(it, &quot;END&quot;))           # END；默认值避免抛 StopIteration
+
+# for 的核心流程：取得迭代器，反复取下一项，遇到结束异常退出
+it = iter([1, 2])
+while True:
+    try:
+        value = next(it)
+    except StopIteration:
+        break
+    print(value)
+
+# 生成器属于迭代器，迭代器属于可迭代对象；协议不承诺索引或长度
+# it[0]                         # TypeError
+# len(it)                       # TypeError
+# 迭代器也不保证省内存，例如 iter(巨大的列表) 仍引用原列表
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;4. 函数式编程&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;# 纯函数：相同输入得到相同结果，不修改外部状态；可使用局部变量
+def square(x):
+    result = x * x
+    return result
+
+print(square(3), square(3))      # 9 9
+
+history = []
+def record(x):
+    history.append(x)           # 有外部副作用；Python 也支持这种写法
+    return x
+
+record(3)
+print(history)                  # [3]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;4.1 高阶函数&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;# 接受函数或返回函数的函数是高阶函数
+def combine(x, y, func):
+    return func(x) + func(y)
+
+f = abs
+print(combine(-2, 3, f))         # 5；传 f 是传规则，f(x) 才执行
+
+def make_adder(offset):
+    return lambda x: x + offset
+
+add_two = make_adder(2)
+print(add_two(5))                # 7
+
+# 不用 abs、list、sum 等内置名称命名普通变量
+# abs = 3
+# abs(-2)                       # TypeError：名称已不再指向函数
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;4.1.1 map / reduce&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;from functools import reduce
+
+mapped = map(str, [2, 4])        # 惰性变换，返回迭代器
+print(list(mapped), list(mapped))  # [&apos;2&apos;, &apos;4&apos;] []
+print(list(map(lambda a, b: a + b, [1, 2, 3], [10, 20])))
+# [11, 22]；多输入默认到最短输入结束
+
+print(reduce(lambda a, b: a - b, [10, 3, 2]))  # 5，即 (10 - 3) - 2
+print(reduce(lambda a, b: a * b, [2, 3, 4], 1))  # 24，初值为 1
+print(reduce(lambda a, b: a * b, [], 1))         # 1，空输入返回初值
+# reduce(lambda a, b: a + b, [])                # TypeError：空输入无初值
+print(sum([1, 2, 3]))            # 求和直接用 sum，结果 6
+
+digits = map(int, &quot;246&quot;)
+number = reduce(lambda acc, digit: acc * 10 + digit, digits, 0)
+print(number)                   # 246：逐项转换，再从左向右累积
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;4.1.2 filter&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;print(list(filter(lambda x: x % 2, range(6))))  # [1, 3, 5]
+print(list(filter(None, [0, 1, &quot;&quot;, &quot;hi&quot;, None])))  # [1, &apos;hi&apos;]
+# 谓词按真值筛选，不必严格返回 bool；结果是惰性迭代器
+
+texts = [&quot;&quot;, &quot;  &quot;, &quot; A &quot;, None, &quot;B&quot;]
+print(list(filter(lambda s: s and s.strip(), texts)))  # [&apos; A &apos;, &apos;B&apos;]
+# 保留的是原元素，不是 strip() 的返回值
+
+def palindrome(n):
+    return str(n) == str(n)[::-1]
+
+print(list(filter(palindrome, [12, 121, 1331])))  # [121, 1331]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;# 素数筛：每次取最小候选，再过滤它的倍数
+def odd_numbers():
+    n = 3
+    while True:
+        yield n
+        n += 2
+
+def not_divisible(divisor):
+    return lambda x: x % divisor != 0
+
+def primes():
+    yield 2
+    candidates = odd_numbers()
+    while True:
+        prime = next(candidates)
+        yield prime
+        candidates = filter(not_divisible(prime), candidates)
+
+result = []
+for prime in primes():
+    if prime &amp;gt;= 15:
+        break                   # 不把无限流整体转成 list
+    result.append(prime)
+print(result)                   # [2, 3, 5, 7, 11, 13]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;4.1.3 sorted&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;values = [-3, 1, -2]
+print(sorted(values))           # [-3, -2, 1]
+print(sorted(values, key=abs))  # [1, -2, -3]；比较键，返回原元素
+print(values)                   # [-3, 1, -2]；不改原列表
+print(sorted(values, reverse=True))  # [1, -2, -3]
+
+print(sorted([&quot;b&quot;, &quot;A&quot;, &quot;Z&quot;]))  # [&apos;A&apos;, &apos;Z&apos;, &apos;b&apos;]；按 Unicode 码点字典序
+print(sorted([&quot;b&quot;, &quot;A&quot;, &quot;Z&quot;], key=str.lower))  # [&apos;A&apos;, &apos;b&apos;, &apos;Z&apos;]
+# 默认排序不是汉语拼音排序
+
+rows = [(&quot;A&quot;, 80), (&quot;B&quot;, 90), (&quot;C&quot;, 80)]
+print(sorted(rows, key=lambda row: row[1], reverse=True))
+# [(&apos;B&apos;, 90), (&apos;A&apos;, 80), (&apos;C&apos;, 80)]；同键保持原相对顺序，排序稳定
+
+print(values.sort())            # None；list.sort 原地修改并返回 None
+print(values)                   # [-3, -2, 1]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;4.2 返回函数与闭包&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;延后计算与绑定时机&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def lazy_total(*values):
+    def calculate():
+        return sum(values)      # 引用外层变量，形成闭包
+    return calculate            # 返回函数；calculate() 才是返回计算结果
+
+f = lazy_total(1, 2, 3)
+print(f())                      # 6；此时才求和
+print(f is lazy_total(1, 2, 3)) # False；不同函数对象
+
+def bad_functions():
+    return [lambda: i * i for i in range(3)]
+
+print([f() for f in bad_functions()])  # [4, 4, 4]；调用时读取共享 i
+good = [lambda i=i: i * i for i in range(3)]
+print([f() for f in good])       # [0, 1, 4]；默认值绑定本轮引用
+
+def bind_square(value):         # 也可用工厂参数形成独立绑定
+    return lambda: value * value
+
+print([bind_square(i)() for i in range(3)])  # [0, 1, 4]
+
+items = [1]
+read = lambda items=items: items
+items.append(2)
+print(read())                   # [1, 2]；固定引用不是深拷贝
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;nonlocal 与独立状态&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def make_counter():
+    count = 0
+    def increment():
+        nonlocal count          # 重新赋值外层函数变量前声明
+        count += 1
+        return count
+    return increment
+
+a, b = make_counter(), make_counter()
+print(a(), a(), b())            # 1 2 1；两个闭包各有状态
+
+def make_reader():
+    value = 10
+    def read():
+        return value + 1        # 仅读取，不需要 nonlocal
+    return read
+
+print(make_reader()())          # 11
+# 若在 read 中写 value += 1 而未声明 nonlocal，会触发 UnboundLocalError
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;4.3 匿名函数&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;square = lambda x: x * x        # 单个表达式，自动返回结果
+print(square(4))                # 16
+print(list(map(lambda x: x + 1, [1, 2])))  # [2, 3]
+print(sorted([&quot;pear&quot;, &quot;a&quot;], key=lambda s: len(s)))  # [&apos;a&apos;, &apos;pear&apos;]
+choose = lambda x: &quot;yes&quot; if x else &quot;no&quot;
+print(choose(0))                # no
+# lambda x: return x            # SyntaxError，不写 return
+
+def explainable(x):             # 多步骤、需文档或复杂分支时用 def
+    &quot;&quot;&quot;将输入加一后平方。&quot;&quot;&quot;
+    adjusted = x + 1
+    return adjusted * adjusted
+
+print(explainable(2))           # 9
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;4.4 装饰器&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;无参数装饰器：接收函数、返回包装器&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from functools import wraps
+
+def logged(func):
+    @wraps(func)                # 保留 __name__、__doc__，设置 __wrapped__
+    def wrapper(*args, **kwargs):
+        print(&quot;calling&quot;, func.__name__)
+        return func(*args, **kwargs)  # 转发参数，保留原返回值
+    return wrapper
+
+@logged                         # 等价于定义后 multiply = logged(multiply)
+def multiply(x, y=2):
+    &quot;&quot;&quot;Return the product.&quot;&quot;&quot;
+    return x * y
+
+print(multiply(3, y=4))         # calling multiply；12
+print(multiply.__name__)        # multiply
+print(multiply.__doc__)         # Return the product.
+print(multiply.__wrapped__(3))  # 6，直接调用原函数
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;带参数装饰器、计时与异常时的收尾&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;from functools import wraps
+from time import perf_counter
+
+def timed(label):               # 第一层：装饰器配置
+    def decorate(func):         # 第二层：接收原函数
+        @wraps(func)
+        def wrapper(*args, **kwargs):  # 第三层：每次调用执行
+            start = perf_counter()
+            try:
+                return func(*args, **kwargs)
+            finally:            # 原函数抛异常也记录结束时间
+                elapsed_ms = (perf_counter() - start) * 1000
+                print(f&quot;{label}: {elapsed_ms:.3f} ms&quot;)
+        return wrapper
+    return decorate
+
+@timed(&quot;sum&quot;)                  # 等价于 total = timed(&quot;sum&quot;)(total)
+def total(values):
+    return sum(values)
+
+print(total([1, 2, 3]))          # 先输出实际耗时，再输出 6
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;定义时装饰，调用时执行包装器；叠加由内向外&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;events = []
+def tag(name):
+    events.append(&quot;configure &quot; + name)
+    def decorate(func):
+        events.append(&quot;decorate &quot; + name)
+        def wrapper():
+            return name + func()
+        return wrapper
+    return decorate
+
+@tag(&quot;A&quot;)
+@tag(&quot;B&quot;)                      # greet = tag(&quot;A&quot;)(tag(&quot;B&quot;)(greet))
+def greet():
+    return &quot;!&quot;
+
+print(events)  # [&apos;configure A&apos;, &apos;configure B&apos;, &apos;decorate B&apos;, &apos;decorate A&apos;]
+print(greet())                  # AB!；包装器在调用时才运行
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;4.5 偏函数&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;from functools import partial
+
+parse_binary = partial(int, base=2)  # 预绑定参数，不修改 int
+print(parse_binary(&quot;101&quot;))          # 5
+print(parse_binary(&quot;101&quot;, base=10)) # 101；调用时可覆盖预绑定关键字
+print(int(&quot;101&quot;))                   # 101；原函数不变
+
+at_least_ten = partial(max, 10)      # 普通预绑定位置参数放最前面
+print(at_least_ten(3, 7))            # 10，等价于 max(10, 3, 7)
+# 此处“偏函数”表示固定部分实参以简化调用，并非数学中的同名概念
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;5. 模块与包&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;# 每个 .py 文件通常对应一个模块，目录组织成包
+project/
+├── app.py
+└── tools/
+    ├── __init__.py        # 普通包初始化文件，可为空
+    ├── helpers.py         # 模块名 tools.helpers
+    └── text/
+        ├── __init__.py
+        └── formatter.py   # 模块名 tools.text.formatter
+
+# 特殊的命名空间包允许省略 __init__.py
+# 模块名宜小写，避免 json.py、random.py 等与依赖同名造成遮蔽
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;5.1 使用模块&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;导入、别名与文档属性&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import math
+import math as m
+from math import sqrt
+
+print(math.sqrt(9), m.sqrt(9), sqrt(9))  # 3.0 3.0 3.0
+print(math.__name__)                    # math
+print(math.__doc__ is not None)         # True
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;下面两个文件放在同一目录。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# 文件：helpers.py
+&quot;&quot;&quot;数字计算工具。&quot;&quot;&quot;              # 模块 __doc__
+
+def _double(x):                 # _ 前缀约定内部使用，并非权限控制
+    return x * 2
+
+def calculate(x):               # 公开接口封装内部实现
+    return _double(x) + 1
+
+print(&quot;helpers loaded&quot;)         # 首次导入会执行顶层语句
+
+if __name__ == &quot;__main__&quot;:
+    print(calculate(3))          # 仅作为入口运行时执行
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;# 文件：app.py
+import sys
+import helpers
+import helpers                  # 通常复用 sys.modules 缓存，不再打印 loaded
+from helpers import calculate
+
+print(calculate(3))              # 7
+print(helpers.__name__)          # helpers
+print(__name__)                  # 直接运行本文件时是 __main__
+print(sys.argv)                 # 脚本名及字符串参数
+# helpers._double(3)             # 技术上可访问，但不应依赖内部接口
+# 模块级 __secret 也不自动隐藏；__name__ 等双端下划线名有特殊用途
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;python app.py hello 3
+# sys.argv 为 [&apos;app.py&apos;, &apos;hello&apos;, &apos;3&apos;]；数字参数也是字符串
+python helpers.py
+# 输出 helpers loaded，再输出 7
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;5.2 第三方模块与搜索路径&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;# 使用目标解释器对应的 pip；下面是终端命令，不是 Python 语句
+python -m pip install Pillow
+python -m pip --version
+python -c &quot;from PIL import Image; print(Image.__name__)&quot;
+# 安装名 Pillow，导入名 PIL；两者未必相同
+
+# Anaconda 是集成 Python 与数据科学工具的发行版，可用 conda 管理环境
+# 安装 Anaconda 后，可在其提供的终端检查解释器与包
+conda info --envs
+python -c &quot;import sys; print(sys.executable)&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;import sys
+import os
+import importlib.util
+
+print(sys.executable)            # 当前解释器实际路径
+print(sys.path)                  # 文件模块搜索路径，初始项受启动方式影响
+print(os.environ.get(&quot;PATH&quot;))   # Shell 查找可执行命令的路径
+print(os.environ.get(&quot;PYTHONPATH&quot;))  # 为 Python 添加模块搜索目录
+print(importlib.util.find_spec(&quot;json&quot;).origin)  # 定位实际加载的模块
+
+# 只影响当前进程；此处以字符串演示，不要求目录存在
+sys.path.append(&quot;./my_modules&quot;)
+sys.path.pop()                   # 撤销示例添加项
+# import module_that_does_not_exist  # ModuleNotFoundError
+# 已安装却不能导入：核对解释器、pip 路径和当前目录是否有同名文件
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;6. 面向对象编程&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;# 类把属性和操作属性的方法放在一起；实例是具体对象
+class Product:
+    def __init__(self, name, price):
+        self.name = name
+        self.price = price
+
+    def total(self, quantity):
+        return self.price * quantity
+
+pen = Product(&quot;pen&quot;, 3)
+print(pen.name, pen.total(4))    # pen 12
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;6.1 类和实例&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;class Item:                     # Python 3 中最终继承 object
+    def __init__(self, name):    # 初始化，不返回非 None 值
+        self.name = name
+
+    def rename(self, name=&quot;untitled&quot;):
+        self.name = name        # self 按惯例表示当前实例
+
+a, b = Item(&quot;A&quot;), Item(&quot;B&quot;)
+a.rename(&quot;new&quot;)                # 自动传入 self
+Item.rename(b, &quot;other&quot;)         # 对普通实例方法，显式传入实例
+print(a.name, b.name)            # new other
+a.extra = 1                     # 一般自定义实例可动态绑定属性
+print(hasattr(b, &quot;extra&quot;))      # False，不自动给其他实例添加
+print(isinstance(a, object))     # True
+
+shared = []
+a.data = shared
+b.data = shared
+a.data.append(1)
+print(b.data)                   # [1]；实例也可显式共享可变数据
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;6.2 访问限制&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;class Account:
+    def __init__(self, balance):
+        self.owner = &quot;guest&quot;    # 公共属性
+        self._label = &quot;main&quot;    # 约定内部使用
+        self.__balance = 0      # 名称改写为 _Account__balance
+        self.set_balance(balance)
+
+    def get_balance(self):
+        return self.__balance
+
+    def set_balance(self, value):
+        if not isinstance(value, (int, float)):
+            raise TypeError(&quot;需要数字&quot;)
+        if value &amp;lt; 0:
+            raise ValueError(&quot;余额不能为负&quot;)
+        self.__balance = value
+
+account = Account(10)
+account.set_balance(20)
+print(account.get_balance())    # 20；通过接口校验后修改
+# account.__balance             # AttributeError
+print(account._Account__balance) # 20；名称改写不是安全隔离
+account.__balance = 999         # 类外创建另一个属性
+print(account.get_balance())    # 20；内部值不变
+# account.set_balance(-1)       # ValueError
+# __name__、__init__ 等双端下划线名有特殊用途，不是私有变量写法
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;6.3 继承、多态与鸭子类型&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;class Animal:
+    def __init__(self, name):
+        self.name = name
+
+    def speak(self):
+        return &quot;sound&quot;
+
+class Dog(Animal):
+    def __init__(self, name):
+        super().__init__(name)  # 重写初始化后，按需显式调用基类初始化
+
+    def speak(self):
+        return &quot;woof&quot;          # 重写同名方法
+
+class Cat(Animal):
+    def speak(self):
+        return &quot;meow&quot;
+
+def sound_of(obj):
+    return obj.speak()          # 稳定接口，新增实现不必修改调用方
+
+dog = Dog(&quot;D&quot;)
+print(sound_of(dog), sound_of(Cat(&quot;C&quot;)))  # woof meow
+print(isinstance(dog, Animal), isinstance(Animal(&quot;A&quot;), Dog))  # True False
+
+class Bell:                    # 没有继承 Animal，但提供所需行为
+    def speak(self):
+        return &quot;ding&quot;
+
+print(sound_of(Bell()))         # ding；鸭子类型关注行为及返回约定
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;6.4 获取对象信息&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;import types
+
+class Base:
+    pass
+class Child(Base):
+    def __init__(self):
+        self.x = 3
+    def power(self):
+        return self.x ** 2
+
+obj = Child()
+print(type(obj) is Child, type(obj) is Base)  # True False：确切类型
+print(isinstance(obj, Base), isinstance([], (list, tuple)))  # True True
+print(isinstance(lambda: 1, types.FunctionType))  # True
+print(types.LambdaType is types.FunctionType)    # True
+print(isinstance(abs, types.BuiltinFunctionType)) # True
+print(isinstance((x for x in []), types.GeneratorType))  # True
+
+print(&quot;power&quot; in dir(obj))      # True；dir 用于探索，不穷尽动态属性
+print(hasattr(obj, &quot;x&quot;))        # True；可能触发属性查找逻辑
+print(getattr(obj, &quot;missing&quot;, 0))  # 0；无默认值且缺失时 AttributeError
+setattr(obj, &quot;x&quot;, 4)            # 对应 obj.x = 4
+method = getattr(obj, &quot;power&quot;)
+print(method())                 # 16，获得绑定方法后调用
+print(obj.x)                    # 4；名称已知时直接访问更清楚
+
+class Sized:
+    def __len__(self):
+        return 3                # 特殊方法须返回非负整数
+
+print(len(Sized()))             # 3
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;6.5 实例属性和类属性&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;class Student:
+    school = &quot;School&quot;          # 类属性，供实例共享访问
+    count = 0
+    shared = []
+
+    def __init__(self, name):
+        self.name = name        # 实例属性
+        self.notes = []         # 每个实例独立的列表
+        Student.count += 1      # 累计创建数，不等于仍存活实例数
+
+a, b = Student(&quot;A&quot;), Student(&quot;B&quot;)
+print(Student.count, a.school, b.school)  # 2 School School
+a.school = &quot;Other&quot;             # 遮蔽普通同名类属性
+print(a.school, Student.school) # Other School
+del a.school
+print(a.school)                 # School：删除后重新找到类属性
+
+a.shared.append(1)
+print(b.shared)                 # [1]：修改共享列表
+a.notes.append(&quot;math&quot;)
+print(b.notes)                  # []：实例列表互不影响
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;7. 定制类&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;# 特殊方法把类接入内置操作，而非只能显式调用普通方法
+class Answer:
+    def __call__(self):
+        return 42
+
+print(Answer()())                # 42；调用实例会使用 __call__
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;7.1 字符串表示：&lt;strong&gt;str&lt;/strong&gt; / &lt;strong&gt;repr&lt;/strong&gt;&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;class User:
+    def __init__(self, name):
+        self.name = name
+    def __str__(self):
+        return self.name        # 面向用户，必须返回 str
+    def __repr__(self):
+        return f&quot;User({self.name!r})&quot;  # 面向调试；!r 使用 repr
+
+user = User(&quot;Ada&quot;)
+print(str(user), repr(user))    # Ada User(&apos;Ada&apos;)
+print([user])                   # [User(&apos;Ada&apos;)]；容器显示成员通常用 repr
+
+class Label:
+    def __str__(self):
+        return &quot;label&quot;
+    __repr__ = __str__           # 两种显示需求相同时复用
+
+class OnlyRepr:
+    def __repr__(self):
+        return &quot;fallback&quot;
+
+print(str(OnlyRepr()))          # fallback；没有 __str__ 时回退到 __repr__
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;7.2 迭代协议：&lt;strong&gt;iter&lt;/strong&gt; / &lt;strong&gt;next&lt;/strong&gt;&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;class Countdown:
+    def __init__(self, start):
+        self.current = start
+    def __iter__(self):
+        return self             # 自身就是迭代器，共享当前进度
+    def __next__(self):
+        if self.current &amp;lt;= 0:
+            raise StopIteration # 耗尽后持续保持耗尽
+        value = self.current
+        self.current -= 1
+        return value
+
+counter = Countdown(3)
+print(next(counter))            # 3
+print(list(counter), list(counter))  # [2, 1] []
+
+class Bag:
+    def __init__(self, values):
+        self.values = list(values)
+    def __iter__(self):
+        return iter(self.values) # 每次新建迭代器，可重复遍历
+
+bag = Bag([1, 2])
+print(list(bag), list(bag))      # [1, 2] [1, 2]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;7.3 索引、切片与增删&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;class Series:
+    def __init__(self, values):
+        self.values = list(values)
+    def __getitem__(self, key):
+        return self.values[key] # 委托 list 处理负索引和 slice
+    def __setitem__(self, key, value):
+        self.values[key] = value
+    def __delitem__(self, key):
+        del self.values[key]
+    def __len__(self):
+        return len(self.values)
+
+s = Series([1, 2, 3, 4])
+print(s[-1], s[::2])            # 4 [1, 3]
+s[1] = 20
+del s[0]
+print(s[:], len(s))             # [20, 3, 4] 3
+# s[99]                         # IndexError；映射缺失键应是 KeyError
+# s[::0]                        # ValueError；不能只实现正向切片就声称支持全部切片
+
+key = slice(None, None, -1)     # s[::-1] 传入这样的 slice
+print(key.start, key.stop, key.step)  # None None -1
+print(key.indices(4))           # (3, -1, -1)，按长度规范化
+print(list(range(*key.indices(4))))  # [3, 2, 1, 0]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;7.4 动态属性：&lt;strong&gt;getattr&lt;/strong&gt;&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;class Profile:
+    name = &quot;guest&quot;
+    def __getattr__(self, name): # 仅在普通属性查找失败后调用
+        if name == &quot;score&quot;:
+            return 100
+        if name == &quot;greeting&quot;:
+            return lambda: &quot;hello&quot;  # 属性也可动态返回函数
+        raise AttributeError(name)  # 不认识的名称不要默默返回 None
+
+p = Profile()
+print(p.name, p.score, p.greeting())  # guest 100 hello
+print(hasattr(p, &quot;typo&quot;))       # False；依赖 AttributeError
+# p.typo                        # AttributeError
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;7.5 可调用对象与链式访问&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;class Adder:
+    def __init__(self, amount):
+        self.amount = amount
+    def __call__(self, value):
+        return self.amount + value
+
+add_two = Adder(2)
+print(add_two(3), callable(add_two))  # 5 True
+print(callable(Adder), callable(abs), callable([]))  # True True False
+# add_two()                     # TypeError：callable 不保证任意参数调用都成功
+
+class PathChain:
+    def __init__(self, path=&quot;&quot;):
+        self.path = path
+    def __getattr__(self, name):
+        return PathChain(f&quot;{self.path}/{name}&quot;)
+    def __call__(self, value):
+        return PathChain(f&quot;{self.path}/{value}&quot;)
+    def __str__(self):
+        return self.path
+
+print(PathChain().users(&quot;ada&quot;).repos)  # /users/ada/repos
+# 这里只构造路径，不发送网络请求；动态属性返回新对象实现链式调用
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;8. 错误、调试和测试&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;def parse_number(text):
+    return int(text)
+
+try:
+    parse_number(&quot;bad&quot;)         # 异常处理：应对失败
+except ValueError:
+    print(&quot;需要整数&quot;)
+
+value = parse_number(&quot;3&quot;)
+print(&quot;debug value:&quot;, value)    # 调试：观察状态
+assert value == 3               # 验证当前结果；系统化测试见下文
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;8.1 错误处理&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;try / except / else / finally&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;def divide(text):
+    try:
+        result = 10 / int(text)
+        print(&quot;calculated&quot;)    # 出错后跳过 try 中剩余语句
+    except ValueError:
+        print(&quot;invalid integer&quot;)
+    except ZeroDivisionError:
+        print(&quot;zero divisor&quot;)
+    else:
+        print(result)           # try 正常执行到末尾时执行
+    finally:
+        print(&quot;finished&quot;)       # 正常、异常或提前返回时执行清理
+
+divide(&quot;2&quot;)                     # calculated；5.0；finished
+divide(&quot;0&quot;)                     # zero divisor；finished
+divide(&quot;bad&quot;)                   # invalid integer；finished
+# try 通过 return/break/continue 提前离开也不会进入 else
+# finally 无法保证在进程被强制终止时执行；其中不宜 return，以免掩盖异常
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;异常继承、匹配顺序与传播&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;print(issubclass(ValueError, Exception))       # True
+print(issubclass(Exception, BaseException))    # True
+print(issubclass(KeyboardInterrupt, Exception)) # False
+
+try:
+    b&quot;\xff&quot;.decode(&quot;utf-8&quot;)
+except UnicodeError:            # 子类在前；它也是 ValueError 的子类
+    print(&quot;unicode error&quot;)
+except ValueError:
+    print(&quot;other value error&quot;)
+
+try:
+    int(None)
+except (TypeError, ValueError): # 一次处理多个类型，不吞掉所有 BaseException
+    print(&quot;invalid input&quot;)
+
+def inner():
+    return 1 / 0
+def outer():
+    return inner()
+
+try:
+    outer()                     # 异常跨调用层级传播，在能处理的位置捕获
+except ZeroDivisionError:
+    print(&quot;handled outside&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;主动抛出、记录、重新抛出与异常链&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import logging
+
+class ConfigError(ValueError):
+    pass                        # 必要时派生自定义异常
+
+def read_count(text):
+    try:
+        value = int(text)
+    except ValueError as exc:
+        raise ConfigError(&quot;count 必须是整数&quot;) from exc
+    if value &amp;lt; 0:
+        raise ConfigError(&quot;count 不能为负&quot;)
+    return value
+
+def process(text):
+    try:
+        return read_count(text)
+    except ConfigError:
+        logging.exception(&quot;读取配置失败&quot;)  # 记录当前异常及堆栈
+        raise                   # 原样重抛，日志不等于已解决
+
+try:
+    process(&quot;abc&quot;)
+except ConfigError as exc:
+    print(type(exc.__cause__).__name__)  # ValueError，保留原始原因
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;阅读 traceback&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;Traceback (most recent call last):
+  File &quot;app.py&quot;, line 6, in outer
+    return inner()
+  File &quot;app.py&quot;, line 3, in inner
+    return 1 / 0
+ZeroDivisionError: division by zero
+
+# 先看末行：异常类型与信息
+# 再看最近出错行：inner 内的 1 / 0
+# 向上追踪调用者：outer 如何调用到这里
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;8.2 调试&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;临时输出与断言&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# 文件：debug_demo.py
+def divide(n):
+    print(&quot;n =&quot;, n)             # 临时观察，定位后移除无用输出
+    assert n != 0, &quot;n 不能为零&quot; # 断言内部假设，失败时 AssertionError
+    return 10 / n
+
+print(divide(2))                 # n = 2；5.0
+# divide(0)                     # AssertionError
+# 必要的用户输入校验应 if...raise，不能依赖可能被禁用的 assert
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;python -O debug_demo.py
+# 大写字母 O，禁用 assert；不是数字 0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;logging 级别与输出&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import logging
+
+logging.basicConfig(level=logging.INFO, format=&quot;%(levelname)s: %(message)s&quot;, force=True)
+logging.debug(&quot;不会显示&quot;)        # 低于 INFO 阈值
+logging.info(&quot;n=%s&quot;, 3)
+logging.warning(&quot;warning&quot;)
+logging.error(&quot;error&quot;)
+logging.critical(&quot;critical&quot;)
+# DEBUG &amp;lt; INFO &amp;lt; WARNING &amp;lt; ERROR &amp;lt; CRITICAL；默认阈值通常为 WARNING
+# 独立脚本写文件可改为：
+# logging.basicConfig(filename=&quot;app.log&quot;, encoding=&quot;utf-8&quot;, level=logging.INFO)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;断点与单步调试&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# 文件：app.py；交互调试示例，取消断点行注释后运行
+import pdb
+
+value = 2
+# pdb.set_trace()                # 执行到这里进入 pdb
+# breakpoint()                   # 默认进入 pdb，可通过配置改变
+result = 10 / value
+print(result)
+# IDE 中也可在 result 行设置断点，查看 value 与调用栈，然后逐步执行
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;python -m pdb app.py
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;# 在 (Pdb) 提示符后输入
+l           # 查看源码
+n           # 下一行，不进入被调用函数
+s           # 进入函数
+p value     # 查看表达式
+c           # 继续执行
+q           # 退出调试
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;8.3 单元测试&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;# 文件：test_numbers.py
+import unittest
+
+def parse_nonnegative(text):
+    value = int(text)
+    if value &amp;lt; 0:
+        raise ValueError(&quot;不能为负&quot;)
+    return value
+
+class TestNumbers(unittest.TestCase):
+    def setUp(self):
+        self.values = []        # 每个测试前准备，各用独立状态
+
+    def tearDown(self):
+        self.values.clear()     # setUp 成功后，即使测试失败也执行
+
+    def test_normal(self):
+        self.assertEqual(parse_nonnegative(&quot;12&quot;), 12)
+        self.assertTrue(isinstance(parse_nonnegative(&quot;1&quot;), int))
+        self.assertFalse(self.values)
+
+    def test_boundary(self):
+        self.assertEqual(parse_nonnegative(&quot;0&quot;), 0)
+
+    def test_empty(self):
+        with self.assertRaises(ValueError):
+            parse_nonnegative(&quot;&quot;)
+
+    def test_invalid(self):
+        for text in (&quot;-1&quot;, &quot;bad&quot;):
+            with self.assertRaises(ValueError):
+                parse_nonnegative(text)
+
+if __name__ == &quot;__main__&quot;:
+    unittest.main()
+
+# test 开头的方法才会被默认识别；test_*.py 便于自动发现
+# TDD：先写上述预期用例 -&amp;gt; 实现函数 -&amp;gt; 重构后再运行
+# 用例应独立且简单；通过不证明无 bug，失败也需核对测试预期与环境
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;python test_numbers.py
+python -m unittest test_numbers
+python -m unittest test_numbers.TestNumbers.test_boundary
+python -m unittest test_numbers -k invalid -v
+python -m unittest discover
+# 依次：直接运行、指定模块、指定方法、按名称筛选并显示详情、自动发现
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;8.4 文档测试&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;# 文件：labels.py
+def label(number):
+    &quot;&quot;&quot;给非负数生成标签；&amp;gt;&amp;gt;&amp;gt; 为输入，下一行为预期输出。
+
+    &amp;gt;&amp;gt;&amp;gt; label(3)
+    &apos;item-3&apos;
+    &amp;gt;&amp;gt;&amp;gt; label(-1)
+    Traceback (most recent call last):
+        ...
+    ValueError: 不能为负
+    &amp;gt;&amp;gt;&amp;gt; print(label(12))  # doctest: +ELLIPSIS
+    item-...
+    &quot;&quot;&quot;
+    if number &amp;lt; 0:
+        raise ValueError(&quot;不能为负&quot;)
+    return f&quot;item-{number}&quot;
+
+if __name__ == &quot;__main__&quot;:
+    import doctest
+    doctest.testmod()
+
+# 普通输出默认精确比对：引号、空白、换行均可能影响结果
+# 异常中间的栈内容可省略；普通输出用 ... 通配需 ELLIPSIS
+# 避免使用随机值、内存地址等不稳定预期输出
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;python labels.py                 # 默认通过时无输出
+python -m doctest -v labels.py   # 显示各示例的测试结果
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;9. IO 编程&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;from io import StringIO
+
+stream = StringIO()
+stream.write(&quot;hello&quot;)           # Output：写出
+stream.seek(0)
+text = stream.read()            # Input：读入
+print(text)                     # hello
+stream.close()                  # 用完关闭资源
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;# 同步文件调用完成后才继续执行；文件对象不同于底层整数描述符
+import tempfile
+
+with tempfile.TemporaryFile(mode=&quot;w+&quot;, encoding=&quot;utf-8&quot;) as file:
+    file.write(&quot;hello&quot;)
+    print(isinstance(file.fileno(), int))  # True，fileno 得到整数描述符
+    file.seek(0)
+    print(file.read())           # hello；退出 with 自动关闭
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;# 对比：把阻塞工作放到线程后，事件循环可在等待期间运行其他任务
+import asyncio
+from io import StringIO
+
+async def main():
+    with StringIO(&quot;hello&quot;) as stream:
+        text = await asyncio.to_thread(stream.read)
+        print(text)
+
+# asyncio.run(main())            # 在普通脚本中运行；不保证所有任务都会更快
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;9.1 文件读写&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;模式、编码与自动关闭&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# 下面的模式会实际创建或修改当前目录的示例文件
+with open(&quot;notes.txt&quot;, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+    print(f.write(&quot;第一行\n&quot;))   # 4；w 不存在则创建，存在则立即截断
+    f.flush()                   # 把 Python 缓冲交给下层
+
+with open(&quot;notes.txt&quot;, &quot;a&quot;, encoding=&quot;utf-8&quot;) as f:
+    f.write(&quot;第二行\n&quot;)         # a 追加，不自动添加换行
+
+with open(&quot;notes.txt&quot;, &quot;r&quot;, encoding=&quot;utf-8&quot;) as f:
+    print(f.read())             # 文本模式返回 str，按实际编码读取
+print(f.closed)                 # True；块内抛异常也会关闭
+
+with open(&quot;bytes.bin&quot;, &quot;wb&quot;) as f:
+    f.write(b&quot;\x00\x01&quot;)       # 二进制写入 bytes，不传 encoding
+with open(&quot;bytes.bin&quot;, &quot;rb&quot;) as f:
+    print(f.read())             # b&apos;\x00\x01&apos;
+
+# ab 为二进制追加；正常 close 会刷新缓冲，不等于保证断电后已持久落盘
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;import os
+import tempfile
+
+with tempfile.TemporaryDirectory() as directory:
+    path = os.path.join(directory, &quot;new.txt&quot;)
+    with open(path, &quot;x&quot;, encoding=&quot;utf-8&quot;) as f:
+        f.write(&quot;abc&quot;)          # x 独占创建，已存在会 FileExistsError
+    with open(path, &quot;r+&quot;, encoding=&quot;utf-8&quot;) as f:
+        f.write(&quot;X&quot;)            # + 增加读写能力；r+ 不截断
+        f.seek(0)
+        print(f.read())         # Xbc
+    # open(path, &quot;x&quot;)           # FileExistsError
+    # open(path, &quot;w+&quot;)          # 可读写，但仍会截断
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;读取位置、长度单位与逐行处理&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;with open(&quot;reading.txt&quot;, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+    f.write(&quot;中文\n  hello  \n&quot;)
+
+with open(&quot;reading.txt&quot;, encoding=&quot;utf-8&quot;) as f:
+    print(f.read(1))            # 中；文本 size 计字符
+    print(repr(f.readline()))   # &apos;文\n&apos;；从当前位置读到行尾
+    print(f.readlines())        # [&apos;  hello  \n&apos;]；剩余行组成 list
+    print(repr(f.read()))       # &apos;&apos;：已到 EOF
+    f.seek(0)
+    print(f.read(2))            # 中文；显式回到开头
+
+with open(&quot;reading.txt&quot;, &quot;rb&quot;) as f:
+    print(len(f.read(1)))        # 1；二进制 size 计字节
+    f.read()
+    print(f.read())             # b&apos;&apos;：二进制 EOF
+
+with open(&quot;reading.txt&quot;, encoding=&quot;utf-8&quot;) as f:
+    for line in f:              # 大文本逐行处理，不一次加载全部
+        print(repr(line.rstrip(&quot;\n&quot;)))  # 保留行首尾空格
+
+print(repr(&quot;  hello  \n&quot;.strip()))      # &apos;hello&apos;；strip 去掉两端所有空白
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;文件与编码异常&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import os
+import tempfile
+
+with tempfile.TemporaryDirectory() as directory:
+    try:
+        with open(os.path.join(directory, &quot;missing.txt&quot;)) as f:
+            f.read()
+    except FileNotFoundError:
+        print(&quot;file not found&quot;)
+
+print(issubclass(FileNotFoundError, OSError))  # True
+print(issubclass(PermissionError, OSError))   # True；权限不足
+
+with open(&quot;encoding.bin&quot;, &quot;wb&quot;) as f:
+    f.write(b&quot;A\xffB&quot;)
+with open(&quot;encoding.bin&quot;, encoding=&quot;utf-8&quot;, errors=&quot;ignore&quot;) as f:
+    print(f.read())             # AB，丢弃错误字节；默认会 UnicodeDecodeError
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;9.2 StringIO 和 BytesIO&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;from io import StringIO, BytesIO
+
+with StringIO() as f:
+    print(f.write(&quot;hello&quot;))     # 5，操作 str
+    print(repr(f.read()))       # &apos;&apos;：写完游标位于末尾
+    print(f.getvalue())         # hello：取完整内容，不受游标影响
+    f.seek(0)
+    print(f.read())             # hello
+
+with StringIO(&quot;a\nb&quot;) as f:    # 可用初始文本创建
+    print(repr(f.readline()))   # &apos;a\n&apos;
+    print(f.read())             # b
+
+with BytesIO() as f:
+    f.write(&quot;中文&quot;.encode(&quot;utf-8&quot;))  # 只写 bytes
+    print(len(f.getvalue()))    # 6
+    f.seek(0)
+    print(f.read().decode(&quot;utf-8&quot;))  # 中文
+
+def read_text(stream):          # 接口只要求满足 read() 行为和返回约定
+    return stream.read().upper()
+
+with StringIO(&quot;hello&quot;) as memory_file:
+    print(read_text(memory_file))  # HELLO；内存流可替代真实文件做测试
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;9.3 文件与目录操作&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;系统、环境变量与路径处理&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import os
+
+print(os.name)                  # Windows 常见 nt；Unix 类系统常见 posix
+if hasattr(os, &quot;uname&quot;):
+    print(os.uname())           # 平台相关，Windows 通常不支持
+print(os.environ.get(&quot;PYTHON_REVIEW_OPTION&quot;, &quot;default&quot;))
+print(os.getcwd())              # 当前工作目录
+print(os.path.abspath(&quot;.&quot;))    # 规范化绝对路径
+
+path = os.path.join(&quot;data&quot;, &quot;report.txt&quot;)  # 使用平台分隔符
+print(os.path.split(path))      # (&apos;data&apos;, &apos;report.txt&apos;)
+print(os.path.splitext(path))   # (&apos;data/report&apos;, &apos;.txt&apos;)，分隔符随平台
+# 合并、拆分路径不要求文件存在，也不会创建目录
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;创建、复制、重命名、查询和删除&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import os
+import shutil
+import tempfile
+
+with tempfile.TemporaryDirectory() as root:
+    folder = os.path.join(root, &quot;data&quot;)
+    os.mkdir(folder)            # 创建单层目录，父目录须存在
+    source = os.path.join(folder, &quot;a.txt&quot;)
+    with open(source, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+        f.write(&quot;abc&quot;)
+    copied = os.path.join(folder, &quot;b.txt&quot;)
+    shutil.copyfile(source, copied)  # 复制内容，不保证全部元数据
+    renamed = os.path.join(folder, &quot;c.txt&quot;)
+    os.rename(copied, renamed)  # 目标覆盖语义有平台差异
+
+    print(sorted(os.listdir(folder)))  # [&apos;a.txt&apos;, &apos;c.txt&apos;]；listdir 不保证顺序
+    print(os.path.isfile(source), os.path.isdir(folder))  # True True
+    stat = os.stat(source)
+    print(stat.st_size)         # 3，字节大小；stat.st_mtime 为修改时间
+
+    os.remove(source)           # 删除文件
+    os.remove(renamed)
+    os.rmdir(folder)            # 只能删除空目录
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;按类型筛选与递归搜索&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import os
+
+root = &quot;.&quot;
+python_files = [
+    name for name in os.listdir(root)
+    if os.path.isfile(os.path.join(root, name))
+    and os.path.splitext(name)[1] == &quot;.py&quot;
+]
+print(python_files)
+# listdir 只返回直属条目名；检查其他目录时必须先与 root 拼接
+
+for directory, subdirs, filenames in os.walk(root):
+    for name in filenames:
+        if &quot;report&quot; in name:
+            path = os.path.join(directory, name)
+            print(os.path.relpath(path, root))  # 相对路径
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;9.4 序列化&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;pickle：Python 对象与字节表示&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import pickle
+from io import BytesIO
+
+record = {&quot;numbers&quot;: [1, 2], &quot;point&quot;: (3, 4)}
+data = pickle.dumps(record)     # 对象 -&amp;gt; bytes
+restored = pickle.loads(data)   # bytes -&amp;gt; 对象，仅加载可信数据
+print(type(data), restored == record, restored is record)  # bytes True False
+
+with BytesIO() as f:            # 真实文件相应使用 wb / rb
+    pickle.dump(record, f)      # 写二进制流
+    f.seek(0)
+    print(pickle.load(f))        # 从流恢复
+
+# pickle.loads(untrusted_data)  # 不要执行：反序列化可能运行任意代码
+# pickle.dumps((x for x in [])) # TypeError：生成器不可直接保存
+# 自定义类恢复还依赖可导入的类定义、协议版本和环境兼容性
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;JSON：类型映射、文本与文件&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import json
+
+record = {&quot;name&quot;: &quot;中文&quot;, &quot;items&quot;: [1, 2.5], &quot;ok&quot;: True, &quot;extra&quot;: None}
+text = json.dumps(record, ensure_ascii=False)
+print(text)
+# {&quot;name&quot;: &quot;中文&quot;, &quot;items&quot;: [1, 2.5], &quot;ok&quot;: true, &quot;extra&quot;: null}
+# dict/list/str/int或float/True或False/None -&amp;gt; object/array/string/number/boolean/null
+print(type(text), json.loads(text) == record)  # str True
+
+escaped = json.dumps(record)    # 默认 ensure_ascii=True，非 ASCII 字符转义
+print(json.loads(escaped) == json.loads(text)) # True，含义相同
+print(json.loads(json.dumps((1, 2))))         # [1, 2]；tuple 恢复为 list
+print(json.loads(json.dumps({1: &quot;one&quot;})))      # {&apos;1&apos;: &apos;one&apos;}；键变为字符串
+# json.dumps({1, 2})            # TypeError：set 默认不支持
+# json.dumps(float(&quot;nan&quot;), allow_nan=False)   # ValueError，拒绝非标准数值
+
+with open(&quot;record.json&quot;, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+    json.dump(record, f, ensure_ascii=False, indent=2)  # 写文本流
+with open(&quot;record.json&quot;, encoding=&quot;utf-8&quot;) as f:
+    print(json.load(f) == record)  # True；文件编码由 open 指定
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;自定义编码与恢复对象&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import json
+
+class Point:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+
+def encode(obj):
+    if isinstance(obj, Point):
+        return {&quot;__type__&quot;: &quot;Point&quot;, &quot;x&quot;: obj.x, &quot;y&quot;: obj.y}
+    raise TypeError(&quot;不支持此类型&quot;)
+
+def decode(data):
+    if data.get(&quot;__type__&quot;) == &quot;Point&quot;:
+        return Point(data[&quot;x&quot;], data[&quot;y&quot;])
+    return data                 # 普通字典保持原样
+
+text = json.dumps({&quot;point&quot;: Point(1, 2)}, default=encode)
+result = json.loads(text, object_hook=decode)
+print(result[&quot;point&quot;].x, result[&quot;point&quot;].y)  # 1 2
+# default 处理默认不支持的类型，显式选择字段，不假定都有 __dict__
+# object_hook 对每个 JSON object 都调用，包括嵌套对象，须识别类型标记
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;10. venv 虚拟环境&lt;/h2&gt;
+&lt;h3&gt;10.1 环境隔离与创建&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;# 一个项目一套依赖；源码放在环境目录之外
+project/
+├── .venv/              # 解释器副本或链接、包目录、pyvenv.cfg
+├── app.py              # 项目源码
+└── requirements.txt    # 依赖记录
+
+# 默认不使用系统第三方包；环境可重建，不把唯一源码存进 .venv
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;# Windows PowerShell，用当前解释器创建环境
+python -m venv .venv
+# 用另一已安装解释器创建；venv 不负责下载 Python 版本
+# &amp;amp; &apos;C:\Python312\python.exe&apos; -m venv .venv312
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;# Linux / macOS
+python3 -m venv .venv
+# 不同项目可各自创建，不同环境可安装不同版本依赖
+python3 -m venv .venv-other
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;10.2 激活、安装与退出&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+python -m pip install jinja2
+python -c &quot;import jinja2; print(jinja2.__version__)&quot;
+deactivate
+# 激活调整当前 Shell 的 PATH 等变量，提示符通常显示环境名
+# deactivate 退出环境，不删除包，也不修改整个系统的 Python
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;:: Windows cmd.exe，使用不同的激活脚本
+.venv\Scripts\activate.bat
+python -m pip install jinja2
+deactivate
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;# Linux / macOS，bash 或 zsh
+source .venv/bin/activate
+python -m pip install jinja2
+deactivate
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;10.3 不激活运行与确认解释器&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;# Windows；激活脚本无法执行时也可直接指定环境解释器
+.\.venv\Scripts\python.exe app.py
+.\.venv\Scripts\python.exe -m pip --version
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;# Linux / macOS
+.venv/bin/python app.py
+.venv/bin/python -m pip --version
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;import sys
+
+print(sys.executable)            # 当前解释器路径
+print(sys.prefix)               # 当前环境目录
+print(sys.base_prefix)          # 基础 Python 目录
+print(sys.prefix != sys.base_prefix)  # 在 venv 中通常为 True
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;10.4 依赖快照与重建&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;# 在已激活环境中保存依赖；这是当前环境快照，仍受平台与 Python 版本影响
+python -m pip freeze &amp;gt; requirements.txt
+
+# 新建环境并激活后安装
+python -m pip install -r requirements.txt
+
+# 停止相关程序并退出后，才考虑删除不再使用的环境目录
+deactivate
+# 环境通常重建而非跨机器复制；不要删除项目源码目录
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;参考来源&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://liaoxuefeng.com/books/python/introduction/index.html&quot;&gt;廖雪峰 Python 教程&lt;/a&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://liaoxuefeng.com/books/python/basic/index.html&quot;&gt;5 Python基础&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/basic/data-types/index.html&quot;&gt;5.1 数据类型和变量&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/basic/string-encoding/index.html&quot;&gt;5.2 字符串和编码&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/basic/list-tuple/index.html&quot;&gt;5.3 使用list和tuple&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/basic/if/index.html&quot;&gt;5.4 条件判断&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/basic/match/index.html&quot;&gt;5.5 模式匹配&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/basic/loop/index.html&quot;&gt;5.6 循环&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/basic/dict-set/index.html&quot;&gt;5.7 使用dict和set&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://liaoxuefeng.com/books/python/function/index.html&quot;&gt;6 函数&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/function/call-function/index.html&quot;&gt;6.1 调用函数&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/function/define-function/index.html&quot;&gt;6.2 定义函数&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/function/parameter/index.html&quot;&gt;6.3 函数的参数&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/function/recursive-function/index.html&quot;&gt;6.4 递归函数&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://liaoxuefeng.com/books/python/advanced/index.html&quot;&gt;7 高级特性&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/advanced/slice/index.html&quot;&gt;7.1 切片&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/advanced/iterate/index.html&quot;&gt;7.2 迭代&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/advanced/list-comprehension/index.html&quot;&gt;7.3 列表生成式&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/advanced/generator/index.html&quot;&gt;7.4 生成器&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/advanced/iterator/index.html&quot;&gt;7.5 迭代器&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://liaoxuefeng.com/books/python/functional/index.html&quot;&gt;8 函数式编程&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/functional/higher-order-function/index.html&quot;&gt;8.1 高阶函数&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/functional/higher-order-function/map-reduce/index.html&quot;&gt;8.1.1 map/reduce&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/functional/higher-order-function/filter/index.html&quot;&gt;8.1.2 filter&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/functional/higher-order-function/sorted/index.html&quot;&gt;8.1.3 sorted&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/functional/return-function/index.html&quot;&gt;8.2 返回函数&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/functional/lambda/index.html&quot;&gt;8.3 匿名函数&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/functional/decorator/index.html&quot;&gt;8.4 装饰器&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/functional/partial/index.html&quot;&gt;8.5 偏函数&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://liaoxuefeng.com/books/python/module/index.html&quot;&gt;9 模块&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/module/use-module/index.html&quot;&gt;9.1 使用模块&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/module/install/index.html&quot;&gt;9.2 安装第三方模块&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://liaoxuefeng.com/books/python/oop/index.html&quot;&gt;10 面向对象编程&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/oop/class/index.html&quot;&gt;10.1 类和实例&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/oop/access/index.html&quot;&gt;10.2 访问限制&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/oop/extend/index.html&quot;&gt;10.3 继承和多态&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/oop/attr/index.html&quot;&gt;10.4 获取对象信息&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/oop/props/index.html&quot;&gt;10.5 实例属性和类属性&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://liaoxuefeng.com/books/python/oop-adv/special-method/index.html&quot;&gt;11.4 定制类&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://liaoxuefeng.com/books/python/error-debug-test/index.html&quot;&gt;12 错误、调试和测试&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/error-debug-test/error/index.html&quot;&gt;12.1 错误处理&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/error-debug-test/debug/index.html&quot;&gt;12.2 调试&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/error-debug-test/unit-test/index.html&quot;&gt;12.3 单元测试&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/error-debug-test/doctest/index.html&quot;&gt;12.4 文档测试&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://liaoxuefeng.com/books/python/io/index.html&quot;&gt;13 IO编程&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/io/file/index.html&quot;&gt;13.1 文件读写&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/io/stringio-bytesio/index.html&quot;&gt;13.2 StringIO和BytesIO&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/io/dir/index.html&quot;&gt;13.3 操作文件和目录&lt;/a&gt;；&lt;a href=&quot;https://liaoxuefeng.com/books/python/io/serialization/index.html&quot;&gt;13.4 序列化&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://liaoxuefeng.com/books/python/built-in-modules/venv/index.html&quot;&gt;16.13 venv&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Python 官方文档：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.python.org/3/howto/unicode.html&quot;&gt;Unicode 与编码&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.python.org/3/library/stdtypes.html&quot;&gt;内置类型&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.python.org/3/tutorial/controlflow.html&quot;&gt;控制流与函数参数&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.python.org/3/tutorial/modules.html&quot;&gt;模块与包&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.python.org/3/reference/datamodel.html&quot;&gt;数据模型与特殊方法&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.python.org/3/library/functools.html&quot;&gt;functools&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.python.org/3/library/unittest.html&quot;&gt;unittest&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.python.org/3/library/doctest.html&quot;&gt;doctest&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.python.org/3/library/io.html&quot;&gt;IO 流&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.python.org/3/library/pickle.html&quot;&gt;pickle&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.python.org/3/library/json.html&quot;&gt;JSON&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.python.org/3/library/venv.html&quot;&gt;venv&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 </content:encoded></item><item><title>LearnCpp 类</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB/</guid><description>LearnCpp 类笔记，介绍面向对象编程、类与成员函数、访问控制、封装、构造函数和复制构造函数。</description><pubDate>Mon, 31 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 类&lt;/h1&gt;
 &lt;h2&gt;14.1 面向对象编程简介&lt;/h2&gt;
 &lt;p&gt;过程式编程把程序组织为一组函数或过程，数据与操作数据的函数彼此分离。例如，&lt;code&gt;eat(you, apple)&lt;/code&gt; 把动作写成独立函数，并把参与动作的对象作为参数传入。&lt;/p&gt;
@@ -1506,486 +3278,6 @@ void print(T value)
 &lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/class-templates/&quot;&gt;13.13 — Class templates&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;访问日期：2026-08-20。&lt;/p&gt;
-</content:encoded></item><item><title>LearnCpp 作用域、变量与命名空间</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</guid><description>LearnCpp 作用域、变量与命名空间笔记，介绍代码块、用户命名空间、局部与全局变量、变量遮蔽、静态局部变量以及 using 语句。</description><pubDate>Wed, 19 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 作用域、变量与命名空间&lt;/h1&gt;
-&lt;h2&gt;7.1 复合语句（代码块）&lt;/h2&gt;
-&lt;p&gt;&lt;strong&gt;复合语句&lt;/strong&gt;（compound statement）也称为&lt;strong&gt;代码块&lt;/strong&gt;（block）或&lt;strong&gt;块语句&lt;/strong&gt;（block statement），由零条或多条语句组成，但编译器把整个代码块当作一条语句处理。&lt;/p&gt;
-&lt;p&gt;代码块以 &lt;code&gt;{&lt;/code&gt; 开始，以 &lt;code&gt;}&lt;/code&gt; 结束。凡是语法要求一条语句的地方，都可以放置一个代码块。代码块的右花括号后不需要分号。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int add(int x, int y)
-{ // 代码块开始
-    return x + y;
-} // 代码块结束，无分号
-
-int main()
-{
-    int value{}; // 这里的花括号用于初始化，不是代码块
-    add(3, 4);
-
-    return 0;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;函数体本身就是代码块。用于列表初始化的花括号并不构成代码块。&lt;/p&gt;
-&lt;h3&gt;嵌套代码块&lt;/h3&gt;
-&lt;p&gt;函数不能定义在另一个函数内部，但代码块可以嵌套在其他代码块中。包含其他代码块的块称为&lt;strong&gt;外层代码块&lt;/strong&gt;，被包含的块称为&lt;strong&gt;内层代码块&lt;/strong&gt;或&lt;strong&gt;嵌套代码块&lt;/strong&gt;。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{ // 外层代码块
-    int value{};
-
-    { // 内层代码块
-        value = 7;
-    }
-
-    return 0;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;代码块的常见用途是让 &lt;code&gt;if&lt;/code&gt; 或 &lt;code&gt;else&lt;/code&gt; 条件控制多条语句。&lt;code&gt;if&lt;/code&gt; 默认只控制紧随其后的一条语句；以代码块替代该语句后，块内所有语句会作为一个整体执行。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;if (value &amp;gt;= 0)
-{
-    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &quot; is non-negative\n&quot;;
-    std::cout &amp;lt;&amp;lt; &quot;Double: &quot; &amp;lt;&amp;lt; value * 2 &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-else
-{
-    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &quot; is negative\n&quot;;
-    std::cout &amp;lt;&amp;lt; &quot;Absolute value: &quot; &amp;lt;&amp;lt; -value &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;嵌套层级&lt;/h3&gt;
-&lt;p&gt;函数的&lt;strong&gt;嵌套层级&lt;/strong&gt;或&lt;strong&gt;嵌套深度&lt;/strong&gt;，是执行到函数中某一点时最多能同时位于多少层代码块之内，函数最外层代码块也计入。嵌套层级不是代码块总数：两个并列的三级代码块仍只产生三级深度。&lt;/p&gt;
-&lt;p&gt;C++ 标准建议编译器至少支持 256 层嵌套，但并非所有实现都达到这一数量。可编译不等于易读；过深嵌套会使控制关系难以追踪。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;函数的嵌套层级尽量不超过 3。需要更深嵌套时，通常应把最深处的代码提取为独立函数。&lt;/p&gt;
-&lt;h2&gt;7.2 用户定义命名空间与作用域解析运算符&lt;/h2&gt;
-&lt;p&gt;当两个相同标识符被引入同一作用域，而编译器无法判断应使用哪一个时，就会发生&lt;strong&gt;命名冲突&lt;/strong&gt;（naming collision）。冲突可能由编译器报告，也可能在多个翻译单元链接时由链接器报告。&lt;/p&gt;
-&lt;p&gt;同一作用域中的每个名称都可能与其他名称冲突。因此，标识符数量线性增加时，潜在冲突组合会大幅增加。这也是应把标识符定义在最小可用作用域内的重要原因。&lt;/p&gt;
-&lt;p&gt;例如，两个源文件都在全局作用域定义 &lt;code&gt;doSomething(int, int)&lt;/code&gt;，即使程序从未调用该函数，链接器仍会在处理重复定义时报告错误。直接改名能够消除冲突，却需要同步修改所有调用点。命名空间可以让名称保持不变，同时把它们放入不同作用域。&lt;/p&gt;
-&lt;h3&gt;定义命名空间&lt;/h3&gt;
-&lt;p&gt;程序定义的命名空间使用 &lt;code&gt;namespace&lt;/code&gt; 关键字：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Foo
-{
-    int doSomething(int x, int y)
-    {
-        return x + y;
-    }
-}
-
-namespace Goo
-{
-    int doSomething(int x, int y)
-    {
-        return x - y;
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;命名空间只能定义在全局作用域或另一个命名空间内，不能定义在函数内部。命名空间内容通常缩进一级；右花括号后的分号是可选的。&lt;/p&gt;
-&lt;p&gt;历史上，命名空间名通常使用小写，许多风格指南仍采用这种约定。LearnCpp 推荐程序定义的命名空间以大写字母开头，理由包括：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;与程序定义类型的命名约定保持一致；&lt;/li&gt;
-&lt;li&gt;降低与系统或库提供的小写名称冲突的概率；&lt;/li&gt;
-&lt;li&gt;C++20 标准文本与 C++ Core Guidelines 采用这种风格。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;大写与小写两种风格都有效，项目内保持一致更重要。&lt;/p&gt;
-&lt;h3&gt;作用域解析运算符&lt;/h3&gt;
-&lt;p&gt;把函数移入 &lt;code&gt;Foo&lt;/code&gt; 和 &lt;code&gt;Goo&lt;/code&gt; 后，原先位于全局作用域的前置声明不再与它们匹配。编译器可能接受该全局声明，但链接器找不到对应的全局定义。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;作用域解析运算符&lt;/strong&gt; &lt;code&gt;::&lt;/code&gt; 用于明确指定标识符所在的作用域。左操作数是要查找的作用域，右操作数是该作用域内的标识符。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;std::cout &amp;lt;&amp;lt; Foo::doSomething(4, 3) &amp;lt;&amp;lt; &apos;\n&apos;; // 7
-std::cout &amp;lt;&amp;lt; Goo::doSomething(4, 3) &amp;lt;&amp;lt; &apos;\n&apos;; // 1
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;显式限定名称能够消除两个同名函数之间的歧义。&lt;code&gt;::name&lt;/code&gt; 没有左侧命名空间名时，表示从全局命名空间查找 &lt;code&gt;name&lt;/code&gt;：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;void print()
-{
-    std::cout &amp;lt;&amp;lt; &quot;global\n&quot;;
-}
-
-namespace Foo
-{
-    void print()
-    {
-        std::cout &amp;lt;&amp;lt; &quot;Foo\n&quot;;
-    }
-
-    void callBoth()
-    {
-        print();   // Foo::print()
-        ::print(); // 全局命名空间中的 print()
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;在命名空间内部使用未限定名称时，编译器先查找当前命名空间，再依次查找各层外部命名空间，最后查找全局命名空间。&lt;code&gt;::&lt;/code&gt; 可以跳过这套逐层查找，直接要求使用全局名称。&lt;/p&gt;
-&lt;h3&gt;声明、定义与多个命名空间块&lt;/h3&gt;
-&lt;p&gt;命名空间中标识符的前置声明和定义必须位于同一命名空间。头文件中的声明、源文件中的定义以及调用点应保持一致：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;// add.h
-namespace BasicMath
-{
-    int add(int x, int y);
-}
-
-// add.cpp
-#include &quot;add.h&quot;
-
-namespace BasicMath
-{
-    int add(int x, int y)
-    {
-        return x + y;
-    }
-}
-
-// main.cpp
-#include &quot;add.h&quot;
-
-int result{ BasicMath::add(4, 3) };
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;若声明留在全局命名空间，编译器看不到 &lt;code&gt;BasicMath::add&lt;/code&gt; 的声明；若定义留在全局命名空间，链接器找不到 &lt;code&gt;BasicMath::add&lt;/code&gt; 的定义。&lt;/p&gt;
-&lt;p&gt;同一命名空间可以在同一文件的多个位置或不同文件中反复打开。所有同名命名空间块的声明都属于同一命名空间。标准库头文件正是通过多个 &lt;code&gt;namespace std&lt;/code&gt; 块共同组成 &lt;code&gt;std&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;警告&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;不要向 &lt;code&gt;std&lt;/code&gt; 命名空间添加自定义功能。除标准明确允许的少数情况外，这通常会导致未定义行为。&lt;/p&gt;
-&lt;h3&gt;嵌套命名空间&lt;/h3&gt;
-&lt;p&gt;命名空间可以嵌套：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Foo
-{
-    namespace Goo
-    {
-        int add(int x, int y)
-        {
-            return x + y;
-        }
-    }
-}
-
-int sum{ Foo::Goo::add(1, 2) };
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;C++17 可以使用等价的紧凑语法：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Foo::Goo
-{
-    int add(int x, int y)
-    {
-        return x + y;
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;之后仍可单独重新打开 &lt;code&gt;namespace Foo&lt;/code&gt;，向 &lt;code&gt;Foo&lt;/code&gt; 而不是 &lt;code&gt;Foo::Goo&lt;/code&gt; 添加声明。选择传统嵌套写法还是 C++17 紧凑写法属于风格问题。&lt;/p&gt;
-&lt;h3&gt;命名空间别名&lt;/h3&gt;
-&lt;p&gt;长命名空间链可以通过别名临时缩短：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Active = Foo::Goo;
-
-int result{ Active::add(1, 2) };
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;命名空间别名遵循其声明位置的作用域规则。例如，函数块内声明的 &lt;code&gt;Active&lt;/code&gt; 会在该块结束时失效。别名还提供一层间接性：实现迁移到 &lt;code&gt;V2&lt;/code&gt; 后，只需把别名改为 &lt;code&gt;namespace Active = V2;&lt;/code&gt;，调用点仍可保持 &lt;code&gt;Active::add()&lt;/code&gt;。&lt;/p&gt;
-&lt;h3&gt;命名空间的使用尺度&lt;/h3&gt;
-&lt;p&gt;命名空间的首要目的不是建立信息层次，而是防止命名冲突。标准库主体位于单一顶层命名空间 &lt;code&gt;std&lt;/code&gt;；名称较多的新组件也会采用嵌套命名空间，例如 &lt;code&gt;std::ranges&lt;/code&gt;。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;小型、仅供个人使用的程序通常不必放入自定义命名空间。&lt;/li&gt;
-&lt;li&gt;引入大量第三方库的较大项目可用命名空间降低冲突风险。&lt;/li&gt;
-&lt;li&gt;会分发给其他项目使用的代码应放入命名空间；一个独特的顶层命名空间通常已经足够，也便于编辑器自动补全展示库的公开名称。&lt;/li&gt;
-&lt;li&gt;多团队项目常采用“项目或库::模块”“组织::项目或库”，或“组织::项目或库::模块”的两至三级结构。&lt;/li&gt;
-&lt;li&gt;模块级命名空间可区分可复用代码与应用专用代码；目录结构也能承担一部分组织职责。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;命名空间一般不应嵌套超过 3 层。&lt;/p&gt;
-&lt;h2&gt;7.3 局部变量&lt;/h2&gt;
-&lt;p&gt;定义在函数内部的变量，包括函数形参，称为&lt;strong&gt;局部变量&lt;/strong&gt;。C++ 并不存在一个单独属性来判定“局部”；局部变量的行为由作用域、存储期和链接属性共同构成。&lt;/p&gt;
-&lt;h3&gt;块作用域&lt;/h3&gt;
-&lt;p&gt;标识符的&lt;strong&gt;作用域&lt;/strong&gt;决定源代码中哪些位置可以访问它。能够访问时称为“在作用域内”，不能访问时称为“超出作用域”。作用域是编译期属性；访问超出作用域的标识符会产生编译错误。&lt;/p&gt;
-&lt;p&gt;局部变量具有&lt;strong&gt;块作用域&lt;/strong&gt;：从定义点开始进入作用域，到所在代码块末尾离开作用域。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    int i{ 5 };      // i 从这里进入作用域
-    double d{ 4.0 }; // d 从这里进入作用域
-
-    return 0;
-} // d 和 i 在这里离开作用域
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;普通函数的形参虽然写在函数体之前，但通常可以把它们视为处于函数体代码块的作用域中。&lt;/p&gt;
-&lt;p&gt;同一作用域中的变量名必须唯一。形参与函数体顶层局部变量属于同一作用域，因此不能重名：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;void someFunction(int x)
-{
-    int x{}; // 错误：与形参 x 冲突
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;自动存储期与生命周期&lt;/h3&gt;
-&lt;p&gt;变量的&lt;strong&gt;存储期&lt;/strong&gt;（storage duration）规定变量何时以及如何创建和销毁；多数情况下，存储期直接决定变量的&lt;strong&gt;生命周期&lt;/strong&gt;，即对象从实际创建到实际销毁的时间。&lt;/p&gt;
-&lt;p&gt;局部变量默认具有&lt;strong&gt;自动存储期&lt;/strong&gt;：执行到定义处时创建，在所在代码块结束时销毁。因此局部变量也称为&lt;strong&gt;自动变量&lt;/strong&gt;。&lt;/p&gt;
-&lt;p&gt;作用域与生命周期描述不同维度：作用域是名称能否在某段源代码中被使用的编译期属性；生命周期是对象在运行时是否存在。&lt;/p&gt;
-&lt;h3&gt;嵌套块中的局部变量&lt;/h3&gt;
-&lt;p&gt;内层变量只能从其定义点使用到内层块末尾；离开内层块后，它既超出作用域，也被销毁。外层块的作用域包含其嵌套块，因此外层变量在内层块中仍然可见。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    int x{ 5 };
-
-    {
-        int y{ 7 };
-        std::cout &amp;lt;&amp;lt; x + y &amp;lt;&amp;lt; &apos;\n&apos;; // x 与 y 都在作用域内
-    } // y 离开作用域并被销毁
-
-    // y 在这里不可访问
-    return 0;
-} // x 离开作用域并被销毁
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;无链接&lt;/h3&gt;
-&lt;p&gt;标识符的&lt;strong&gt;链接属性&lt;/strong&gt;决定不同作用域中的同名声明是否指向同一对象或函数。局部变量没有链接属性（no linkage）；每个声明都表示一个独立对象。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    int x{ 2 };
-
-    {
-        int x{ 3 }; // 与外层 x 是不同对象
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;作用域回答“单个声明在哪里可见”，链接属性回答“多个声明是否指向同一实体”，二者不能混为一谈。&lt;/p&gt;
-&lt;h3&gt;使用最小的现有作用域&lt;/h3&gt;
-&lt;p&gt;变量应定义在能够满足使用需求的最小现有作用域内。较小的作用域减少同时活跃的变量数量，也让变量可能被使用的位置更容易辨认。&lt;/p&gt;
-&lt;p&gt;如果变量只在嵌套块中使用，就在该块中定义。如果变量离开内层块后仍要使用，则必须在外层块中定义；这种需求可能导致变量早于首次使用声明。&lt;/p&gt;
-&lt;p&gt;不应仅为缩短变量作用域而额外创建代码块，因为这会让整个函数变长并增加结构复杂度。若一段代码确实值得形成独立作用域，通常更适合提取为函数。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;在最小的现有作用域内定义变量。不要创建唯一目的只是限制变量作用域的新代码块。&lt;/p&gt;
-&lt;h2&gt;7.4 全局变量简介&lt;/h2&gt;
-&lt;p&gt;定义在函数外部的变量称为&lt;strong&gt;全局变量&lt;/strong&gt;。按惯例，全局变量放在文件顶部、&lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;#include &amp;lt;iostream&amp;gt;
-
-int g_x{}; // 全局变量
-
-void setValue()
-{
-    g_x = 3;
-}
-
-int main()
-{
-    setValue();
-    std::cout &amp;lt;&amp;lt; g_x &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;全局命名空间作用域&lt;/h3&gt;
-&lt;p&gt;在全局命名空间中声明的标识符具有&lt;strong&gt;全局命名空间作用域&lt;/strong&gt;，常简称为全局作用域，也会被非正式地称为文件作用域。它从声明点持续到所在文件末尾。&lt;/p&gt;
-&lt;p&gt;全局变量也可以定义在用户命名空间中：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Foo
-{
-    int x{};
-}
-
-void setValue()
-{
-    Foo::x = 3;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;code&gt;x&lt;/code&gt; 的名称受 &lt;code&gt;Foo&lt;/code&gt; 限定，但仍可通过 &lt;code&gt;Foo::x&lt;/code&gt; 在文件各处访问，所以它仍是全局变量。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;全局变量优先定义在用户命名空间中，而不是直接放在全局命名空间。&lt;/p&gt;
-&lt;h3&gt;静态存储期&lt;/h3&gt;
-&lt;p&gt;全局变量具有&lt;strong&gt;静态存储期&lt;/strong&gt;：在程序启动时、&lt;code&gt;main()&lt;/code&gt; 执行前创建，在程序结束时销毁。具有静态存储期的变量有时也称为静态变量；这里的“静态”描述存储期，不要求变量写出 &lt;code&gt;static&lt;/code&gt; 关键字。&lt;/p&gt;
-&lt;h3&gt;命名全局变量&lt;/h3&gt;
-&lt;p&gt;一些项目使用 &lt;code&gt;g&lt;/code&gt; 或 &lt;code&gt;g_&lt;/code&gt; 前缀标记全局变量。该前缀可以：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;降低与全局命名空间中其他标识符冲突的概率；&lt;/li&gt;
-&lt;li&gt;减少无意遮蔽全局变量的可能；&lt;/li&gt;
-&lt;li&gt;表明该变量会在当前函数结束后继续存在，对它的修改也会保留。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;命名空间中的全局变量常省略 &lt;code&gt;g_&lt;/code&gt;，因为命名空间限定已经能降低冲突并表明其非局部来源；保留前缀仍可强调其静态存储期。&lt;/p&gt;
-&lt;p&gt;用名称前缀编码类型的匈牙利命名法在现代 C++ 中通常价值有限；用 &lt;code&gt;g_&lt;/code&gt;、&lt;code&gt;s_&lt;/code&gt;、&lt;code&gt;m_&lt;/code&gt; 表达作用域或存储期则仍能提供有用信息。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;尤其对全局命名空间中的变量，可考虑使用 &lt;code&gt;g&lt;/code&gt; 或 &lt;code&gt;g_&lt;/code&gt; 前缀，将其与局部变量和函数形参区分。&lt;/p&gt;
-&lt;h3&gt;初始化&lt;/h3&gt;
-&lt;p&gt;具有静态存储期的变量在没有显式初始化器时会默认零初始化，这与默认未初始化的普通局部变量不同：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int g_x;       // 默认零初始化
-int g_y{};     // 值初始化，结果为零
-int g_z{ 1 };  // 初始化为 1
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;非常量全局变量可以省略初始化器。&lt;code&gt;const&lt;/code&gt; 和 &lt;code&gt;constexpr&lt;/code&gt; 全局变量必须初始化：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;const int g_a;          // 错误
-constexpr int g_b;      // 错误
-const int g_c{ 1 };     // 正确
-constexpr int g_d{ 2 }; // 正确
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;strong&gt;警告&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;通常应完全避免使用非常量全局变量。它们让任何可访问位置都能改变共享状态，使函数行为产生难以追踪的隐式依赖。&lt;/p&gt;
-&lt;h2&gt;7.5 变量遮蔽（名称隐藏）&lt;/h2&gt;
-&lt;p&gt;每个代码块都定义自己的作用域区域。内层块声明与外层变量同名的变量后，在两者作用域重叠的区域中，内层变量会&lt;strong&gt;隐藏&lt;/strong&gt;外层变量。这称为&lt;strong&gt;名称隐藏&lt;/strong&gt;（name hiding）或&lt;strong&gt;变量遮蔽&lt;/strong&gt;（shadowing）。&lt;/p&gt;
-&lt;h3&gt;局部变量之间的遮蔽&lt;/h3&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    int apples{ 5 };
-
-    {
-        std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 外层 apples：5
-
-        int apples{ 0 }; // 从这里开始隐藏外层 apples
-        apples = 10;
-
-        std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 内层 apples：10
-    } // 内层 apples 被销毁
-
-    std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 外层 apples：5
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;输出为：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;5
-10
-5
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;遮蔽不会修改或销毁外层对象。内层声明出现前，未限定名称仍指向外层变量；从内层声明到代码块结束，名称指向内层变量。内层块结束后，外层名称重新可见，其值保持不变。&lt;/p&gt;
-&lt;p&gt;如果没有声明内层 &lt;code&gt;apples&lt;/code&gt;，内层块中的读取和赋值都会作用于外层变量，输出会是 &lt;code&gt;5&lt;/code&gt;、&lt;code&gt;10&lt;/code&gt;、&lt;code&gt;10&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;在内层块中，没有语法可以直接访问被同名局部变量遮蔽的外层局部变量。&lt;/p&gt;
-&lt;h3&gt;局部变量遮蔽全局变量&lt;/h3&gt;
-&lt;p&gt;局部变量也可以遮蔽同名全局变量。局部变量在作用域内时，未限定名称指向局部对象：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int value{ 5 };
-
-int main()
-{
-    int value{ 7 };
-
-    ++value;     // 局部 value 变为 8
-    --(::value); // 全局 value 变为 4
-
-    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &apos;\n&apos;;   // 8
-    std::cout &amp;lt;&amp;lt; ::value &amp;lt;&amp;lt; &apos;\n&apos;; // 4
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;全局变量属于全局命名空间，所以即使被局部变量遮蔽，仍可通过无前缀作用域解析 &lt;code&gt;::value&lt;/code&gt; 明确访问。这个办法不适用于被遮蔽的外层局部变量。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;避免变量遮蔽。遮蔽容易让代码读取或修改错误的对象。为全局变量统一使用 &lt;code&gt;g_&lt;/code&gt; 前缀可以简单地避免局部变量与全局变量同名。&lt;/p&gt;
-&lt;p&gt;GCC 和 Clang 可用 &lt;code&gt;-Wshadow&lt;/code&gt; 启用遮蔽警告，并提供 &lt;code&gt;-Wshadow=global&lt;/code&gt;、&lt;code&gt;-Wshadow=local&lt;/code&gt;、&lt;code&gt;-Wshadow=compatible-local&lt;/code&gt; 等变体。Visual Studio 默认启用相应警告。&lt;/p&gt;
-&lt;h2&gt;7.11 静态局部变量&lt;/h2&gt;
-&lt;p&gt;&lt;code&gt;static&lt;/code&gt; 在不同上下文中含义不同：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;全局变量本身具有静态存储期；&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;static&lt;/code&gt; 修饰全局标识符时赋予其内部链接；&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;static&lt;/code&gt; 修饰局部变量时，把它的存储期从自动存储期改为静态存储期。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;本节的 &lt;code&gt;static&lt;/code&gt; 指第三种用法。&lt;/p&gt;
-&lt;h3&gt;跨函数调用保留值&lt;/h3&gt;
-&lt;p&gt;普通局部变量每次执行到定义处都会创建，并在离开代码块时销毁：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;void incrementAndPrint()
-{
-    int value{ 1 };
-    ++value;
-    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;调用三次会输出三次 &lt;code&gt;2&lt;/code&gt;。改为静态局部变量后：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;void incrementAndPrint()
-{
-    static int s_value{ 1 };
-    ++s_value;
-    std::cout &amp;lt;&amp;lt; s_value &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;初始化只发生一次。函数结束时，&lt;code&gt;s_value&lt;/code&gt; 离开作用域而暂时不可访问，但对象不会被销毁。三次调用依次输出 &lt;code&gt;2&lt;/code&gt;、&lt;code&gt;3&lt;/code&gt;、&lt;code&gt;4&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;静态局部变量兼具两类属性：名称具有局部变量的块作用域，对象却具有延续到程序结束的生命周期。它适合需要局部状态在多次函数调用之间保留的场景。&lt;/p&gt;
-&lt;h3&gt;初始化规则&lt;/h3&gt;
-&lt;p&gt;可零初始化或具有常量表达式初始化器的静态局部变量可以在程序启动时初始化。&lt;/p&gt;
-&lt;p&gt;没有初始化器或具有非常量表达式初始化器的静态局部变量会在程序启动时先零初始化。具有非常量表达式初始化器的变量在程序第一次执行到定义处时完成初始化；后续调用跳过该定义，不会再次初始化。未显式初始化的静态局部变量最终保持默认的零值。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;显式初始化静态局部变量。常用 &lt;code&gt;s&lt;/code&gt; 或 &lt;code&gt;s_&lt;/code&gt; 前缀表明局部变量具有静态存储期。&lt;/p&gt;
-&lt;h3&gt;唯一 ID 生成器&lt;/h3&gt;
-&lt;pre&gt;&lt;code&gt;int generateID()
-{
-    static int s_itemID{ 0 };
-    return s_itemID++;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;第一次调用返回 &lt;code&gt;0&lt;/code&gt;，第二次返回 &lt;code&gt;1&lt;/code&gt;，之后每次递增。状态只能通过该函数改变，其他函数无法直接篡改 &lt;code&gt;s_itemID&lt;/code&gt;。这种写法获得了全局变量“持续存在”的特征，同时把可见性限制在函数块内。&lt;/p&gt;
-&lt;p&gt;该方案只有在整个程序确实只需要一个永不重置的 ID 序列时才合适。&lt;/p&gt;
-&lt;h3&gt;静态局部常量&lt;/h3&gt;
-&lt;p&gt;静态局部变量可以声明为 &lt;code&gt;const&lt;/code&gt; 或 &lt;code&gt;constexpr&lt;/code&gt;。如果函数需要一个创建或初始化成本较高的常量对象，普通局部变量会在每次调用时重复构造；静态局部常量只初始化一次，之后所有调用都复用该对象。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;关键点&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;静态局部变量最适合用来避免每次函数调用都重复初始化昂贵的局部对象。静态局部常量通常可以安全使用。&lt;/p&gt;
-&lt;h3&gt;不要用静态局部状态改变函数流程&lt;/h3&gt;
-&lt;p&gt;非 &lt;code&gt;const&lt;/code&gt; 静态局部变量会让函数调用隐式依赖先前调用。例如，用 &lt;code&gt;static bool s_isFirstCall&lt;/code&gt; 让第一次调用显示一种提示、以后显示另一种提示，会造成相同参数的两次调用表现不同。调用者仅阅读调用点无法发现这种内部状态。&lt;/p&gt;
-&lt;p&gt;这种函数难以复用：内部状态不能由调用者重置；当另一段流程希望重新执行“第一次调用”时，旧状态仍然存在。更好的做法是把差异作为参数传入，让调用者显式控制行为。若需要传入提示文本，&lt;code&gt;std::string_view&lt;/code&gt; 参数通常比布尔标记更通用。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;const&lt;/code&gt; 静态局部变量通常可以使用。&lt;/li&gt;
-&lt;li&gt;非 &lt;code&gt;const&lt;/code&gt; 静态局部变量通常应避免。&lt;/li&gt;
-&lt;li&gt;确实使用非 &lt;code&gt;const&lt;/code&gt; 静态局部变量时，应确认该状态在整个程序中只有唯一实例、永远不需要重置，并且不用于改变控制流。&lt;/li&gt;
-&lt;li&gt;需要多个各自保留状态的实例时，应使用函数对象等可实例化方案，而不是单个静态局部变量。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;7.13 using 声明与 using 指令&lt;/h2&gt;
-&lt;p&gt;标准库的名称最初位于全局命名空间，容易与程序名称冲突。命名空间在 1995 年标准化后，标准库功能迁移到 &lt;code&gt;std&lt;/code&gt;。为兼容大量使用未限定标准库名称的旧代码，并减少反复书写限定符，C++ 提供了 using 语句。&lt;/p&gt;
-&lt;h3&gt;限定名称与未限定名称&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;限定名称&lt;/strong&gt;带有关联作用域：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;std::cout // 由命名空间 std 限定
-::foo     // 由全局命名空间限定
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;名称还可以由类名通过 &lt;code&gt;::&lt;/code&gt; 限定，或由类对象、对象指针通过 &lt;code&gt;.&lt;/code&gt;、&lt;code&gt;-&amp;gt;&lt;/code&gt; 限定：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;C::s_member;
-obj.x;
-ptr-&amp;gt;y;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;strong&gt;未限定名称&lt;/strong&gt;不带作用域限定符，例如 &lt;code&gt;cout&lt;/code&gt; 和 &lt;code&gt;x&lt;/code&gt;。&lt;/p&gt;
-&lt;h3&gt;using 声明&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;using 声明&lt;/strong&gt;让一个限定名称可以通过未限定名称使用：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    using std::cout;
-
-    cout &amp;lt;&amp;lt; &quot;Hello world!\n&quot;;
-} // using 声明在此失效
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;code&gt;using std::cout;&lt;/code&gt; 表明当前作用域中的未限定 &lt;code&gt;cout&lt;/code&gt; 应解析为 &lt;code&gt;std::cout&lt;/code&gt;。若 &lt;code&gt;std::cout&lt;/code&gt; 与另一个可见的 &lt;code&gt;cout&lt;/code&gt; 发生名称冲突，该 using 声明指定的 &lt;code&gt;std::cout&lt;/code&gt; 优先。&lt;/p&gt;
-&lt;p&gt;每个名称需要单独的 using 声明，例如 &lt;code&gt;std::cout&lt;/code&gt; 与 &lt;code&gt;std::cin&lt;/code&gt; 各写一条。using 声明从声明点生效，持续到当前作用域末尾。它不如显式 &lt;code&gt;std::&lt;/code&gt; 清晰，但放在源文件中所有 &lt;code&gt;#include&lt;/code&gt; 指令之后时通常安全且可接受。&lt;/p&gt;
-&lt;h3&gt;using 指令&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;using 指令&lt;/strong&gt;使指定命名空间中的所有标识符都可以在作用域内以未限定名称参与查找：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    using namespace std;
-
-    cout &amp;lt;&amp;lt; &quot;Hello world!\n&quot;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;从技术上说，using 指令并非真正把新名称声明到当前作用域，而是让这些名称在某个外层作用域中参与查找。实际结果仍是该命名空间的大量名称都成为未限定名称查找的候选项。&lt;/p&gt;
-&lt;p&gt;using 指令曾用于让命名空间出现前的旧代码以很小改动继续使用标准库。现代 C++ 中，它节省的输入量通常不足以抵消风险：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;它让命名空间中的所有名称参与未限定查找，包括完全不会使用的名称。&lt;/li&gt;
-&lt;li&gt;它不会让该命名空间的名称优先于其他候选名称。&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;同时引入 &lt;code&gt;A&lt;/code&gt; 与 &lt;code&gt;B&lt;/code&gt; 后，若两者都有 &lt;code&gt;x&lt;/code&gt;，未限定 &lt;code&gt;x&lt;/code&gt; 会产生歧义。可通过删除某条 using 指令、改用 using 声明，或显式写成 &lt;code&gt;A::x&lt;/code&gt;、&lt;code&gt;B::x&lt;/code&gt; 解决。&lt;/p&gt;
-&lt;h3&gt;对未来库版本的脆弱性&lt;/h3&gt;
-&lt;p&gt;using 指令即使当前没有冲突，也会让代码暴露给库将来新增的所有名称。&lt;/p&gt;
-&lt;p&gt;假设程序有全局 &lt;code&gt;print()&lt;/code&gt;，并使用 &lt;code&gt;using namespace Foo;&lt;/code&gt;。库升级后新增 &lt;code&gt;Foo::print()&lt;/code&gt;，原本正常的 &lt;code&gt;print()&lt;/code&gt; 调用可能突然变成歧义并停止编译。&lt;/p&gt;
-&lt;p&gt;更隐蔽的情况是库新增同名重载，而且它比原函数更匹配：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int get(long)
-{
-    return 1;
-}
-
-int main()
-{
-    using namespace Foo;
-    std::cout &amp;lt;&amp;lt; get(0) &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;若 &lt;code&gt;Foo&lt;/code&gt; 后来新增 &lt;code&gt;int get(int)&lt;/code&gt;，整型字面量 &lt;code&gt;0&lt;/code&gt; 与它精确匹配，优于需要 &lt;code&gt;int&lt;/code&gt; 到 &lt;code&gt;long&lt;/code&gt; 转换的全局函数。程序无需修改即可从输出 &lt;code&gt;1&lt;/code&gt; 变为输出 &lt;code&gt;2&lt;/code&gt;。显式限定名称或只引入目标名称的 using 声明不会产生这种扩大候选集的问题。&lt;/p&gt;
-&lt;p&gt;using 指令还隐藏名称来源。&lt;code&gt;NS::foo()&lt;/code&gt; 明确表明它来自库；未限定的 &lt;code&gt;foo()&lt;/code&gt; 无法直接显示它属于库还是程序。个别库头可能把名称放入全局命名空间，因此未限定名称来自程序只是倾向而非保证。&lt;/p&gt;
-&lt;h3&gt;using 语句的作用域与位置&lt;/h3&gt;
-&lt;p&gt;块内的 using 声明或 using 指令仅在该块内生效，遵循普通块作用域规则。命名空间作用域（包括全局命名空间）中的 using 语句从声明点影响文件剩余部分。&lt;/p&gt;
-&lt;p&gt;using 语句不应放在头文件中，也不应放在任何 &lt;code&gt;#include&lt;/code&gt; 指令之前。基本原则是：不要把 using 语句放到可能影响其他文件代码的位置，也不要放到其他文件代码可能反过来改变它的位置。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;头文件全局或命名空间作用域中的 using 语句会传播到每个包含该头文件的源文件。&lt;/li&gt;
-&lt;li&gt;即使 using 语句位于头文件中定义的函数内部也不安全，因为在它之前包含了哪些头文件由包含者决定。&lt;/li&gt;
-&lt;li&gt;using 声明能引入的重载集合取决于声明处此前已经可见的声明，因此具有顺序依赖。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;例如，&lt;code&gt;using Foo::print;&lt;/code&gt; 写在 &lt;code&gt;Foo::print(int)&lt;/code&gt; 的声明可见之后，会同时引入已知重载并为整数实参选择 &lt;code&gt;print(int)&lt;/code&gt;。若把 using 声明移到该头文件之前，当时只可见 &lt;code&gt;print(double)&lt;/code&gt;，随后出现的 &lt;code&gt;print(int)&lt;/code&gt; 不会自动加入这条 using 声明的候选集合，调用将改为 &lt;code&gt;print(double)&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;using 语句真正安全的位置是源文件中所有 &lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/p&gt;
-&lt;h3&gt;不能在同一作用域中取消或替换&lt;/h3&gt;
-&lt;p&gt;using 语句一旦在某个作用域中声明，就无法在该作用域内取消，也无法用另一条 using 语句替换。只能从一开始就利用嵌套块限制其作用域；显式使用 &lt;code&gt;::&lt;/code&gt; 通常能避免这类管理负担。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;优先使用显式命名空间限定符，而不是 using 语句。&lt;/li&gt;
-&lt;li&gt;避免 using 指令；&lt;code&gt;using namespace std::literals;&lt;/code&gt; 为访问 &lt;code&gt;s&lt;/code&gt; 与 &lt;code&gt;sv&lt;/code&gt; 字面量后缀的常见例外。&lt;/li&gt;
-&lt;li&gt;using 声明可放在 &lt;code&gt;.cpp&lt;/code&gt; 源文件中，但必须位于所有 &lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/li&gt;
-&lt;li&gt;不要在头文件中使用 using 语句，尤其不要在头文件的全局命名空间中使用。&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;using&lt;/code&gt; 还可定义类型别名；类型别名与本节的 using 语句是不同功能。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;参考来源&lt;/h2&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/compound-statements-blocks/&quot;&gt;7.1 — Compound statements (blocks)&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/user-defined-namespaces-and-the-scope-resolution-operator/&quot;&gt;7.2 — User-defined namespaces and the scope resolution operator&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/local-variables/&quot;&gt;7.3 — Local variables&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/introduction-to-global-variables/&quot;&gt;7.4 — Introduction to global variables&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/variable-shadowing-name-hiding/&quot;&gt;7.5 — Variable shadowing (name hiding)&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/static-local-variables/&quot;&gt;7.11 — Static local variables&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/using-declarations-and-using-directives/&quot;&gt;7.13 — Using declarations and using directives&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
 </content:encoded></item><item><title>LearnCpp 类型转换</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/</guid><description>LearnCpp 类型转换笔记，介绍隐式转换、数值提升、数值转换、窄化转换、通常算术转换及 static_cast。</description><pubDate>Wed, 19 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 类型转换&lt;/h1&gt;
 &lt;h2&gt;10.1 隐式类型转换&lt;/h2&gt;
 &lt;h3&gt;类型转换产生新值&lt;/h3&gt;
@@ -2523,6 +3815,486 @@ auto value = uint{ ch };
 &lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/narrowing-conversions-list-initialization-and-constexpr-initializers/&quot;&gt;10.4 — Narrowing conversions, list initialization, and constexpr initializers&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/arithmetic-conversions/&quot;&gt;10.5 — Arithmetic conversions&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/explicit-type-conversion-casting-and-static-cast/&quot;&gt;10.6 — Explicit type conversion (casting) and static_cast&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</content:encoded></item><item><title>LearnCpp 作用域、变量与命名空间</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</guid><description>LearnCpp 作用域、变量与命名空间笔记，介绍代码块、用户命名空间、局部与全局变量、变量遮蔽、静态局部变量以及 using 语句。</description><pubDate>Wed, 19 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 作用域、变量与命名空间&lt;/h1&gt;
+&lt;h2&gt;7.1 复合语句（代码块）&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;复合语句&lt;/strong&gt;（compound statement）也称为&lt;strong&gt;代码块&lt;/strong&gt;（block）或&lt;strong&gt;块语句&lt;/strong&gt;（block statement），由零条或多条语句组成，但编译器把整个代码块当作一条语句处理。&lt;/p&gt;
+&lt;p&gt;代码块以 &lt;code&gt;{&lt;/code&gt; 开始，以 &lt;code&gt;}&lt;/code&gt; 结束。凡是语法要求一条语句的地方，都可以放置一个代码块。代码块的右花括号后不需要分号。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int add(int x, int y)
+{ // 代码块开始
+    return x + y;
+} // 代码块结束，无分号
+
+int main()
+{
+    int value{}; // 这里的花括号用于初始化，不是代码块
+    add(3, 4);
+
+    return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;函数体本身就是代码块。用于列表初始化的花括号并不构成代码块。&lt;/p&gt;
+&lt;h3&gt;嵌套代码块&lt;/h3&gt;
+&lt;p&gt;函数不能定义在另一个函数内部，但代码块可以嵌套在其他代码块中。包含其他代码块的块称为&lt;strong&gt;外层代码块&lt;/strong&gt;，被包含的块称为&lt;strong&gt;内层代码块&lt;/strong&gt;或&lt;strong&gt;嵌套代码块&lt;/strong&gt;。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{ // 外层代码块
+    int value{};
+
+    { // 内层代码块
+        value = 7;
+    }
+
+    return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;代码块的常见用途是让 &lt;code&gt;if&lt;/code&gt; 或 &lt;code&gt;else&lt;/code&gt; 条件控制多条语句。&lt;code&gt;if&lt;/code&gt; 默认只控制紧随其后的一条语句；以代码块替代该语句后，块内所有语句会作为一个整体执行。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;if (value &amp;gt;= 0)
+{
+    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &quot; is non-negative\n&quot;;
+    std::cout &amp;lt;&amp;lt; &quot;Double: &quot; &amp;lt;&amp;lt; value * 2 &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+else
+{
+    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &quot; is negative\n&quot;;
+    std::cout &amp;lt;&amp;lt; &quot;Absolute value: &quot; &amp;lt;&amp;lt; -value &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;嵌套层级&lt;/h3&gt;
+&lt;p&gt;函数的&lt;strong&gt;嵌套层级&lt;/strong&gt;或&lt;strong&gt;嵌套深度&lt;/strong&gt;，是执行到函数中某一点时最多能同时位于多少层代码块之内，函数最外层代码块也计入。嵌套层级不是代码块总数：两个并列的三级代码块仍只产生三级深度。&lt;/p&gt;
+&lt;p&gt;C++ 标准建议编译器至少支持 256 层嵌套，但并非所有实现都达到这一数量。可编译不等于易读；过深嵌套会使控制关系难以追踪。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;函数的嵌套层级尽量不超过 3。需要更深嵌套时，通常应把最深处的代码提取为独立函数。&lt;/p&gt;
+&lt;h2&gt;7.2 用户定义命名空间与作用域解析运算符&lt;/h2&gt;
+&lt;p&gt;当两个相同标识符被引入同一作用域，而编译器无法判断应使用哪一个时，就会发生&lt;strong&gt;命名冲突&lt;/strong&gt;（naming collision）。冲突可能由编译器报告，也可能在多个翻译单元链接时由链接器报告。&lt;/p&gt;
+&lt;p&gt;同一作用域中的每个名称都可能与其他名称冲突。因此，标识符数量线性增加时，潜在冲突组合会大幅增加。这也是应把标识符定义在最小可用作用域内的重要原因。&lt;/p&gt;
+&lt;p&gt;例如，两个源文件都在全局作用域定义 &lt;code&gt;doSomething(int, int)&lt;/code&gt;，即使程序从未调用该函数，链接器仍会在处理重复定义时报告错误。直接改名能够消除冲突，却需要同步修改所有调用点。命名空间可以让名称保持不变，同时把它们放入不同作用域。&lt;/p&gt;
+&lt;h3&gt;定义命名空间&lt;/h3&gt;
+&lt;p&gt;程序定义的命名空间使用 &lt;code&gt;namespace&lt;/code&gt; 关键字：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Foo
+{
+    int doSomething(int x, int y)
+    {
+        return x + y;
+    }
+}
+
+namespace Goo
+{
+    int doSomething(int x, int y)
+    {
+        return x - y;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;命名空间只能定义在全局作用域或另一个命名空间内，不能定义在函数内部。命名空间内容通常缩进一级；右花括号后的分号是可选的。&lt;/p&gt;
+&lt;p&gt;历史上，命名空间名通常使用小写，许多风格指南仍采用这种约定。LearnCpp 推荐程序定义的命名空间以大写字母开头，理由包括：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;与程序定义类型的命名约定保持一致；&lt;/li&gt;
+&lt;li&gt;降低与系统或库提供的小写名称冲突的概率；&lt;/li&gt;
+&lt;li&gt;C++20 标准文本与 C++ Core Guidelines 采用这种风格。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;大写与小写两种风格都有效，项目内保持一致更重要。&lt;/p&gt;
+&lt;h3&gt;作用域解析运算符&lt;/h3&gt;
+&lt;p&gt;把函数移入 &lt;code&gt;Foo&lt;/code&gt; 和 &lt;code&gt;Goo&lt;/code&gt; 后，原先位于全局作用域的前置声明不再与它们匹配。编译器可能接受该全局声明，但链接器找不到对应的全局定义。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;作用域解析运算符&lt;/strong&gt; &lt;code&gt;::&lt;/code&gt; 用于明确指定标识符所在的作用域。左操作数是要查找的作用域，右操作数是该作用域内的标识符。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;std::cout &amp;lt;&amp;lt; Foo::doSomething(4, 3) &amp;lt;&amp;lt; &apos;\n&apos;; // 7
+std::cout &amp;lt;&amp;lt; Goo::doSomething(4, 3) &amp;lt;&amp;lt; &apos;\n&apos;; // 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;显式限定名称能够消除两个同名函数之间的歧义。&lt;code&gt;::name&lt;/code&gt; 没有左侧命名空间名时，表示从全局命名空间查找 &lt;code&gt;name&lt;/code&gt;：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void print()
+{
+    std::cout &amp;lt;&amp;lt; &quot;global\n&quot;;
+}
+
+namespace Foo
+{
+    void print()
+    {
+        std::cout &amp;lt;&amp;lt; &quot;Foo\n&quot;;
+    }
+
+    void callBoth()
+    {
+        print();   // Foo::print()
+        ::print(); // 全局命名空间中的 print()
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在命名空间内部使用未限定名称时，编译器先查找当前命名空间，再依次查找各层外部命名空间，最后查找全局命名空间。&lt;code&gt;::&lt;/code&gt; 可以跳过这套逐层查找，直接要求使用全局名称。&lt;/p&gt;
+&lt;h3&gt;声明、定义与多个命名空间块&lt;/h3&gt;
+&lt;p&gt;命名空间中标识符的前置声明和定义必须位于同一命名空间。头文件中的声明、源文件中的定义以及调用点应保持一致：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;// add.h
+namespace BasicMath
+{
+    int add(int x, int y);
+}
+
+// add.cpp
+#include &quot;add.h&quot;
+
+namespace BasicMath
+{
+    int add(int x, int y)
+    {
+        return x + y;
+    }
+}
+
+// main.cpp
+#include &quot;add.h&quot;
+
+int result{ BasicMath::add(4, 3) };
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;若声明留在全局命名空间，编译器看不到 &lt;code&gt;BasicMath::add&lt;/code&gt; 的声明；若定义留在全局命名空间，链接器找不到 &lt;code&gt;BasicMath::add&lt;/code&gt; 的定义。&lt;/p&gt;
+&lt;p&gt;同一命名空间可以在同一文件的多个位置或不同文件中反复打开。所有同名命名空间块的声明都属于同一命名空间。标准库头文件正是通过多个 &lt;code&gt;namespace std&lt;/code&gt; 块共同组成 &lt;code&gt;std&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;警告&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;不要向 &lt;code&gt;std&lt;/code&gt; 命名空间添加自定义功能。除标准明确允许的少数情况外，这通常会导致未定义行为。&lt;/p&gt;
+&lt;h3&gt;嵌套命名空间&lt;/h3&gt;
+&lt;p&gt;命名空间可以嵌套：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Foo
+{
+    namespace Goo
+    {
+        int add(int x, int y)
+        {
+            return x + y;
+        }
+    }
+}
+
+int sum{ Foo::Goo::add(1, 2) };
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;C++17 可以使用等价的紧凑语法：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Foo::Goo
+{
+    int add(int x, int y)
+    {
+        return x + y;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;之后仍可单独重新打开 &lt;code&gt;namespace Foo&lt;/code&gt;，向 &lt;code&gt;Foo&lt;/code&gt; 而不是 &lt;code&gt;Foo::Goo&lt;/code&gt; 添加声明。选择传统嵌套写法还是 C++17 紧凑写法属于风格问题。&lt;/p&gt;
+&lt;h3&gt;命名空间别名&lt;/h3&gt;
+&lt;p&gt;长命名空间链可以通过别名临时缩短：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Active = Foo::Goo;
+
+int result{ Active::add(1, 2) };
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;命名空间别名遵循其声明位置的作用域规则。例如，函数块内声明的 &lt;code&gt;Active&lt;/code&gt; 会在该块结束时失效。别名还提供一层间接性：实现迁移到 &lt;code&gt;V2&lt;/code&gt; 后，只需把别名改为 &lt;code&gt;namespace Active = V2;&lt;/code&gt;，调用点仍可保持 &lt;code&gt;Active::add()&lt;/code&gt;。&lt;/p&gt;
+&lt;h3&gt;命名空间的使用尺度&lt;/h3&gt;
+&lt;p&gt;命名空间的首要目的不是建立信息层次，而是防止命名冲突。标准库主体位于单一顶层命名空间 &lt;code&gt;std&lt;/code&gt;；名称较多的新组件也会采用嵌套命名空间，例如 &lt;code&gt;std::ranges&lt;/code&gt;。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;小型、仅供个人使用的程序通常不必放入自定义命名空间。&lt;/li&gt;
+&lt;li&gt;引入大量第三方库的较大项目可用命名空间降低冲突风险。&lt;/li&gt;
+&lt;li&gt;会分发给其他项目使用的代码应放入命名空间；一个独特的顶层命名空间通常已经足够，也便于编辑器自动补全展示库的公开名称。&lt;/li&gt;
+&lt;li&gt;多团队项目常采用“项目或库::模块”“组织::项目或库”，或“组织::项目或库::模块”的两至三级结构。&lt;/li&gt;
+&lt;li&gt;模块级命名空间可区分可复用代码与应用专用代码；目录结构也能承担一部分组织职责。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;命名空间一般不应嵌套超过 3 层。&lt;/p&gt;
+&lt;h2&gt;7.3 局部变量&lt;/h2&gt;
+&lt;p&gt;定义在函数内部的变量，包括函数形参，称为&lt;strong&gt;局部变量&lt;/strong&gt;。C++ 并不存在一个单独属性来判定“局部”；局部变量的行为由作用域、存储期和链接属性共同构成。&lt;/p&gt;
+&lt;h3&gt;块作用域&lt;/h3&gt;
+&lt;p&gt;标识符的&lt;strong&gt;作用域&lt;/strong&gt;决定源代码中哪些位置可以访问它。能够访问时称为“在作用域内”，不能访问时称为“超出作用域”。作用域是编译期属性；访问超出作用域的标识符会产生编译错误。&lt;/p&gt;
+&lt;p&gt;局部变量具有&lt;strong&gt;块作用域&lt;/strong&gt;：从定义点开始进入作用域，到所在代码块末尾离开作用域。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    int i{ 5 };      // i 从这里进入作用域
+    double d{ 4.0 }; // d 从这里进入作用域
+
+    return 0;
+} // d 和 i 在这里离开作用域
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;普通函数的形参虽然写在函数体之前，但通常可以把它们视为处于函数体代码块的作用域中。&lt;/p&gt;
+&lt;p&gt;同一作用域中的变量名必须唯一。形参与函数体顶层局部变量属于同一作用域，因此不能重名：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void someFunction(int x)
+{
+    int x{}; // 错误：与形参 x 冲突
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;自动存储期与生命周期&lt;/h3&gt;
+&lt;p&gt;变量的&lt;strong&gt;存储期&lt;/strong&gt;（storage duration）规定变量何时以及如何创建和销毁；多数情况下，存储期直接决定变量的&lt;strong&gt;生命周期&lt;/strong&gt;，即对象从实际创建到实际销毁的时间。&lt;/p&gt;
+&lt;p&gt;局部变量默认具有&lt;strong&gt;自动存储期&lt;/strong&gt;：执行到定义处时创建，在所在代码块结束时销毁。因此局部变量也称为&lt;strong&gt;自动变量&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;作用域与生命周期描述不同维度：作用域是名称能否在某段源代码中被使用的编译期属性；生命周期是对象在运行时是否存在。&lt;/p&gt;
+&lt;h3&gt;嵌套块中的局部变量&lt;/h3&gt;
+&lt;p&gt;内层变量只能从其定义点使用到内层块末尾；离开内层块后，它既超出作用域，也被销毁。外层块的作用域包含其嵌套块，因此外层变量在内层块中仍然可见。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    int x{ 5 };
+
+    {
+        int y{ 7 };
+        std::cout &amp;lt;&amp;lt; x + y &amp;lt;&amp;lt; &apos;\n&apos;; // x 与 y 都在作用域内
+    } // y 离开作用域并被销毁
+
+    // y 在这里不可访问
+    return 0;
+} // x 离开作用域并被销毁
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;无链接&lt;/h3&gt;
+&lt;p&gt;标识符的&lt;strong&gt;链接属性&lt;/strong&gt;决定不同作用域中的同名声明是否指向同一对象或函数。局部变量没有链接属性（no linkage）；每个声明都表示一个独立对象。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    int x{ 2 };
+
+    {
+        int x{ 3 }; // 与外层 x 是不同对象
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;作用域回答“单个声明在哪里可见”，链接属性回答“多个声明是否指向同一实体”，二者不能混为一谈。&lt;/p&gt;
+&lt;h3&gt;使用最小的现有作用域&lt;/h3&gt;
+&lt;p&gt;变量应定义在能够满足使用需求的最小现有作用域内。较小的作用域减少同时活跃的变量数量，也让变量可能被使用的位置更容易辨认。&lt;/p&gt;
+&lt;p&gt;如果变量只在嵌套块中使用，就在该块中定义。如果变量离开内层块后仍要使用，则必须在外层块中定义；这种需求可能导致变量早于首次使用声明。&lt;/p&gt;
+&lt;p&gt;不应仅为缩短变量作用域而额外创建代码块，因为这会让整个函数变长并增加结构复杂度。若一段代码确实值得形成独立作用域，通常更适合提取为函数。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;在最小的现有作用域内定义变量。不要创建唯一目的只是限制变量作用域的新代码块。&lt;/p&gt;
+&lt;h2&gt;7.4 全局变量简介&lt;/h2&gt;
+&lt;p&gt;定义在函数外部的变量称为&lt;strong&gt;全局变量&lt;/strong&gt;。按惯例，全局变量放在文件顶部、&lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;#include &amp;lt;iostream&amp;gt;
+
+int g_x{}; // 全局变量
+
+void setValue()
+{
+    g_x = 3;
+}
+
+int main()
+{
+    setValue();
+    std::cout &amp;lt;&amp;lt; g_x &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;全局命名空间作用域&lt;/h3&gt;
+&lt;p&gt;在全局命名空间中声明的标识符具有&lt;strong&gt;全局命名空间作用域&lt;/strong&gt;，常简称为全局作用域，也会被非正式地称为文件作用域。它从声明点持续到所在文件末尾。&lt;/p&gt;
+&lt;p&gt;全局变量也可以定义在用户命名空间中：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Foo
+{
+    int x{};
+}
+
+void setValue()
+{
+    Foo::x = 3;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;x&lt;/code&gt; 的名称受 &lt;code&gt;Foo&lt;/code&gt; 限定，但仍可通过 &lt;code&gt;Foo::x&lt;/code&gt; 在文件各处访问，所以它仍是全局变量。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;全局变量优先定义在用户命名空间中，而不是直接放在全局命名空间。&lt;/p&gt;
+&lt;h3&gt;静态存储期&lt;/h3&gt;
+&lt;p&gt;全局变量具有&lt;strong&gt;静态存储期&lt;/strong&gt;：在程序启动时、&lt;code&gt;main()&lt;/code&gt; 执行前创建，在程序结束时销毁。具有静态存储期的变量有时也称为静态变量；这里的“静态”描述存储期，不要求变量写出 &lt;code&gt;static&lt;/code&gt; 关键字。&lt;/p&gt;
+&lt;h3&gt;命名全局变量&lt;/h3&gt;
+&lt;p&gt;一些项目使用 &lt;code&gt;g&lt;/code&gt; 或 &lt;code&gt;g_&lt;/code&gt; 前缀标记全局变量。该前缀可以：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;降低与全局命名空间中其他标识符冲突的概率；&lt;/li&gt;
+&lt;li&gt;减少无意遮蔽全局变量的可能；&lt;/li&gt;
+&lt;li&gt;表明该变量会在当前函数结束后继续存在，对它的修改也会保留。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;命名空间中的全局变量常省略 &lt;code&gt;g_&lt;/code&gt;，因为命名空间限定已经能降低冲突并表明其非局部来源；保留前缀仍可强调其静态存储期。&lt;/p&gt;
+&lt;p&gt;用名称前缀编码类型的匈牙利命名法在现代 C++ 中通常价值有限；用 &lt;code&gt;g_&lt;/code&gt;、&lt;code&gt;s_&lt;/code&gt;、&lt;code&gt;m_&lt;/code&gt; 表达作用域或存储期则仍能提供有用信息。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;尤其对全局命名空间中的变量，可考虑使用 &lt;code&gt;g&lt;/code&gt; 或 &lt;code&gt;g_&lt;/code&gt; 前缀，将其与局部变量和函数形参区分。&lt;/p&gt;
+&lt;h3&gt;初始化&lt;/h3&gt;
+&lt;p&gt;具有静态存储期的变量在没有显式初始化器时会默认零初始化，这与默认未初始化的普通局部变量不同：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int g_x;       // 默认零初始化
+int g_y{};     // 值初始化，结果为零
+int g_z{ 1 };  // 初始化为 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;非常量全局变量可以省略初始化器。&lt;code&gt;const&lt;/code&gt; 和 &lt;code&gt;constexpr&lt;/code&gt; 全局变量必须初始化：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;const int g_a;          // 错误
+constexpr int g_b;      // 错误
+const int g_c{ 1 };     // 正确
+constexpr int g_d{ 2 }; // 正确
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;警告&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;通常应完全避免使用非常量全局变量。它们让任何可访问位置都能改变共享状态，使函数行为产生难以追踪的隐式依赖。&lt;/p&gt;
+&lt;h2&gt;7.5 变量遮蔽（名称隐藏）&lt;/h2&gt;
+&lt;p&gt;每个代码块都定义自己的作用域区域。内层块声明与外层变量同名的变量后，在两者作用域重叠的区域中，内层变量会&lt;strong&gt;隐藏&lt;/strong&gt;外层变量。这称为&lt;strong&gt;名称隐藏&lt;/strong&gt;（name hiding）或&lt;strong&gt;变量遮蔽&lt;/strong&gt;（shadowing）。&lt;/p&gt;
+&lt;h3&gt;局部变量之间的遮蔽&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    int apples{ 5 };
+
+    {
+        std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 外层 apples：5
+
+        int apples{ 0 }; // 从这里开始隐藏外层 apples
+        apples = 10;
+
+        std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 内层 apples：10
+    } // 内层 apples 被销毁
+
+    std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 外层 apples：5
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;输出为：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;5
+10
+5
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;遮蔽不会修改或销毁外层对象。内层声明出现前，未限定名称仍指向外层变量；从内层声明到代码块结束，名称指向内层变量。内层块结束后，外层名称重新可见，其值保持不变。&lt;/p&gt;
+&lt;p&gt;如果没有声明内层 &lt;code&gt;apples&lt;/code&gt;，内层块中的读取和赋值都会作用于外层变量，输出会是 &lt;code&gt;5&lt;/code&gt;、&lt;code&gt;10&lt;/code&gt;、&lt;code&gt;10&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;在内层块中，没有语法可以直接访问被同名局部变量遮蔽的外层局部变量。&lt;/p&gt;
+&lt;h3&gt;局部变量遮蔽全局变量&lt;/h3&gt;
+&lt;p&gt;局部变量也可以遮蔽同名全局变量。局部变量在作用域内时，未限定名称指向局部对象：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int value{ 5 };
+
+int main()
+{
+    int value{ 7 };
+
+    ++value;     // 局部 value 变为 8
+    --(::value); // 全局 value 变为 4
+
+    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &apos;\n&apos;;   // 8
+    std::cout &amp;lt;&amp;lt; ::value &amp;lt;&amp;lt; &apos;\n&apos;; // 4
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;全局变量属于全局命名空间，所以即使被局部变量遮蔽，仍可通过无前缀作用域解析 &lt;code&gt;::value&lt;/code&gt; 明确访问。这个办法不适用于被遮蔽的外层局部变量。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;避免变量遮蔽。遮蔽容易让代码读取或修改错误的对象。为全局变量统一使用 &lt;code&gt;g_&lt;/code&gt; 前缀可以简单地避免局部变量与全局变量同名。&lt;/p&gt;
+&lt;p&gt;GCC 和 Clang 可用 &lt;code&gt;-Wshadow&lt;/code&gt; 启用遮蔽警告，并提供 &lt;code&gt;-Wshadow=global&lt;/code&gt;、&lt;code&gt;-Wshadow=local&lt;/code&gt;、&lt;code&gt;-Wshadow=compatible-local&lt;/code&gt; 等变体。Visual Studio 默认启用相应警告。&lt;/p&gt;
+&lt;h2&gt;7.11 静态局部变量&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;static&lt;/code&gt; 在不同上下文中含义不同：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;全局变量本身具有静态存储期；&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;static&lt;/code&gt; 修饰全局标识符时赋予其内部链接；&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;static&lt;/code&gt; 修饰局部变量时，把它的存储期从自动存储期改为静态存储期。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;本节的 &lt;code&gt;static&lt;/code&gt; 指第三种用法。&lt;/p&gt;
+&lt;h3&gt;跨函数调用保留值&lt;/h3&gt;
+&lt;p&gt;普通局部变量每次执行到定义处都会创建，并在离开代码块时销毁：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void incrementAndPrint()
+{
+    int value{ 1 };
+    ++value;
+    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;调用三次会输出三次 &lt;code&gt;2&lt;/code&gt;。改为静态局部变量后：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void incrementAndPrint()
+{
+    static int s_value{ 1 };
+    ++s_value;
+    std::cout &amp;lt;&amp;lt; s_value &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;初始化只发生一次。函数结束时，&lt;code&gt;s_value&lt;/code&gt; 离开作用域而暂时不可访问，但对象不会被销毁。三次调用依次输出 &lt;code&gt;2&lt;/code&gt;、&lt;code&gt;3&lt;/code&gt;、&lt;code&gt;4&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;静态局部变量兼具两类属性：名称具有局部变量的块作用域，对象却具有延续到程序结束的生命周期。它适合需要局部状态在多次函数调用之间保留的场景。&lt;/p&gt;
+&lt;h3&gt;初始化规则&lt;/h3&gt;
+&lt;p&gt;可零初始化或具有常量表达式初始化器的静态局部变量可以在程序启动时初始化。&lt;/p&gt;
+&lt;p&gt;没有初始化器或具有非常量表达式初始化器的静态局部变量会在程序启动时先零初始化。具有非常量表达式初始化器的变量在程序第一次执行到定义处时完成初始化；后续调用跳过该定义，不会再次初始化。未显式初始化的静态局部变量最终保持默认的零值。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;显式初始化静态局部变量。常用 &lt;code&gt;s&lt;/code&gt; 或 &lt;code&gt;s_&lt;/code&gt; 前缀表明局部变量具有静态存储期。&lt;/p&gt;
+&lt;h3&gt;唯一 ID 生成器&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;int generateID()
+{
+    static int s_itemID{ 0 };
+    return s_itemID++;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;第一次调用返回 &lt;code&gt;0&lt;/code&gt;，第二次返回 &lt;code&gt;1&lt;/code&gt;，之后每次递增。状态只能通过该函数改变，其他函数无法直接篡改 &lt;code&gt;s_itemID&lt;/code&gt;。这种写法获得了全局变量“持续存在”的特征，同时把可见性限制在函数块内。&lt;/p&gt;
+&lt;p&gt;该方案只有在整个程序确实只需要一个永不重置的 ID 序列时才合适。&lt;/p&gt;
+&lt;h3&gt;静态局部常量&lt;/h3&gt;
+&lt;p&gt;静态局部变量可以声明为 &lt;code&gt;const&lt;/code&gt; 或 &lt;code&gt;constexpr&lt;/code&gt;。如果函数需要一个创建或初始化成本较高的常量对象，普通局部变量会在每次调用时重复构造；静态局部常量只初始化一次，之后所有调用都复用该对象。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;关键点&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;静态局部变量最适合用来避免每次函数调用都重复初始化昂贵的局部对象。静态局部常量通常可以安全使用。&lt;/p&gt;
+&lt;h3&gt;不要用静态局部状态改变函数流程&lt;/h3&gt;
+&lt;p&gt;非 &lt;code&gt;const&lt;/code&gt; 静态局部变量会让函数调用隐式依赖先前调用。例如，用 &lt;code&gt;static bool s_isFirstCall&lt;/code&gt; 让第一次调用显示一种提示、以后显示另一种提示，会造成相同参数的两次调用表现不同。调用者仅阅读调用点无法发现这种内部状态。&lt;/p&gt;
+&lt;p&gt;这种函数难以复用：内部状态不能由调用者重置；当另一段流程希望重新执行“第一次调用”时，旧状态仍然存在。更好的做法是把差异作为参数传入，让调用者显式控制行为。若需要传入提示文本，&lt;code&gt;std::string_view&lt;/code&gt; 参数通常比布尔标记更通用。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;const&lt;/code&gt; 静态局部变量通常可以使用。&lt;/li&gt;
+&lt;li&gt;非 &lt;code&gt;const&lt;/code&gt; 静态局部变量通常应避免。&lt;/li&gt;
+&lt;li&gt;确实使用非 &lt;code&gt;const&lt;/code&gt; 静态局部变量时，应确认该状态在整个程序中只有唯一实例、永远不需要重置，并且不用于改变控制流。&lt;/li&gt;
+&lt;li&gt;需要多个各自保留状态的实例时，应使用函数对象等可实例化方案，而不是单个静态局部变量。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;7.13 using 声明与 using 指令&lt;/h2&gt;
+&lt;p&gt;标准库的名称最初位于全局命名空间，容易与程序名称冲突。命名空间在 1995 年标准化后，标准库功能迁移到 &lt;code&gt;std&lt;/code&gt;。为兼容大量使用未限定标准库名称的旧代码，并减少反复书写限定符，C++ 提供了 using 语句。&lt;/p&gt;
+&lt;h3&gt;限定名称与未限定名称&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;限定名称&lt;/strong&gt;带有关联作用域：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;std::cout // 由命名空间 std 限定
+::foo     // 由全局命名空间限定
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;名称还可以由类名通过 &lt;code&gt;::&lt;/code&gt; 限定，或由类对象、对象指针通过 &lt;code&gt;.&lt;/code&gt;、&lt;code&gt;-&amp;gt;&lt;/code&gt; 限定：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;C::s_member;
+obj.x;
+ptr-&amp;gt;y;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;未限定名称&lt;/strong&gt;不带作用域限定符，例如 &lt;code&gt;cout&lt;/code&gt; 和 &lt;code&gt;x&lt;/code&gt;。&lt;/p&gt;
+&lt;h3&gt;using 声明&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;using 声明&lt;/strong&gt;让一个限定名称可以通过未限定名称使用：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    using std::cout;
+
+    cout &amp;lt;&amp;lt; &quot;Hello world!\n&quot;;
+} // using 声明在此失效
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;using std::cout;&lt;/code&gt; 表明当前作用域中的未限定 &lt;code&gt;cout&lt;/code&gt; 应解析为 &lt;code&gt;std::cout&lt;/code&gt;。若 &lt;code&gt;std::cout&lt;/code&gt; 与另一个可见的 &lt;code&gt;cout&lt;/code&gt; 发生名称冲突，该 using 声明指定的 &lt;code&gt;std::cout&lt;/code&gt; 优先。&lt;/p&gt;
+&lt;p&gt;每个名称需要单独的 using 声明，例如 &lt;code&gt;std::cout&lt;/code&gt; 与 &lt;code&gt;std::cin&lt;/code&gt; 各写一条。using 声明从声明点生效，持续到当前作用域末尾。它不如显式 &lt;code&gt;std::&lt;/code&gt; 清晰，但放在源文件中所有 &lt;code&gt;#include&lt;/code&gt; 指令之后时通常安全且可接受。&lt;/p&gt;
+&lt;h3&gt;using 指令&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;using 指令&lt;/strong&gt;使指定命名空间中的所有标识符都可以在作用域内以未限定名称参与查找：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    using namespace std;
+
+    cout &amp;lt;&amp;lt; &quot;Hello world!\n&quot;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;从技术上说，using 指令并非真正把新名称声明到当前作用域，而是让这些名称在某个外层作用域中参与查找。实际结果仍是该命名空间的大量名称都成为未限定名称查找的候选项。&lt;/p&gt;
+&lt;p&gt;using 指令曾用于让命名空间出现前的旧代码以很小改动继续使用标准库。现代 C++ 中，它节省的输入量通常不足以抵消风险：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;它让命名空间中的所有名称参与未限定查找，包括完全不会使用的名称。&lt;/li&gt;
+&lt;li&gt;它不会让该命名空间的名称优先于其他候选名称。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;同时引入 &lt;code&gt;A&lt;/code&gt; 与 &lt;code&gt;B&lt;/code&gt; 后，若两者都有 &lt;code&gt;x&lt;/code&gt;，未限定 &lt;code&gt;x&lt;/code&gt; 会产生歧义。可通过删除某条 using 指令、改用 using 声明，或显式写成 &lt;code&gt;A::x&lt;/code&gt;、&lt;code&gt;B::x&lt;/code&gt; 解决。&lt;/p&gt;
+&lt;h3&gt;对未来库版本的脆弱性&lt;/h3&gt;
+&lt;p&gt;using 指令即使当前没有冲突，也会让代码暴露给库将来新增的所有名称。&lt;/p&gt;
+&lt;p&gt;假设程序有全局 &lt;code&gt;print()&lt;/code&gt;，并使用 &lt;code&gt;using namespace Foo;&lt;/code&gt;。库升级后新增 &lt;code&gt;Foo::print()&lt;/code&gt;，原本正常的 &lt;code&gt;print()&lt;/code&gt; 调用可能突然变成歧义并停止编译。&lt;/p&gt;
+&lt;p&gt;更隐蔽的情况是库新增同名重载，而且它比原函数更匹配：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int get(long)
+{
+    return 1;
+}
+
+int main()
+{
+    using namespace Foo;
+    std::cout &amp;lt;&amp;lt; get(0) &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;若 &lt;code&gt;Foo&lt;/code&gt; 后来新增 &lt;code&gt;int get(int)&lt;/code&gt;，整型字面量 &lt;code&gt;0&lt;/code&gt; 与它精确匹配，优于需要 &lt;code&gt;int&lt;/code&gt; 到 &lt;code&gt;long&lt;/code&gt; 转换的全局函数。程序无需修改即可从输出 &lt;code&gt;1&lt;/code&gt; 变为输出 &lt;code&gt;2&lt;/code&gt;。显式限定名称或只引入目标名称的 using 声明不会产生这种扩大候选集的问题。&lt;/p&gt;
+&lt;p&gt;using 指令还隐藏名称来源。&lt;code&gt;NS::foo()&lt;/code&gt; 明确表明它来自库；未限定的 &lt;code&gt;foo()&lt;/code&gt; 无法直接显示它属于库还是程序。个别库头可能把名称放入全局命名空间，因此未限定名称来自程序只是倾向而非保证。&lt;/p&gt;
+&lt;h3&gt;using 语句的作用域与位置&lt;/h3&gt;
+&lt;p&gt;块内的 using 声明或 using 指令仅在该块内生效，遵循普通块作用域规则。命名空间作用域（包括全局命名空间）中的 using 语句从声明点影响文件剩余部分。&lt;/p&gt;
+&lt;p&gt;using 语句不应放在头文件中，也不应放在任何 &lt;code&gt;#include&lt;/code&gt; 指令之前。基本原则是：不要把 using 语句放到可能影响其他文件代码的位置，也不要放到其他文件代码可能反过来改变它的位置。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;头文件全局或命名空间作用域中的 using 语句会传播到每个包含该头文件的源文件。&lt;/li&gt;
+&lt;li&gt;即使 using 语句位于头文件中定义的函数内部也不安全，因为在它之前包含了哪些头文件由包含者决定。&lt;/li&gt;
+&lt;li&gt;using 声明能引入的重载集合取决于声明处此前已经可见的声明，因此具有顺序依赖。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;例如，&lt;code&gt;using Foo::print;&lt;/code&gt; 写在 &lt;code&gt;Foo::print(int)&lt;/code&gt; 的声明可见之后，会同时引入已知重载并为整数实参选择 &lt;code&gt;print(int)&lt;/code&gt;。若把 using 声明移到该头文件之前，当时只可见 &lt;code&gt;print(double)&lt;/code&gt;，随后出现的 &lt;code&gt;print(int)&lt;/code&gt; 不会自动加入这条 using 声明的候选集合，调用将改为 &lt;code&gt;print(double)&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;using 语句真正安全的位置是源文件中所有 &lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/p&gt;
+&lt;h3&gt;不能在同一作用域中取消或替换&lt;/h3&gt;
+&lt;p&gt;using 语句一旦在某个作用域中声明，就无法在该作用域内取消，也无法用另一条 using 语句替换。只能从一开始就利用嵌套块限制其作用域；显式使用 &lt;code&gt;::&lt;/code&gt; 通常能避免这类管理负担。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;优先使用显式命名空间限定符，而不是 using 语句。&lt;/li&gt;
+&lt;li&gt;避免 using 指令；&lt;code&gt;using namespace std::literals;&lt;/code&gt; 为访问 &lt;code&gt;s&lt;/code&gt; 与 &lt;code&gt;sv&lt;/code&gt; 字面量后缀的常见例外。&lt;/li&gt;
+&lt;li&gt;using 声明可放在 &lt;code&gt;.cpp&lt;/code&gt; 源文件中，但必须位于所有 &lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/li&gt;
+&lt;li&gt;不要在头文件中使用 using 语句，尤其不要在头文件的全局命名空间中使用。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;using&lt;/code&gt; 还可定义类型别名；类型别名与本节的 using 语句是不同功能。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;参考来源&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/compound-statements-blocks/&quot;&gt;7.1 — Compound statements (blocks)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/user-defined-namespaces-and-the-scope-resolution-operator/&quot;&gt;7.2 — User-defined namespaces and the scope resolution operator&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/local-variables/&quot;&gt;7.3 — Local variables&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/introduction-to-global-variables/&quot;&gt;7.4 — Introduction to global variables&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/variable-shadowing-name-hiding/&quot;&gt;7.5 — Variable shadowing (name hiding)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/static-local-variables/&quot;&gt;7.11 — Static local variables&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/using-declarations-and-using-directives/&quot;&gt;7.13 — Using declarations and using directives&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;
 </content:encoded></item><item><title>LearnCpp 函数重载与函数模板</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E5%87%BD%E6%95%B0%E9%87%8D%E8%BD%BD%E4%B8%8E%E5%87%BD%E6%95%B0%E6%A8%A1%E6%9D%BF/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E5%87%BD%E6%95%B0%E9%87%8D%E8%BD%BD%E4%B8%8E%E5%87%BD%E6%95%B0%E6%A8%A1%E6%9D%BF/</guid><description>LearnCpp 函数重载与函数模板笔记，介绍重载区分与决议、删除函数、默认实参、函数模板、实例化、实参推导、多类型模板及模板偏序。</description><pubDate>Wed, 19 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 函数重载与函数模板&lt;/h1&gt;
 &lt;h2&gt;11.1 函数重载简介&lt;/h2&gt;
