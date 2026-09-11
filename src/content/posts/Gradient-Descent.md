@@ -1,7 +1,9 @@
 ---
 title: Gradient Descent
+image: /assets/post-card/post-card-43-v20260908.png
+cardImagePosition: center 25%
 published: 2026-09-10
-updated: 2026-09-11
+updated: 2026-09-12
 description: 以模型训练为基础，阐述 GD、SGD、动量、Nesterov 与 Adam 的定义、更新机制及适用限制。
 tags:
   - 优化算法
