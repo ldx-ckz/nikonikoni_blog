@@ -1049,6 +1049,571 @@ density_block.columns = density_block.columns.set_names(df.columns.names)
 result = pd.concat([df, density_block], axis=1)
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;这保留了数据与坐标之间的关系：先在相同年份和城市上计算，再给结果附上新的指标名称。掌握标签对齐、聚合和级别移动之后，复杂的多重索引表也可以拆成一系列含义明确的操作。&lt;/p&gt;
+</content:encoded></item><item><title>Gradient Descent</title><link>https://miku.nikonikoni.blog/posts/gradient-descent/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/gradient-descent/</guid><description>以模型训练为基础，阐述 GD、SGD、动量、Nesterov 与 Adam 的定义、更新机制及适用限制。</description><pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;梯度下降算法&lt;/h1&gt;
+&lt;p&gt;模型训练是以训练损失最小化为目标的参数估计过程。梯度下降及其改进方法利用损失函数的梯度构造参数更新，通过迭代降低模型在训练数据上的预测误差。&lt;/p&gt;
+&lt;p&gt;本文依次讨论常规梯度下降、随机梯度下降、动量法、Nesterov 加速动量和 Adam，重点说明各方法的定义、更新机制及适用限制，并最终解释其差异。[1]&lt;/p&gt;
+&lt;h2&gt;1. 模型训练与优化目标&lt;/h2&gt;
+&lt;h3&gt;模型参数与损失函数&lt;/h3&gt;
+&lt;p&gt;给定训练数据 ${(x_i,y_i)}_{i=1}^{N}$，模型 $f(x_i;\theta)$ 根据输入 $x_i$ 给出预测。$\theta$ 表示模型参数。&lt;/p&gt;
+&lt;p&gt;损失函数将模型预测与观测值之间的差异量化为标量。以平方误差损失为例：&lt;/p&gt;
+&lt;p&gt;$$
+\ell_i(\theta)=\bigl(f(x_i;\theta)-y_i\bigr)^2,
+\qquad
+L(\theta)=\frac{1}{N}\sum_{i=1}^{N}\ell_i(\theta).
+$$&lt;/p&gt;
+&lt;p&gt;$\ell_i$ 是一个样本的损失，$L$ 是所有训练样本的平均损失。训练目标是求解损失函数的最小化问题：&lt;/p&gt;
+&lt;p&gt;$$
+\theta^*\in\arg\min_{\theta}L(\theta).
+$$&lt;/p&gt;
+&lt;p&gt;其中，$\arg\min$ 表示使目标函数取得最小值的参数集合。符号 $\in$ 表明最优参数可能不唯一。&lt;/p&gt;
+&lt;p&gt;损失函数也可定义为样本损失之和。&lt;strong&gt;求和损失与平均损失具有相同的最优解，但梯度相差 $N$ 倍。&lt;/strong&gt; 为使两种定义下的常规梯度下降产生相同更新，需要相应缩放学习率。本文将统一采用平均损失。&lt;/p&gt;
+&lt;h3&gt;迭代训练过程&lt;/h3&gt;
+&lt;p&gt;梯度优化的基本训练流程包括：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;确定参数初始值。&lt;/li&gt;
+&lt;li&gt;根据当前参数计算模型预测与损失。&lt;/li&gt;
+&lt;li&gt;计算损失函数关于参数的梯度。&lt;/li&gt;
+&lt;li&gt;根据优化算法更新参数，并重复上述过程。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;反向传播用于高效计算梯度，优化器根据梯度构造更新，参数初始化则确定迭代起点。三者共同影响训练效率与最终结果。&lt;/p&gt;
+&lt;p&gt;主要符号定义如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;记号&lt;/th&gt;
+&lt;th&gt;含义&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;$\theta_t$&lt;/td&gt;
+&lt;td&gt;第 $t$ 次更新前的参数，初始值为 $\theta_0$&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;$g_t$&lt;/td&gt;
+&lt;td&gt;当前用于更新的梯度，可以来自全部样本或一个小批量&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;$\alpha$&lt;/td&gt;
+&lt;td&gt;学习率，控制更新幅度&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;$B_t,b$&lt;/td&gt;
+&lt;td&gt;当前批次的样本集合及其大小&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;$m_t$&lt;/td&gt;
+&lt;td&gt;梯度的历史加权平均&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;$\beta$&lt;/td&gt;
+&lt;td&gt;动量系数，取 $0\leq\beta&amp;lt;1$&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;$v_t$&lt;/td&gt;
+&lt;td&gt;Adam 中梯度平方的历史加权平均&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3&gt;训练超参数&lt;/h3&gt;
+&lt;p&gt;模型参数通过损失最小化进行估计，包括权重、偏置等。训练超参数规定优化过程的配置，包括优化器、学习率、批量大小、动量系数与训练周期数。&lt;/p&gt;
+&lt;p&gt;超参数选择通常通过比较不同配置的验证集表现完成，独立测试集用于评价最终选定模型的泛化性能。&lt;/p&gt;
+&lt;p&gt;梯度采样方式与参数更新机制是两个不同层面：SGD 采用样本子集估计梯度，动量与 Adam 则规定如何利用当前及历史梯度。因此，动量和 Nesterov 均可使用随机梯度，Adam 也可使用全梯度。&lt;/p&gt;
+&lt;h2&gt;2. 常规梯度下降&lt;/h2&gt;
+&lt;h3&gt;梯度的定义与几何意义&lt;/h3&gt;
+&lt;p&gt;损失函数关于某一参数的偏导数，描述其他参数固定时，损失随该参数变化的局部变化率。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;偏导数为正：参数的微小增大会导致损失局部增大，减小该参数构成下降方向。&lt;/li&gt;
+&lt;li&gt;偏导数为负：参数的微小增大会导致损失局部减小，增大该参数构成下降方向。&lt;/li&gt;
+&lt;li&gt;偏导数接近零：损失对该参数的局部一阶变化不敏感。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;梯度是由各参数偏导数组成的向量。对于两参数模型，有&lt;/p&gt;
+&lt;p&gt;$$
+\nabla L(\theta)=
+\begin{bmatrix}
+\dfrac{\partial L}{\partial\theta_0}\[4pt]
+\dfrac{\partial L}{\partial\theta_1}
+\end{bmatrix}.
+$$&lt;/p&gt;
+&lt;p&gt;在梯度非零的位置，以欧氏距离衡量等长的微小参数位移时，梯度方向使损失的一阶增量最大，负梯度方向使其最小。因此，负梯度是局部最陡下降方向，但该性质不意味着它直接指向全局最优解。&lt;/p&gt;
+&lt;h3&gt;参数更新规则&lt;/h3&gt;
+&lt;p&gt;常规梯度下降（Gradient Descent，GD）使用全部训练样本计算损失梯度，并按照以下规则更新参数：&lt;/p&gt;
+&lt;p&gt;$$
+g_t=\nabla L(\theta_t),
+\qquad
+\boxed{\theta_{t+1}=\theta_t-\alpha g_t.}
+$$&lt;/p&gt;
+&lt;p&gt;其中，参数增量为负梯度与学习率的乘积，学习率决定该方向上的更新幅度。&lt;/p&gt;
+&lt;p&gt;例如，若当前 $\theta_t=(1,2)$，梯度 $g_t=(4,-2)$，学习率 $\alpha=0.1$，则&lt;/p&gt;
+&lt;p&gt;$$
+\theta_{t+1}=(1,2)-0.1(4,-2)=(0.6,2.2).
+$$&lt;/p&gt;
+&lt;p&gt;本次更新使第一个参数减小、第二个参数增大，变化方向由相应偏导数的符号决定。各偏导数均应在同一组当前参数处计算，再同步更新全部参数。&lt;/p&gt;
+&lt;h3&gt;局部下降原理&lt;/h3&gt;
+&lt;p&gt;在一维情况下，损失函数在当前参数附近的一阶近似为：&lt;/p&gt;
+&lt;p&gt;$$
+L(\theta+\Delta\theta)\approx L(\theta)+L&apos;(\theta)\Delta\theta.
+$$&lt;/p&gt;
+&lt;p&gt;代入 $\Delta\theta=-\alpha L&apos;(\theta)$，得到&lt;/p&gt;
+&lt;p&gt;$$
+L(\theta-\alpha L&apos;(\theta))
+\approx L(\theta)-\alpha\bigl(L&apos;(\theta)\bigr)^2.
+$$&lt;/p&gt;
+&lt;p&gt;当 $\alpha&amp;gt;0$ 且导数非零时，该一阶近似给出负的损失增量，为负梯度更新提供了局部依据。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;上述结论要求更新幅度足够小，使局部近似保持有效。&lt;/strong&gt; 学习率过大时，高阶项的影响可能不可忽略，实际损失因而可能增加。&lt;/p&gt;
+&lt;h3&gt;学习率与更新稳定性&lt;/h3&gt;
+&lt;p&gt;学习率决定参数增量的尺度，并影响迭代速度与稳定性：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;学习率&lt;/th&gt;
+&lt;th&gt;可能出现的情况&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;过小&lt;/td&gt;
+&lt;td&gt;参数更新幅度较小，优化进展缓慢&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;适当&lt;/td&gt;
+&lt;td&gt;在稳定性与优化速度之间取得平衡&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;过大&lt;/td&gt;
+&lt;td&gt;可能产生过冲、振荡或发散&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;以 $L(\theta)=\theta^2$ 为例，梯度为 $2\theta$，更新变成&lt;/p&gt;
+&lt;p&gt;$$
+\theta_{t+1}=(1-2\alpha)\theta_t.
+$$&lt;/p&gt;
+&lt;p&gt;从 $\theta_0=1$ 出发：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;$\alpha=0.1$：$1\to0.8\to0.64\to\cdots$，参数单调趋近于零。&lt;/li&gt;
+&lt;li&gt;$\alpha=0.75$：$1\to-0.5\to0.25\to\cdots$，参数符号交替，振幅逐渐减小。&lt;/li&gt;
+&lt;li&gt;$\alpha=1.1$：$1\to-1.2\to1.44\to\cdots$，参数符号交替，振幅逐渐增大。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;对于该二次函数，参数误差在每次迭代中乘以 $1-2\alpha$。若要求任意非零初值的误差幅值逐步减小，则需要&lt;/p&gt;
+&lt;p&gt;$$
+|1-2\alpha|&amp;lt;1
+\quad\Longleftrightarrow\quad
+0&amp;lt;\alpha&amp;lt;1.
+$$&lt;/p&gt;
+&lt;p&gt;这给出了学习率稳定范围的一个直接推导。更一般地，若目标为 $L(\theta)=a\theta^2/2$、$a&amp;gt;0$，相同分析得到 $0&amp;lt;\alpha&amp;lt;2/a$；曲率 $a$ 越大，稳定学习率的上界越小。&lt;/p&gt;
+&lt;p&gt;这说明了学习率对该二次函数的影响，其稳定范围依赖于具体目标函数，不能直接推广至其他问题。&lt;/p&gt;
+&lt;p&gt;学习率与实际位移长度是不同概念：即使 $\alpha$ 固定，梯度幅值仍会随迭代变化，因此参数位移长度通常并不固定。&lt;/p&gt;
+&lt;h3&gt;线搜索方法&lt;/h3&gt;
+&lt;p&gt;线搜索在确定负梯度方向后，通过评估该方向上不同步长对应的损失来选择更新幅度。精确线搜索可写为：&lt;/p&gt;
+&lt;p&gt;$$
+\alpha_t=\arg\min_{\alpha\geq0}L(\theta_t-\alpha g_t).
+$$&lt;/p&gt;
+&lt;p&gt;该过程将当前迭代的步长选择转化为一维优化问题，得到的是既定方向上的最优步长。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/textbook-6-10.CHUL4oax_2dJfMc.webp&quot; alt=&quot;线搜索&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 1｜通过比较区间内若干位置的损失，逐步缩小搜索区间。图示的区间排除规则需要搜索区间内函数单峰等条件。[1]&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;线搜索利用目标函数值选择步长，但需要额外的损失评估。大规模训练通常采用预设学习率及其调度，以控制单次更新的计算成本。&lt;/p&gt;
+&lt;h2&gt;3. 典型模型&lt;/h2&gt;
+&lt;h3&gt;线性回归模型&lt;/h3&gt;
+&lt;p&gt;一维线性回归模型为&lt;/p&gt;
+&lt;p&gt;$$
+\hat y_i=\theta_0+\theta_1x_i,
+\qquad
+L(\theta)=\frac1N\sum_{i=1}^{N}(\theta_0+\theta_1x_i-y_i)^2.
+$$&lt;/p&gt;
+&lt;p&gt;$\theta_0$ 是截距，$\theta_1$ 是斜率。记预测误差为 $r_i=\theta_0+\theta_1x_i-y_i$，则单样本损失是 $r_i^2$。&lt;/p&gt;
+&lt;p&gt;对截距求导时，$\partial r_i/\partial\theta_0=1$，所以 $\partial(r_i^2)/\partial\theta_0=2r_i$。对斜率求导时，多出因子 $x_i$。对全部样本求平均，得到&lt;/p&gt;
+&lt;p&gt;$$
+\frac{\partial L}{\partial\theta_0}=\frac2N\sum_i r_i,
+\qquad
+\frac{\partial L}{\partial\theta_1}=\frac2N\sum_i x_ir_i.
+$$&lt;/p&gt;
+&lt;p&gt;截距梯度由残差的平均值决定，反映整体预测偏差；斜率梯度由输入与残差乘积的平均值决定，反映拟合斜率的调整方向。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/textbook-6-01.D3WAR5ts_1kebFj.webp&quot; alt=&quot;线性回归&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 2｜数据空间中的拟合直线与参数空间中的优化轨迹对应同一训练过程。每次参数更新均对应一条新的预测直线。[1]&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;该平方损失关于两个参数是凸函数，因此局部最小值也是全局最小值。对于这一带截距的线性模型，当输入 $x_i$ 不全相同时，最优参数唯一。&lt;/p&gt;
+&lt;p&gt;若所有输入均为常数 $c$，模型预测仅由组合 $\theta_0+c\theta_1$ 决定，多组参数可以产生相同预测。因此，凸性本身不保证最优参数唯一。&lt;/p&gt;
+&lt;h3&gt;曲率与 Hessian 矩阵&lt;/h3&gt;
+&lt;p&gt;梯度描述损失的一阶变化，二阶导数描述梯度的局部变化。损失函数关于参数的二阶偏导数组成 Hessian 矩阵：&lt;/p&gt;
+&lt;p&gt;$$
+H_{jk}=\frac{\partial^2L}{\partial\theta_j\partial\theta_k}.
+$$&lt;/p&gt;
+&lt;p&gt;在一维中，$L&apos;&apos;&amp;gt;0$ 对应正曲率，$L&apos;&apos;&amp;lt;0$ 对应负曲率。在多维中，不同方向可以具有不同符号的曲率；这有助于解释鞍点附近同时存在上升与下降方向的现象。&lt;/p&gt;
+&lt;p&gt;在线性回归例子中，再对梯度求一次导数可得&lt;/p&gt;
+&lt;p&gt;$$
+H=\frac2N
+\begin{bmatrix}
+N&amp;amp;\sum_i x_i\
+\sum_i x_i&amp;amp;\sum_i x_i^2
+\end{bmatrix}.
+$$&lt;/p&gt;
+&lt;p&gt;该矩阵与参数取值无关，表明二次损失的曲率不随参数位置变化。输入不全相同时，参数在各方向上的曲率均为正；输入完全相同时，则存在不改变预测的平坦参数方向。&lt;/p&gt;
+&lt;p&gt;牛顿法利用 Hessian 的曲率信息构造更新，但其完整矩阵的存储与处理成本可能较高。一百万个参数对应一个 $10^6\times10^6$ 的矩阵，共有 $10^{12}$ 个元素。后文介绍的 Adam 则仅维护两组与参数等长的历史向量。[1]&lt;/p&gt;
+&lt;p&gt;一阶梯度方法所需的状态规模通常较小，因而适合高维参数优化。一般非线性问题中的牛顿法仍可能需要步长控制，其更新也不必然收敛至极小点。&lt;/p&gt;
+&lt;h3&gt;Gabor 模型&lt;/h3&gt;
+&lt;p&gt;非线性模型的损失函数可能具有多个局部最小值。以两参数 Gabor 模型为例：&lt;/p&gt;
+&lt;p&gt;$$
+f(x;\theta)=\sin z\cdot e^{-z^2/32},
+\qquad z=\theta_0+0.06\theta_1x,\quad\theta_1&amp;gt;0.
+$$&lt;/p&gt;
+&lt;p&gt;正弦项描述振荡，指数项构成随距离衰减的振幅包络。固定 $\theta_1$ 时，改变 $\theta_0$ 对应波形的水平平移；增大 $\theta_1$ 则压缩横向尺度，并可能改变包络中心的位置。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/textbook-6-02.bo0TwyNt_YQSEV.webp&quot; alt=&quot;Gabor 波形&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 3｜参数变化对 Gabor 波形的位置与横向尺度产生影响。[1]&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/textbook-6-03.WtrxnFEU_1fWpAV.webp&quot; alt=&quot;Gabor 数据&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 4｜含噪观测分布在生成波形附近，参数估计通过最小化损失改善模型对观测数据的拟合。[1]&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;采用平均平方误差时，根据链式法则，损失梯度由预测残差与模型参数导数的乘积构成：&lt;/p&gt;
+&lt;p&gt;$$
+\frac{\partial L}{\partial\theta_j}
+=\frac2N\sum_i\bigl(f(x_i;\theta)-y_i\bigr)
+\frac{\partial f(x_i;\theta)}{\partial\theta_j}.
+$$&lt;/p&gt;
+&lt;p&gt;对该模型，中间变量 $z$ 对应的导数为&lt;/p&gt;
+&lt;p&gt;$$
+\frac{df}{dz}=e^{-z^2/32}\left(\cos z-\frac z{16}\sin z\right),
+$$&lt;/p&gt;
+&lt;p&gt;结合 $\partial z/\partial\theta_0=1$、$\partial z/\partial\theta_1=0.06x$，即可得到两个参数的损失梯度。其参数更新仍遵循梯度下降规则，但非线性参数依赖使损失曲面更加复杂。&lt;/p&gt;
+&lt;h3&gt;局部最小值与鞍点&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/textbook-6-04.DaH44yOl_Z1o5X3z.webp&quot; alt=&quot;非凸损失&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 5｜非凸损失具有多个局部极小点，各极小点对应不同的拟合波形；叉号标记鞍点。[1]&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;相关概念定义如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;概念&lt;/th&gt;
+&lt;th&gt;含义&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;全局最小值&lt;/td&gt;
+&lt;td&gt;损失函数在整个参数定义域内取得的最小值&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;局部最小值&lt;/td&gt;
+&lt;td&gt;损失函数在某点的邻域内取得的最小值，未必是全局最小值&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;鞍点&lt;/td&gt;
+&lt;td&gt;梯度为零，但沿某些方向损失增大，沿另一些方向损失减小&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;对于光滑损失，内部局部极小点必须满足梯度为零，但梯度为零并非局部极小的充分条件。例如 $L(a,b)=a^2-b^2$ 在原点梯度为零，沿 $a$ 方向上升、沿 $b$ 方向下降，因此原点是鞍点。&lt;/p&gt;
+&lt;p&gt;若纯 GD 恰好位于梯度为零的驻点，则参数增量为零，后续迭代保持不变。若参数位于局部极小点附近，较大步长可能使其离开该邻域，也可能导致发散。因此，增大学习率不能保证获得更优解。&lt;/p&gt;
+&lt;p&gt;低维问题可以采用多起点优化或搜索参数组合。随着参数维度增加，穷尽搜索的计算成本迅速增长，高维训练通常依赖迭代方法获得可接受的低损失解。&lt;/p&gt;
+&lt;h3&gt;停止准则与模型评价&lt;/h3&gt;
+&lt;p&gt;常用停止准则包括梯度范数低于阈值、损失变化低于阈值，以及达到预定计算预算。由于鞍点附近也可能具有较小梯度，这些准则不能单独构成全局最优性的证明。&lt;/p&gt;
+&lt;p&gt;训练损失与泛化性能是不同的评价对象。较低训练损失不必然对应更好的未见数据表现，模型选择还应依据验证集评价。&lt;/p&gt;
+&lt;h2&gt;4. 随机梯度下降&lt;/h2&gt;
+&lt;h3&gt;小批量梯度估计&lt;/h3&gt;
+&lt;p&gt;全批 GD 的每次参数更新均依赖全部训练样本。数据规模较大时，单次梯度计算的成本较高。&lt;/p&gt;
+&lt;p&gt;随机梯度下降（Stochastic Gradient Descent，SGD）使用随机选取的单样本或小批量构造梯度估计：&lt;/p&gt;
+&lt;p&gt;$$
+g_t=\frac1b\sum_{i\in B_t}\nabla\ell_i(\theta_t),
+\qquad
+\boxed{\theta_{t+1}=\theta_t-\alpha g_t.}
+$$&lt;/p&gt;
+&lt;p&gt;SGD 保留了 GD 的参数更新形式，并以样本子集的梯度估计替代全梯度。[1]&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;使用的数据&lt;/th&gt;
+&lt;th&gt;名称&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;全部 $N$ 个样本&lt;/td&gt;
+&lt;td&gt;全批量梯度下降，即这里的常规 GD&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;一个样本&lt;/td&gt;
+&lt;td&gt;严格意义上的 SGD&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;$b$ 个样本，$1&amp;lt;b&amp;lt;N$&lt;/td&gt;
+&lt;td&gt;小批量梯度下降，通常也简称 SGD&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;SGD 的随机性主要来自训练样本的随机选取，无需额外向梯度添加人工噪声。&lt;/p&gt;
+&lt;h3&gt;采样噪声与无偏性&lt;/h3&gt;
+&lt;p&gt;不同样本的损失梯度可能在方向和幅值上存在差异。使用样本子集计算梯度时，所得估计因批次组成而变化。&lt;/p&gt;
+&lt;p&gt;例如，一维参数处有四个样本，它们的梯度分别为 $2,4,-1,3$，全梯度是平均值 $2$。取前两个样本，批次梯度为 $3$；取后两个，批次梯度为 $1$；只取第三个，梯度甚至是 $-1$，方向与全梯度相反。&lt;/p&gt;
+&lt;p&gt;在固定参数处，如果从完整数据集均匀随机采样，批次平均梯度的期望等于全梯度：&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb E[g_t]=\nabla L(\theta_t).
+$$&lt;/p&gt;
+&lt;p&gt;这一性质称为梯度估计的无偏性：单次估计可以偏离全梯度，但其期望与全梯度一致。每轮随机重排后依次取批次是另一种常见采样方式；由于参数与剩余样本集合在轮内持续变化，不能直接将上述无偏性结论应用于每次条件更新。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/textbook-6-05.BB2FICZi_Zy9cPW.webp&quot; alt=&quot;GD 与 SGD&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 6｜GD 的迭代轨迹依赖初始化；SGD 的采样波动可能使参数在不同局部极小点的吸引区域之间转移。[1]&lt;/em&gt;&lt;/p&gt;
+&lt;h3&gt;批次损失&lt;/h3&gt;
+&lt;p&gt;另一种等价描述是：SGD 在每次迭代中，对当前批次定义的损失执行一次梯度更新。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/textbook-6-06.BKnZiGwk_ZJrEV4.webp&quot; alt=&quot;不同批次的损失&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 7｜不同批次在同一参数处定义不同的损失与梯度。降低当前批次损失的更新，可能使总体训练损失暂时增加。[1]&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;因此，SGD 的总体训练损失可能出现非单调变化，单步损失增加不必然表示计算错误。此外，过大的学习率也可能使当前批次损失增加。&lt;/p&gt;
+&lt;h3&gt;批量大小与训练周期&lt;/h3&gt;
+&lt;p&gt;一次参数更新称为一次迭代（iteration）；完整遍历训练数据一次称为一个周期（epoch）。&lt;/p&gt;
+&lt;p&gt;例如，数据集有 100 个样本，每批 20 个，不重复地使用完所有样本需要 5 次更新。因此 1000 次更新对应 $1000/5=200$ 个 epoch。&lt;/p&gt;
+&lt;p&gt;较小批量降低单次更新所需的样本量，但梯度估计的波动通常更大；较大批量通常提高估计稳定性，同时增加单次处理的数据量。因此，优化效率的比较应同时考虑迭代次数、样本处理量和实际计算成本。&lt;/p&gt;
+&lt;p&gt;在固定参数处，若从完整数据集独立、有放回地均匀抽样，且某一坐标的单样本梯度方差为 $\sigma^2$，则根据独立随机变量的方差可加性，$b$ 个样本的平均梯度方差为单样本方差之和除以 $b^2$，即&lt;/p&gt;
+&lt;p&gt;$$
+\operatorname{Var}(g_{t,j})=\frac{\sigma^2}{b}.
+$$&lt;/p&gt;
+&lt;p&gt;因此，梯度标准差按 $1/\sqrt b$ 缩小：批量大小增加为原来的 4 倍，标准差在这些假设下变为原来的二分之一。该关系解释了批量平均的降噪作用，但不直接描述随机重排或样本相关条件下的精确方差。[1]&lt;/p&gt;
+&lt;h3&gt;收敛特性&lt;/h3&gt;
+&lt;p&gt;SGD 通过降低单次梯度计算成本提高参数更新频率。采样噪声还可能促进参数离开部分局部极小点或鞍点的邻域。&lt;/p&gt;
+&lt;p&gt;这些性质不构成全局收敛保证，较大的采样噪声也未必改善优化或泛化性能。&lt;/p&gt;
+&lt;p&gt;接近低损失解时，全梯度接近零可能来自样本梯度之间的抵消，而非各样本梯度均接近零。例如两个样本的梯度分别为 $+1$ 和 $-1$，全梯度为零，单样本更新却仍在移动。因此，固定学习率下的 SGD 可能在解的邻域内持续波动。&lt;/p&gt;
+&lt;h3&gt;学习率调度&lt;/h3&gt;
+&lt;p&gt;学习率衰减通常在训练前期采用较大更新幅度，以较快降低损失；在后期减小更新幅度，以提高局部调整的精度。&lt;/p&gt;
+&lt;p&gt;常见方式包括每隔若干 epoch 按固定比例降低学习率，以及连续平滑衰减。减小学习率会缩小相同梯度对应的参数增量，从而缓和后期随机波动。&lt;/p&gt;
+&lt;p&gt;学习率调度通过改变更新尺度影响迭代行为，其收敛效果仍依赖目标函数、梯度估计与其他训练条件。&lt;/p&gt;
+&lt;p&gt;方差缩减方法进一步改进梯度估计。例如，SVRG 结合参考参数处的全梯度与随机梯度差，减少随机更新的波动；其主要改进对象是梯度估计，而非逐坐标更新尺度。[1]&lt;/p&gt;
+&lt;h2&gt;5. 动量法&lt;/h2&gt;
+&lt;h3&gt;曲率差异与迭代振荡&lt;/h3&gt;
+&lt;p&gt;当损失函数在不同方向上的曲率差异较大时，梯度下降可能在高曲率方向上反复振荡，同时在低曲率方向上缓慢推进。这种现象常见于具有狭长等高线的损失曲面。[2]&lt;/p&gt;
+&lt;p&gt;例如损失 $L(a,b)=10a^2+b^2$ 的梯度为 $(20a,2b)$。当 $a,b$ 大小接近时，$a$ 方向的梯度明显更大。选择较小学习率有利于高曲率方向的稳定性，却可能使低曲率方向收敛缓慢；增大学习率则可能破坏高曲率方向的稳定性。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/distill-gd.jcBhJcVu_1v9Xhf.webp&quot; alt=&quot;梯度下降的轨迹&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 8｜不同方向的曲率差异导致迭代速度不均衡，统一学习率需要在收敛速度与振荡控制之间权衡。[2]&lt;/em&gt;&lt;/p&gt;
+&lt;h3&gt;梯度历史的加权平均&lt;/h3&gt;
+&lt;p&gt;动量法（Momentum）将当前梯度与历史梯度信息结合，以降低更新方向对单次梯度变化的敏感性。采用指数加权平均时，其更新规则为：&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{
+\begin{aligned}
+m_{t+1}&amp;amp;=\beta m_t+(1-\beta)g_t,\
+\theta_{t+1}&amp;amp;=\theta_t-\alpha m_{t+1}.
+\end{aligned}}
+$$&lt;/p&gt;
+&lt;p&gt;通常初始化为 $m_0=0$。更新后的 $m_{t+1}$ 由权重为 $\beta$ 的历史平均和权重为 $(1-\beta)$ 的当前梯度组成。[1]&lt;/p&gt;
+&lt;p&gt;例如，取 $\beta=0.9$，历史平均与当前梯度的权重分别为 90% 和 10%。若历史平均为 $2$、当前梯度为 $4$，则更新后的平均为 $0.9\times2+0.1\times4=2.2$。&lt;/p&gt;
+&lt;p&gt;动量系数越接近 1，历史信息衰减越慢，平滑作用通常越强，但对梯度方向变化的响应也可能存在更大滞后。$\beta=0$ 时，$m_{t+1}=g_t$，更新退化为 GD 或 SGD。&lt;/p&gt;
+&lt;h3&gt;历史权重的递推展开&lt;/h3&gt;
+&lt;p&gt;在零初始化下，展开前几次递推可得：&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+m_1&amp;amp;=(1-\beta)g_0,\
+m_2&amp;amp;=(1-\beta)(\beta g_0+g_1),\
+m_3&amp;amp;=(1-\beta)(\beta^2g_0+\beta g_1+g_2).
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;一般地，&lt;/p&gt;
+&lt;p&gt;$$
+m_{t+1}=(1-\beta)\sum_{j=0}^{t}\beta^{t-j}g_j.
+$$&lt;/p&gt;
+&lt;p&gt;历史梯度的权重随其距当前迭代的时间间隔按 $\beta$ 的幂次衰减，因此该统计量称为&lt;strong&gt;指数移动平均&lt;/strong&gt;。近期梯度具有较高权重，较早梯度的影响逐步减弱。&lt;/p&gt;
+&lt;h3&gt;更新效率&lt;/h3&gt;
+&lt;p&gt;在振荡方向上，梯度的正负分量在加权平均中部分抵消；在梯度方向较一致的分量上，历史贡献得到持续保留。由此，更新方向能够更充分地反映多次迭代中的一致信息。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/textbook-6-07.BrozQr5h_Z2iYJVG.webp&quot; alt=&quot;动量的作用&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 9｜历史梯度的加权平均平滑了更新方向，可减少轨迹中的高频方向变化。[1]&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;动量通过利用连续多次迭代的方向信息改善更新效率。当小批量梯度波动较大时，加权平均可减轻单次异常梯度对更新方向的影响。&lt;/p&gt;
+&lt;p&gt;在上述加权平均形式下，若梯度始终为常量 $g$，则 $m_{t+1}=(1-\beta^{t+1})g$，并逐渐趋近于 $g$。因此，动量的加速作用不能一般地归因于平均梯度幅值超过当前梯度，而应结合方向持续性与参数化方式分析。&lt;/p&gt;
+&lt;h3&gt;动量的两种参数化&lt;/h3&gt;
+&lt;p&gt;另一种常见参数化不对当前梯度乘以 $(1-\beta)$：&lt;/p&gt;
+&lt;p&gt;$$
+u_{t+1}=\beta u_t+g_t,
+\qquad
+\theta_{t+1}=\theta_t-\eta u_{t+1}.
+$$&lt;/p&gt;
+&lt;p&gt;在固定动量系数和零初始化下，两种历史状态满足 $m_t=(1-\beta)u_t$。两种参数化产生相同更新的学习率对应关系为 $\eta=\alpha(1-\beta)$。&lt;/p&gt;
+&lt;h3&gt;惯性效应与稳定性&lt;/h3&gt;
+&lt;p&gt;当参数接近极小点时，历史方向可能与当前局部梯度不再一致，惯性项因而可能导致过冲。过大的学习率或动量系数会进一步影响迭代稳定性。&lt;/p&gt;
+&lt;p&gt;动量更新不保证损失逐步单调下降，其效果依赖目标函数与超参数。Nesterov 方法通过在惯性预测位置计算梯度，对历史方向引起的位移进行修正。&lt;/p&gt;
+&lt;h2&gt;6. Nesterov 加速动量&lt;/h2&gt;
+&lt;h3&gt;前瞻梯度机制&lt;/h3&gt;
+&lt;p&gt;Nesterov 加速梯度（NAG）在保留惯性项的同时，将梯度评估位置由当前参数移至前瞻参数：[3]&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;普通动量：在当前参数处计算梯度，将其与惯性项合成参数增量。&lt;/li&gt;
+&lt;li&gt;Nesterov 动量：根据惯性项构造前瞻参数，在该位置计算梯度并修正参数增量。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;前瞻参数是用于评估梯度的辅助变量。每次迭代仍产生一次最终参数更新，前瞻与梯度修正共同构成该更新。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/textbook-6-08.BVDcblG8_Zkt8oB.webp&quot; alt=&quot;前瞻更新&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 10｜普通动量在当前参数处评估梯度，Nesterov 方法在惯性预测位置评估梯度并修正位移。[1]&lt;/em&gt;&lt;/p&gt;
+&lt;h3&gt;参数更新规则&lt;/h3&gt;
+&lt;p&gt;令 $s_t$ 表示上一次参数位移，初始化 $s_0=0$，并以 $\eta$ 表示该参数化下的学习率。NAG 的更新规则为&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{
+\begin{aligned}
+\widetilde\theta_t&amp;amp;=\theta_t+\beta s_t,\
+s_{t+1}&amp;amp;=\beta s_t-\eta\nabla L(\widetilde\theta_t),\
+\theta_{t+1}&amp;amp;=\theta_t+s_{t+1}.
+\end{aligned}}
+$$&lt;/p&gt;
+&lt;p&gt;第一式由惯性项构造前瞻参数，第二式利用前瞻梯度修正位移，第三式完成参数更新。在随机梯度情形下，可将全梯度替换为当前批次在前瞻参数处的梯度估计。&lt;/p&gt;
+&lt;p&gt;与上一节的加权平均写法对应，取 $s_t=-\alpha m_t$、$\eta=\alpha(1-\beta)$，同一更新也可以写成&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\widetilde\theta_t&amp;amp;=\theta_t-\alpha\beta m_t,\
+m_{t+1}&amp;amp;=\beta m_t+(1-\beta)\nabla L(\widetilde\theta_t),\
+\theta_{t+1}&amp;amp;=\theta_t-\alpha m_{t+1}.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;前瞻位置中的 $\beta$ 与本次迭代保留的历史权重一致。上述两组公式使用不同状态变量表示同一更新机制。&lt;/p&gt;
+&lt;h3&gt;一维更新示例&lt;/h3&gt;
+&lt;p&gt;设 $L(\theta)=\theta^2/2$，当前 $\theta_t=1$，上一步位移 $s_t=-0.5$，动量系数 $\beta=0.9$，学习率 $\eta=0.1$。&lt;/p&gt;
+&lt;p&gt;普通动量在当前位置取梯度 $L&apos;(1)=1$，得到 $s_{t+1}=-0.45-0.1=-0.55$，新位置为 $0.45$。&lt;/p&gt;
+&lt;p&gt;NAG 先预测位置 $1-0.45=0.55$，在这里取梯度 $0.55$，得到 $s_{t+1}=-0.45-0.055=-0.505$，新位置为 $0.495$。&lt;/p&gt;
+&lt;p&gt;由于前瞻位置的梯度幅值较小，NAG 在本例中的梯度修正幅度也较小。本次普通动量的结果更接近最优点，因而不能由前瞻机制推出逐步最优性。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/paper-nesterov-figure1.CuSiC-yj_1WIXP7.webp&quot; alt=&quot;两种动量&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 11｜惯性位移与梯度修正的分解展示了普通动量和 Nesterov 方法的梯度评估位置差异。[3]&lt;/em&gt;&lt;/p&gt;
+&lt;h3&gt;加速性质与适用范围&lt;/h3&gt;
+&lt;p&gt;在满足相应光滑性、凸性条件并采用适当参数设置时，Nesterov 方法具有优于常规梯度下降的收敛速率保证。其基本机制是利用前瞻位置的梯度修正惯性位移。&lt;/p&gt;
+&lt;p&gt;对于非凸神经网络，上述理论结果不能直接解释为普遍的训练加速保证。实际表现仍受学习率、采样噪声与初始化等因素影响。&lt;/p&gt;
+&lt;h2&gt;7. Adam 自适应优化&lt;/h2&gt;
+&lt;h3&gt;参数梯度的尺度差异&lt;/h3&gt;
+&lt;p&gt;GD 和普通动量通常对全部参数使用统一学习率。当不同坐标的梯度尺度差异较大时，统一缩放可能使部分坐标更新过大、另一些坐标进展缓慢。&lt;/p&gt;
+&lt;p&gt;Adam 将梯度的历史平均与逐坐标尺度调整相结合，根据各参数的梯度统计量确定更新幅度。[1][4]&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/textbook-6-09.d6RsX418_2wkv20.webp&quot; alt=&quot;自适应更新&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 12｜统一学习率在低曲率方向的收敛速度与高曲率方向的稳定性之间存在权衡；逐坐标缩放可缓和这一问题。[1]&lt;/em&gt;&lt;/p&gt;
+&lt;h3&gt;逐坐标梯度归一化&lt;/h3&gt;
+&lt;p&gt;一种基本的尺度调整方法是将各坐标梯度除以其绝对值。由 $\sqrt{g_j^2}=|g_j|$，得到&lt;/p&gt;
+&lt;p&gt;$$
+\theta_{t+1,j}=\theta_{t,j}
+-\alpha\frac{g_{t,j}}{\sqrt{g_{t,j}^2}+\epsilon}.
+$$&lt;/p&gt;
+&lt;p&gt;其中 $j$ 表示参数坐标，$\epsilon$ 是防止除零的小正数。忽略 $\epsilon$ 时，正梯度变成 $+1$，负梯度变成 $-1$，每个非零梯度方向的移动距离都约为 $\alpha$。&lt;/p&gt;
+&lt;p&gt;该归一化减轻了大幅值梯度对参数位移的主导作用，同时弱化了梯度的幅值信息。接近极小点时，非零梯度仍可能产生近似固定长度的坐标更新，导致参数在极小点附近振荡。&lt;/p&gt;
+&lt;p&gt;Adam 进一步对梯度及其平方进行历史平均，以平滑更新方向及其归一化尺度。&lt;/p&gt;
+&lt;h3&gt;一阶矩与二阶矩估计&lt;/h3&gt;
+&lt;p&gt;Adam 维护梯度与平方梯度的两组指数移动平均，初始化为 $m_0=v_0=0$：&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+m_{t+1}&amp;amp;=\beta_1m_t+(1-\beta_1)g_t,\
+v_{t+1}&amp;amp;=\beta_2v_t+(1-\beta_2)g_t^2.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;其中，$0\leq\beta_1,\beta_2&amp;lt;1$ 为两组平均的衰减系数。平方以及后续的平方根、除法均按坐标执行。[4]&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;统计量&lt;/th&gt;
+&lt;th&gt;统计对象&lt;/th&gt;
+&lt;th&gt;主要作用&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;$m$&lt;/td&gt;
+&lt;td&gt;梯度的历史加权平均&lt;/td&gt;
+&lt;td&gt;保留较持续的方向，减轻方向波动&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;$v$&lt;/td&gt;
+&lt;td&gt;梯度平方的历史加权平均&lt;/td&gt;
+&lt;td&gt;估计各坐标最近的梯度幅度&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;平方运算保留幅值并消除符号差异。例如，$+2$ 和 $-2$ 对 $m$ 的贡献可能抵消，而对 $v$ 的贡献均来自平方值 $4$。因此，较小的 $m$ 与较大的 $v$ 可以对应幅值较大、方向频繁变化的梯度序列。&lt;/p&gt;
+&lt;p&gt;$m$ 称为一阶矩估计，$v$ 称为二阶原点矩估计。二阶原点矩基于梯度平方，&lt;strong&gt;不等同于损失函数的二阶导数&lt;/strong&gt;，也不直接等于梯度方差。在更新中，$m$ 主要提供方向信息，$v$ 主要提供幅值尺度。&lt;/p&gt;
+&lt;h3&gt;零初始化的偏差校正&lt;/h3&gt;
+&lt;p&gt;零初始化使两组指数平均在训练初期包含较大的初值权重。&lt;/p&gt;
+&lt;p&gt;例如，首个梯度为 $2$、$\beta_1=0.9$ 时，$m_1=0.1\times2=0.2$。该值小于已观测梯度，是因为零初值仍占 90% 的权重。&lt;/p&gt;
+&lt;p&gt;如果梯度一直等于 $g$，展开后有&lt;/p&gt;
+&lt;p&gt;$$
+m_{t+1}=(1-\beta_1^{t+1})g.
+$$&lt;/p&gt;
+&lt;p&gt;除以 $1-\beta_1^{t+1}$ 可归一化已观测梯度的权重，补偿零初始化的影响。相应的校正统计量为&lt;/p&gt;
+&lt;p&gt;$$
+\hat m_{t+1}=\frac{m_{t+1}}{1-\beta_1^{t+1}},
+\qquad
+\hat v_{t+1}=\frac{v_{t+1}}{1-\beta_2^{t+1}}.
+$$&lt;/p&gt;
+&lt;p&gt;随着更新次数增加，$\beta_1^{t+1}$ 和 $\beta_2^{t+1}$ 越来越小，校正因子逐渐接近 1。这种校正处理的是零初始化造成的权重不足，并不消除小批量采样噪声。&lt;/p&gt;
+&lt;h3&gt;完整更新规则&lt;/h3&gt;
+&lt;p&gt;结合梯度估计、矩估计、偏差校正与参数更新，Adam 的完整迭代为：&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{
+\begin{aligned}
+g_t&amp;amp;=\frac1b\sum_{i\in B_t}\nabla\ell_i(\theta_t),\
+m_{t+1}&amp;amp;=\beta_1m_t+(1-\beta_1)g_t,\
+v_{t+1}&amp;amp;=\beta_2v_t+(1-\beta_2)g_t^2,\
+\hat m_{t+1}&amp;amp;=\frac{m_{t+1}}{1-\beta_1^{t+1}},\
+\hat v_{t+1}&amp;amp;=\frac{v_{t+1}}{1-\beta_2^{t+1}},\
+\theta_{t+1}&amp;amp;=\theta_t-\alpha
+\frac{\hat m_{t+1}}{\sqrt{\hat v_{t+1}}+\epsilon}.
+\end{aligned}}
+$$&lt;/p&gt;
+&lt;p&gt;更新式的分子由校正后的一阶矩决定方向，分母利用二阶矩的平方根进行尺度归一化。某坐标长期梯度幅值较大时，其分母通常相应增大，从而降低更新对梯度绝对尺度的敏感性。[4]&lt;/p&gt;
+&lt;p&gt;常见初始超参数为 $\beta_1=0.9$、$\beta_2=0.999$、$\epsilon=10^{-8}$，学习率可从 $0.001$ 量级开始评估。其适用性仍需依据具体任务与验证结果确定。&lt;/p&gt;
+&lt;h3&gt;两步更新示例&lt;/h3&gt;
+&lt;p&gt;考虑单个参数，初始 $m_0=v_0=0$，第一步梯度 $g_0=2$，取 $\beta_1=0.9$、$\beta_2=0.999$：&lt;/p&gt;
+&lt;p&gt;$$
+m_1=0.2,\quad v_1=0.004,
+\qquad\hat m_1=2,\quad\hat v_1=4.
+$$&lt;/p&gt;
+&lt;p&gt;忽略 $\epsilon$，更新为 $\theta_1=\theta_0-\alpha\times2/\sqrt4=\theta_0-\alpha$。&lt;/p&gt;
+&lt;p&gt;若第二步梯度变为 $g_1=-2$，则&lt;/p&gt;
+&lt;p&gt;$$
+m_2=-0.02,\quad v_2=0.007996,
+\qquad\hat m_2\approx-0.1053,\quad\hat v_2=4.
+$$&lt;/p&gt;
+&lt;p&gt;第二次参数增量约为 $0.0526\alpha$。当前梯度虽已反向，但历史梯度在一阶矩中部分抵消，使反向更新幅度显著减小。&lt;/p&gt;
+&lt;p&gt;该示例说明了一阶矩方向平滑与二阶矩尺度归一化在更新中的共同作用。&lt;/p&gt;
+&lt;h3&gt;批次梯度的平方运算&lt;/h3&gt;
+&lt;p&gt;在小批量训练中，标准 Adam 的二阶矩以聚合后的批次平均梯度 $g_t$ 的平方为输入。该统计对象区别于单样本梯度平方的批次平均。&lt;/p&gt;
+&lt;p&gt;例如两个样本的梯度分别为 $+1$ 和 $-1$：平均梯度是 $0$，平方也是 $0$；但先平方再平均，会得到 $1$。两种运算描述不同的统计量，不能交换顺序。[4]&lt;/p&gt;
+&lt;h3&gt;超参数与性能评价&lt;/h3&gt;
+&lt;p&gt;Adam 的自适应性体现在逐坐标缩放随梯度统计量变化。全局学习率、批量大小与训练时长仍属于需要设定的超参数。&lt;/p&gt;
+&lt;p&gt;Adam 可能出现振荡，且不具有一般的全局最优保证。训练中可结合学习率衰减；也可在初期从较小学习率逐渐增加至目标值，即学习率热身（warmup），以缓和初始更新。[5]&lt;/p&gt;
+&lt;p&gt;当 $\beta_1=\beta_2=0$ 时，Adam 的参数增量为 $-\alpha g_t/(|g_t|+\epsilon)$，仍包含逐坐标归一化。因此，该参数设置下的 Adam 不等价于增量为 $-\alpha g_t$ 的普通 SGD。&lt;/p&gt;
+&lt;p&gt;SGD 与 Adam 的性能比较应分别考察优化速度、最终训练损失与测试泛化性能。这些指标不必具有相同排序；训练预算、超参数搜索范围及搜索投入也会影响比较结果。[8]&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/paper-adam-figure1.9Spn7rZQ_Zm8fvy.webp&quot; alt=&quot;优化器的训练曲线&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;图 13｜相同任务下不同优化器的训练损失曲线。横轴表示数据遍历次数；训练损失较低不必然对应更优的测试性能。[4]&lt;/em&gt;&lt;/p&gt;
+&lt;h3&gt;相关自适应方法&lt;/h3&gt;
+&lt;p&gt;相关自适应方法从梯度统计、尺度调整或参数衰减等方面修改更新机制：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;方法&lt;/th&gt;
+&lt;th&gt;主要机制&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;AdaGrad&lt;/td&gt;
+&lt;td&gt;累积每个参数过去的平方梯度，调整该坐标的更新幅度；累计量持续增大，后期更新可能过小&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;RMSProp、AdaDelta&lt;/td&gt;
+&lt;td&gt;利用平方梯度的移动统计调整更新尺度，缓和历史累计量持续增长造成的问题&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;AdamW&lt;/td&gt;
+&lt;td&gt;将参数衰减与自适应梯度更新解耦，避免衰减项直接参与梯度矩估计&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;RAdam&lt;/td&gt;
+&lt;td&gt;改善 Adam 早期自适应更新中的方差问题&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Nadam&lt;/td&gt;
+&lt;td&gt;将 Nesterov 思想与 Adam 结合&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;不同方法的改进对象与适用条件存在差异，其性能需要在明确的任务和训练条件下比较。[1][6][7]&lt;/p&gt;
+&lt;p&gt;其中，AdamW 主要处理参数衰减与自适应缩放之间的关系。对于普通 SGD，将 $\lambda|\theta|^2/2$ 加入损失后，有&lt;/p&gt;
+&lt;p&gt;$$
+\theta_{t+1}=\theta_t-\alpha(g_t+\lambda\theta_t)
+=(1-\alpha\lambda)\theta_t-\alpha g_t.
+$$&lt;/p&gt;
+&lt;p&gt;即 $L_2$ 惩罚可表示为参数的乘法收缩。对于 Adam，若将 $\lambda\theta_t$ 加入梯度，该项会同时进入一阶矩、二阶矩及自适应缩放，因此通常不等价于直接收缩参数。AdamW 将衰减与梯度更新分离，其常见形式为&lt;/p&gt;
+&lt;p&gt;$$
+\theta_{t+1}=(1-\alpha\lambda)\theta_t
+-\alpha\frac{\hat m_{t+1}}{\sqrt{\hat v_{t+1}}+\epsilon},
+$$&lt;/p&gt;
+&lt;p&gt;其中矩估计仅使用数据损失梯度，$\lambda$ 为衰减系数。这一区别涉及正则化与优化更新的组合方式，不构成普遍的性能优势保证。[6]&lt;/p&gt;
+&lt;p&gt;SWATS 则采用阶段性切换策略：先使用 Adam 获得初期优化进展，再切换至 SGD。该策略与前述更新公式的修改不同，其效果同样依赖任务与超参数设置。[1]&lt;/p&gt;
+&lt;h2&gt;参考资料&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;[1] 教材&lt;/strong&gt;：《梯度下降算法.pdf》，第 6 章“训练模型”，书内第 73–88 页，PDF 第 1–16 页。章节与 Simon J. D. Prince 的 &lt;em&gt;Understanding Deep Learning&lt;/em&gt; 第 6 章对应。&lt;a href=&quot;https://udlbook.github.io/udlbook/&quot;&gt;原作者教材主页&lt;/a&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;[2] 动量教程&lt;/strong&gt;：Gabriel Goh（2017），&lt;a href=&quot;https://distill.pub/2017/momentum/&quot;&gt;Why Momentum Really Works&lt;/a&gt;，Distill，DOI：10.23915/distill.00006。本文只采用辅助理解梯度下降和动量的直观内容，不展开特征根、收敛下界、图着色和随机噪声方差分析。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;[3] Nesterov 动量&lt;/strong&gt;：Ilya Sutskever、James Martens、George Dahl、Geoffrey Hinton（2013），&lt;a href=&quot;https://proceedings.mlr.press/v28/sutskever13.html&quot;&gt;On the importance of initialization and momentum in deep learning&lt;/a&gt;，ICML。用于核对前瞻位置与位移更新的关系，见 §2。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;[4] Adam&lt;/strong&gt;：Diederik P. Kingma、Jimmy Ba，&lt;a href=&quot;https://arxiv.org/abs/1412.6980&quot;&gt;Adam: A Method for Stochastic Optimization&lt;/a&gt;，预印本 2014，ICLR 2015。公式与常见初始超参数按 Algorithm 1；偏差校正见 §3。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;[5] Adam 的限制&lt;/strong&gt;：Sashank J. Reddi、Satyen Kale、Sanjiv Kumar（2018），&lt;a href=&quot;https://openreview.net/pdf?id=ryQu7f-RZ&quot;&gt;On the Convergence of Adam and Beyond&lt;/a&gt;，ICLR。提供 Adam 在特定凸问题中不收敛的反例。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;[6] AdamW&lt;/strong&gt;：Ilya Loshchilov、Frank Hutter，&lt;a href=&quot;https://arxiv.org/abs/1711.05101&quot;&gt;Decoupled Weight Decay Regularization&lt;/a&gt;，预印本 2017，ICLR 2019。用于参数衰减与自适应更新关系的说明。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;[7] RAdam&lt;/strong&gt;：Liyuan Liu 等，&lt;a href=&quot;https://arxiv.org/abs/1908.03265&quot;&gt;On the Variance of the Adaptive Learning Rate and Beyond&lt;/a&gt;，预印本 2019，ICLR 2020。用于早期自适应更新与方差问题的简要说明。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;[8] 优化器比较&lt;/strong&gt;：Dami Choi 等（2020），&lt;a href=&quot;https://arxiv.org/abs/1910.05446&quot;&gt;On Empirical Comparisons of Optimizers for Deep Learning&lt;/a&gt;。用于说明调参范围和比较条件会影响 SGD、Adam 等优化器的经验排序。&lt;/p&gt;
 </content:encoded></item><item><title>NumPy Illustrated</title><link>https://miku.nikonikoni.blog/posts/numpy-illustrated/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/numpy-illustrated/</guid><description>通过图解与代码示例，从一维向量到高维数组，介绍 NumPy 的数组创建、索引切片、广播机制与常用运算。</description><pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;NumPy Illustrated&lt;/h1&gt;
 &lt;p&gt;原文链接：&lt;a href=&quot;https://medium.com/better-programming/numpy-illustrated-the-visual-guide-to-numpy-3b1d4976de1d&quot;&gt;NumPy Illustrated: The Visual Guide to NumPy | by Lev Maximov | Better Programming&lt;/a&gt;&lt;/p&gt;
 &lt;hr /&gt;
@@ -4329,6 +4894,486 @@ void print(T value)
 &lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/class-templates/&quot;&gt;13.13 — Class templates&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;访问日期：2026-08-20。&lt;/p&gt;
+</content:encoded></item><item><title>LearnCpp 作用域、变量与命名空间</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</guid><description>LearnCpp 作用域、变量与命名空间笔记，介绍代码块、用户命名空间、局部与全局变量、变量遮蔽、静态局部变量以及 using 语句。</description><pubDate>Wed, 19 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 作用域、变量与命名空间&lt;/h1&gt;
+&lt;h2&gt;7.1 复合语句（代码块）&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;复合语句&lt;/strong&gt;（compound statement）也称为&lt;strong&gt;代码块&lt;/strong&gt;（block）或&lt;strong&gt;块语句&lt;/strong&gt;（block statement），由零条或多条语句组成，但编译器把整个代码块当作一条语句处理。&lt;/p&gt;
+&lt;p&gt;代码块以 &lt;code&gt;{&lt;/code&gt; 开始，以 &lt;code&gt;}&lt;/code&gt; 结束。凡是语法要求一条语句的地方，都可以放置一个代码块。代码块的右花括号后不需要分号。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int add(int x, int y)
+{ // 代码块开始
+    return x + y;
+} // 代码块结束，无分号
+
+int main()
+{
+    int value{}; // 这里的花括号用于初始化，不是代码块
+    add(3, 4);
+
+    return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;函数体本身就是代码块。用于列表初始化的花括号并不构成代码块。&lt;/p&gt;
+&lt;h3&gt;嵌套代码块&lt;/h3&gt;
+&lt;p&gt;函数不能定义在另一个函数内部，但代码块可以嵌套在其他代码块中。包含其他代码块的块称为&lt;strong&gt;外层代码块&lt;/strong&gt;，被包含的块称为&lt;strong&gt;内层代码块&lt;/strong&gt;或&lt;strong&gt;嵌套代码块&lt;/strong&gt;。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{ // 外层代码块
+    int value{};
+
+    { // 内层代码块
+        value = 7;
+    }
+
+    return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;代码块的常见用途是让 &lt;code&gt;if&lt;/code&gt; 或 &lt;code&gt;else&lt;/code&gt; 条件控制多条语句。&lt;code&gt;if&lt;/code&gt; 默认只控制紧随其后的一条语句；以代码块替代该语句后，块内所有语句会作为一个整体执行。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;if (value &amp;gt;= 0)
+{
+    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &quot; is non-negative\n&quot;;
+    std::cout &amp;lt;&amp;lt; &quot;Double: &quot; &amp;lt;&amp;lt; value * 2 &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+else
+{
+    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &quot; is negative\n&quot;;
+    std::cout &amp;lt;&amp;lt; &quot;Absolute value: &quot; &amp;lt;&amp;lt; -value &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;嵌套层级&lt;/h3&gt;
+&lt;p&gt;函数的&lt;strong&gt;嵌套层级&lt;/strong&gt;或&lt;strong&gt;嵌套深度&lt;/strong&gt;，是执行到函数中某一点时最多能同时位于多少层代码块之内，函数最外层代码块也计入。嵌套层级不是代码块总数：两个并列的三级代码块仍只产生三级深度。&lt;/p&gt;
+&lt;p&gt;C++ 标准建议编译器至少支持 256 层嵌套，但并非所有实现都达到这一数量。可编译不等于易读；过深嵌套会使控制关系难以追踪。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;函数的嵌套层级尽量不超过 3。需要更深嵌套时，通常应把最深处的代码提取为独立函数。&lt;/p&gt;
+&lt;h2&gt;7.2 用户定义命名空间与作用域解析运算符&lt;/h2&gt;
+&lt;p&gt;当两个相同标识符被引入同一作用域，而编译器无法判断应使用哪一个时，就会发生&lt;strong&gt;命名冲突&lt;/strong&gt;（naming collision）。冲突可能由编译器报告，也可能在多个翻译单元链接时由链接器报告。&lt;/p&gt;
+&lt;p&gt;同一作用域中的每个名称都可能与其他名称冲突。因此，标识符数量线性增加时，潜在冲突组合会大幅增加。这也是应把标识符定义在最小可用作用域内的重要原因。&lt;/p&gt;
+&lt;p&gt;例如，两个源文件都在全局作用域定义 &lt;code&gt;doSomething(int, int)&lt;/code&gt;，即使程序从未调用该函数，链接器仍会在处理重复定义时报告错误。直接改名能够消除冲突，却需要同步修改所有调用点。命名空间可以让名称保持不变，同时把它们放入不同作用域。&lt;/p&gt;
+&lt;h3&gt;定义命名空间&lt;/h3&gt;
+&lt;p&gt;程序定义的命名空间使用 &lt;code&gt;namespace&lt;/code&gt; 关键字：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Foo
+{
+    int doSomething(int x, int y)
+    {
+        return x + y;
+    }
+}
+
+namespace Goo
+{
+    int doSomething(int x, int y)
+    {
+        return x - y;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;命名空间只能定义在全局作用域或另一个命名空间内，不能定义在函数内部。命名空间内容通常缩进一级；右花括号后的分号是可选的。&lt;/p&gt;
+&lt;p&gt;历史上，命名空间名通常使用小写，许多风格指南仍采用这种约定。LearnCpp 推荐程序定义的命名空间以大写字母开头，理由包括：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;与程序定义类型的命名约定保持一致；&lt;/li&gt;
+&lt;li&gt;降低与系统或库提供的小写名称冲突的概率；&lt;/li&gt;
+&lt;li&gt;C++20 标准文本与 C++ Core Guidelines 采用这种风格。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;大写与小写两种风格都有效，项目内保持一致更重要。&lt;/p&gt;
+&lt;h3&gt;作用域解析运算符&lt;/h3&gt;
+&lt;p&gt;把函数移入 &lt;code&gt;Foo&lt;/code&gt; 和 &lt;code&gt;Goo&lt;/code&gt; 后，原先位于全局作用域的前置声明不再与它们匹配。编译器可能接受该全局声明，但链接器找不到对应的全局定义。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;作用域解析运算符&lt;/strong&gt; &lt;code&gt;::&lt;/code&gt; 用于明确指定标识符所在的作用域。左操作数是要查找的作用域，右操作数是该作用域内的标识符。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;std::cout &amp;lt;&amp;lt; Foo::doSomething(4, 3) &amp;lt;&amp;lt; &apos;\n&apos;; // 7
+std::cout &amp;lt;&amp;lt; Goo::doSomething(4, 3) &amp;lt;&amp;lt; &apos;\n&apos;; // 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;显式限定名称能够消除两个同名函数之间的歧义。&lt;code&gt;::name&lt;/code&gt; 没有左侧命名空间名时，表示从全局命名空间查找 &lt;code&gt;name&lt;/code&gt;：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void print()
+{
+    std::cout &amp;lt;&amp;lt; &quot;global\n&quot;;
+}
+
+namespace Foo
+{
+    void print()
+    {
+        std::cout &amp;lt;&amp;lt; &quot;Foo\n&quot;;
+    }
+
+    void callBoth()
+    {
+        print();   // Foo::print()
+        ::print(); // 全局命名空间中的 print()
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在命名空间内部使用未限定名称时，编译器先查找当前命名空间，再依次查找各层外部命名空间，最后查找全局命名空间。&lt;code&gt;::&lt;/code&gt; 可以跳过这套逐层查找，直接要求使用全局名称。&lt;/p&gt;
+&lt;h3&gt;声明、定义与多个命名空间块&lt;/h3&gt;
+&lt;p&gt;命名空间中标识符的前置声明和定义必须位于同一命名空间。头文件中的声明、源文件中的定义以及调用点应保持一致：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;// add.h
+namespace BasicMath
+{
+    int add(int x, int y);
+}
+
+// add.cpp
+#include &quot;add.h&quot;
+
+namespace BasicMath
+{
+    int add(int x, int y)
+    {
+        return x + y;
+    }
+}
+
+// main.cpp
+#include &quot;add.h&quot;
+
+int result{ BasicMath::add(4, 3) };
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;若声明留在全局命名空间，编译器看不到 &lt;code&gt;BasicMath::add&lt;/code&gt; 的声明；若定义留在全局命名空间，链接器找不到 &lt;code&gt;BasicMath::add&lt;/code&gt; 的定义。&lt;/p&gt;
+&lt;p&gt;同一命名空间可以在同一文件的多个位置或不同文件中反复打开。所有同名命名空间块的声明都属于同一命名空间。标准库头文件正是通过多个 &lt;code&gt;namespace std&lt;/code&gt; 块共同组成 &lt;code&gt;std&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;警告&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;不要向 &lt;code&gt;std&lt;/code&gt; 命名空间添加自定义功能。除标准明确允许的少数情况外，这通常会导致未定义行为。&lt;/p&gt;
+&lt;h3&gt;嵌套命名空间&lt;/h3&gt;
+&lt;p&gt;命名空间可以嵌套：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Foo
+{
+    namespace Goo
+    {
+        int add(int x, int y)
+        {
+            return x + y;
+        }
+    }
+}
+
+int sum{ Foo::Goo::add(1, 2) };
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;C++17 可以使用等价的紧凑语法：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Foo::Goo
+{
+    int add(int x, int y)
+    {
+        return x + y;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;之后仍可单独重新打开 &lt;code&gt;namespace Foo&lt;/code&gt;，向 &lt;code&gt;Foo&lt;/code&gt; 而不是 &lt;code&gt;Foo::Goo&lt;/code&gt; 添加声明。选择传统嵌套写法还是 C++17 紧凑写法属于风格问题。&lt;/p&gt;
+&lt;h3&gt;命名空间别名&lt;/h3&gt;
+&lt;p&gt;长命名空间链可以通过别名临时缩短：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Active = Foo::Goo;
+
+int result{ Active::add(1, 2) };
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;命名空间别名遵循其声明位置的作用域规则。例如，函数块内声明的 &lt;code&gt;Active&lt;/code&gt; 会在该块结束时失效。别名还提供一层间接性：实现迁移到 &lt;code&gt;V2&lt;/code&gt; 后，只需把别名改为 &lt;code&gt;namespace Active = V2;&lt;/code&gt;，调用点仍可保持 &lt;code&gt;Active::add()&lt;/code&gt;。&lt;/p&gt;
+&lt;h3&gt;命名空间的使用尺度&lt;/h3&gt;
+&lt;p&gt;命名空间的首要目的不是建立信息层次，而是防止命名冲突。标准库主体位于单一顶层命名空间 &lt;code&gt;std&lt;/code&gt;；名称较多的新组件也会采用嵌套命名空间，例如 &lt;code&gt;std::ranges&lt;/code&gt;。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;小型、仅供个人使用的程序通常不必放入自定义命名空间。&lt;/li&gt;
+&lt;li&gt;引入大量第三方库的较大项目可用命名空间降低冲突风险。&lt;/li&gt;
+&lt;li&gt;会分发给其他项目使用的代码应放入命名空间；一个独特的顶层命名空间通常已经足够，也便于编辑器自动补全展示库的公开名称。&lt;/li&gt;
+&lt;li&gt;多团队项目常采用“项目或库::模块”“组织::项目或库”，或“组织::项目或库::模块”的两至三级结构。&lt;/li&gt;
+&lt;li&gt;模块级命名空间可区分可复用代码与应用专用代码；目录结构也能承担一部分组织职责。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;命名空间一般不应嵌套超过 3 层。&lt;/p&gt;
+&lt;h2&gt;7.3 局部变量&lt;/h2&gt;
+&lt;p&gt;定义在函数内部的变量，包括函数形参，称为&lt;strong&gt;局部变量&lt;/strong&gt;。C++ 并不存在一个单独属性来判定“局部”；局部变量的行为由作用域、存储期和链接属性共同构成。&lt;/p&gt;
+&lt;h3&gt;块作用域&lt;/h3&gt;
+&lt;p&gt;标识符的&lt;strong&gt;作用域&lt;/strong&gt;决定源代码中哪些位置可以访问它。能够访问时称为“在作用域内”，不能访问时称为“超出作用域”。作用域是编译期属性；访问超出作用域的标识符会产生编译错误。&lt;/p&gt;
+&lt;p&gt;局部变量具有&lt;strong&gt;块作用域&lt;/strong&gt;：从定义点开始进入作用域，到所在代码块末尾离开作用域。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    int i{ 5 };      // i 从这里进入作用域
+    double d{ 4.0 }; // d 从这里进入作用域
+
+    return 0;
+} // d 和 i 在这里离开作用域
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;普通函数的形参虽然写在函数体之前，但通常可以把它们视为处于函数体代码块的作用域中。&lt;/p&gt;
+&lt;p&gt;同一作用域中的变量名必须唯一。形参与函数体顶层局部变量属于同一作用域，因此不能重名：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void someFunction(int x)
+{
+    int x{}; // 错误：与形参 x 冲突
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;自动存储期与生命周期&lt;/h3&gt;
+&lt;p&gt;变量的&lt;strong&gt;存储期&lt;/strong&gt;（storage duration）规定变量何时以及如何创建和销毁；多数情况下，存储期直接决定变量的&lt;strong&gt;生命周期&lt;/strong&gt;，即对象从实际创建到实际销毁的时间。&lt;/p&gt;
+&lt;p&gt;局部变量默认具有&lt;strong&gt;自动存储期&lt;/strong&gt;：执行到定义处时创建，在所在代码块结束时销毁。因此局部变量也称为&lt;strong&gt;自动变量&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;作用域与生命周期描述不同维度：作用域是名称能否在某段源代码中被使用的编译期属性；生命周期是对象在运行时是否存在。&lt;/p&gt;
+&lt;h3&gt;嵌套块中的局部变量&lt;/h3&gt;
+&lt;p&gt;内层变量只能从其定义点使用到内层块末尾；离开内层块后，它既超出作用域，也被销毁。外层块的作用域包含其嵌套块，因此外层变量在内层块中仍然可见。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    int x{ 5 };
+
+    {
+        int y{ 7 };
+        std::cout &amp;lt;&amp;lt; x + y &amp;lt;&amp;lt; &apos;\n&apos;; // x 与 y 都在作用域内
+    } // y 离开作用域并被销毁
+
+    // y 在这里不可访问
+    return 0;
+} // x 离开作用域并被销毁
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;无链接&lt;/h3&gt;
+&lt;p&gt;标识符的&lt;strong&gt;链接属性&lt;/strong&gt;决定不同作用域中的同名声明是否指向同一对象或函数。局部变量没有链接属性（no linkage）；每个声明都表示一个独立对象。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    int x{ 2 };
+
+    {
+        int x{ 3 }; // 与外层 x 是不同对象
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;作用域回答“单个声明在哪里可见”，链接属性回答“多个声明是否指向同一实体”，二者不能混为一谈。&lt;/p&gt;
+&lt;h3&gt;使用最小的现有作用域&lt;/h3&gt;
+&lt;p&gt;变量应定义在能够满足使用需求的最小现有作用域内。较小的作用域减少同时活跃的变量数量，也让变量可能被使用的位置更容易辨认。&lt;/p&gt;
+&lt;p&gt;如果变量只在嵌套块中使用，就在该块中定义。如果变量离开内层块后仍要使用，则必须在外层块中定义；这种需求可能导致变量早于首次使用声明。&lt;/p&gt;
+&lt;p&gt;不应仅为缩短变量作用域而额外创建代码块，因为这会让整个函数变长并增加结构复杂度。若一段代码确实值得形成独立作用域，通常更适合提取为函数。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;在最小的现有作用域内定义变量。不要创建唯一目的只是限制变量作用域的新代码块。&lt;/p&gt;
+&lt;h2&gt;7.4 全局变量简介&lt;/h2&gt;
+&lt;p&gt;定义在函数外部的变量称为&lt;strong&gt;全局变量&lt;/strong&gt;。按惯例，全局变量放在文件顶部、&lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;#include &amp;lt;iostream&amp;gt;
+
+int g_x{}; // 全局变量
+
+void setValue()
+{
+    g_x = 3;
+}
+
+int main()
+{
+    setValue();
+    std::cout &amp;lt;&amp;lt; g_x &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;全局命名空间作用域&lt;/h3&gt;
+&lt;p&gt;在全局命名空间中声明的标识符具有&lt;strong&gt;全局命名空间作用域&lt;/strong&gt;，常简称为全局作用域，也会被非正式地称为文件作用域。它从声明点持续到所在文件末尾。&lt;/p&gt;
+&lt;p&gt;全局变量也可以定义在用户命名空间中：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Foo
+{
+    int x{};
+}
+
+void setValue()
+{
+    Foo::x = 3;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;x&lt;/code&gt; 的名称受 &lt;code&gt;Foo&lt;/code&gt; 限定，但仍可通过 &lt;code&gt;Foo::x&lt;/code&gt; 在文件各处访问，所以它仍是全局变量。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;全局变量优先定义在用户命名空间中，而不是直接放在全局命名空间。&lt;/p&gt;
+&lt;h3&gt;静态存储期&lt;/h3&gt;
+&lt;p&gt;全局变量具有&lt;strong&gt;静态存储期&lt;/strong&gt;：在程序启动时、&lt;code&gt;main()&lt;/code&gt; 执行前创建，在程序结束时销毁。具有静态存储期的变量有时也称为静态变量；这里的“静态”描述存储期，不要求变量写出 &lt;code&gt;static&lt;/code&gt; 关键字。&lt;/p&gt;
+&lt;h3&gt;命名全局变量&lt;/h3&gt;
+&lt;p&gt;一些项目使用 &lt;code&gt;g&lt;/code&gt; 或 &lt;code&gt;g_&lt;/code&gt; 前缀标记全局变量。该前缀可以：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;降低与全局命名空间中其他标识符冲突的概率；&lt;/li&gt;
+&lt;li&gt;减少无意遮蔽全局变量的可能；&lt;/li&gt;
+&lt;li&gt;表明该变量会在当前函数结束后继续存在，对它的修改也会保留。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;命名空间中的全局变量常省略 &lt;code&gt;g_&lt;/code&gt;，因为命名空间限定已经能降低冲突并表明其非局部来源；保留前缀仍可强调其静态存储期。&lt;/p&gt;
+&lt;p&gt;用名称前缀编码类型的匈牙利命名法在现代 C++ 中通常价值有限；用 &lt;code&gt;g_&lt;/code&gt;、&lt;code&gt;s_&lt;/code&gt;、&lt;code&gt;m_&lt;/code&gt; 表达作用域或存储期则仍能提供有用信息。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;尤其对全局命名空间中的变量，可考虑使用 &lt;code&gt;g&lt;/code&gt; 或 &lt;code&gt;g_&lt;/code&gt; 前缀，将其与局部变量和函数形参区分。&lt;/p&gt;
+&lt;h3&gt;初始化&lt;/h3&gt;
+&lt;p&gt;具有静态存储期的变量在没有显式初始化器时会默认零初始化，这与默认未初始化的普通局部变量不同：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int g_x;       // 默认零初始化
+int g_y{};     // 值初始化，结果为零
+int g_z{ 1 };  // 初始化为 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;非常量全局变量可以省略初始化器。&lt;code&gt;const&lt;/code&gt; 和 &lt;code&gt;constexpr&lt;/code&gt; 全局变量必须初始化：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;const int g_a;          // 错误
+constexpr int g_b;      // 错误
+const int g_c{ 1 };     // 正确
+constexpr int g_d{ 2 }; // 正确
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;警告&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;通常应完全避免使用非常量全局变量。它们让任何可访问位置都能改变共享状态，使函数行为产生难以追踪的隐式依赖。&lt;/p&gt;
+&lt;h2&gt;7.5 变量遮蔽（名称隐藏）&lt;/h2&gt;
+&lt;p&gt;每个代码块都定义自己的作用域区域。内层块声明与外层变量同名的变量后，在两者作用域重叠的区域中，内层变量会&lt;strong&gt;隐藏&lt;/strong&gt;外层变量。这称为&lt;strong&gt;名称隐藏&lt;/strong&gt;（name hiding）或&lt;strong&gt;变量遮蔽&lt;/strong&gt;（shadowing）。&lt;/p&gt;
+&lt;h3&gt;局部变量之间的遮蔽&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    int apples{ 5 };
+
+    {
+        std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 外层 apples：5
+
+        int apples{ 0 }; // 从这里开始隐藏外层 apples
+        apples = 10;
+
+        std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 内层 apples：10
+    } // 内层 apples 被销毁
+
+    std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 外层 apples：5
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;输出为：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;5
+10
+5
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;遮蔽不会修改或销毁外层对象。内层声明出现前，未限定名称仍指向外层变量；从内层声明到代码块结束，名称指向内层变量。内层块结束后，外层名称重新可见，其值保持不变。&lt;/p&gt;
+&lt;p&gt;如果没有声明内层 &lt;code&gt;apples&lt;/code&gt;，内层块中的读取和赋值都会作用于外层变量，输出会是 &lt;code&gt;5&lt;/code&gt;、&lt;code&gt;10&lt;/code&gt;、&lt;code&gt;10&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;在内层块中，没有语法可以直接访问被同名局部变量遮蔽的外层局部变量。&lt;/p&gt;
+&lt;h3&gt;局部变量遮蔽全局变量&lt;/h3&gt;
+&lt;p&gt;局部变量也可以遮蔽同名全局变量。局部变量在作用域内时，未限定名称指向局部对象：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int value{ 5 };
+
+int main()
+{
+    int value{ 7 };
+
+    ++value;     // 局部 value 变为 8
+    --(::value); // 全局 value 变为 4
+
+    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &apos;\n&apos;;   // 8
+    std::cout &amp;lt;&amp;lt; ::value &amp;lt;&amp;lt; &apos;\n&apos;; // 4
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;全局变量属于全局命名空间，所以即使被局部变量遮蔽，仍可通过无前缀作用域解析 &lt;code&gt;::value&lt;/code&gt; 明确访问。这个办法不适用于被遮蔽的外层局部变量。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;避免变量遮蔽。遮蔽容易让代码读取或修改错误的对象。为全局变量统一使用 &lt;code&gt;g_&lt;/code&gt; 前缀可以简单地避免局部变量与全局变量同名。&lt;/p&gt;
+&lt;p&gt;GCC 和 Clang 可用 &lt;code&gt;-Wshadow&lt;/code&gt; 启用遮蔽警告，并提供 &lt;code&gt;-Wshadow=global&lt;/code&gt;、&lt;code&gt;-Wshadow=local&lt;/code&gt;、&lt;code&gt;-Wshadow=compatible-local&lt;/code&gt; 等变体。Visual Studio 默认启用相应警告。&lt;/p&gt;
+&lt;h2&gt;7.11 静态局部变量&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;static&lt;/code&gt; 在不同上下文中含义不同：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;全局变量本身具有静态存储期；&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;static&lt;/code&gt; 修饰全局标识符时赋予其内部链接；&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;static&lt;/code&gt; 修饰局部变量时，把它的存储期从自动存储期改为静态存储期。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;本节的 &lt;code&gt;static&lt;/code&gt; 指第三种用法。&lt;/p&gt;
+&lt;h3&gt;跨函数调用保留值&lt;/h3&gt;
+&lt;p&gt;普通局部变量每次执行到定义处都会创建，并在离开代码块时销毁：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void incrementAndPrint()
+{
+    int value{ 1 };
+    ++value;
+    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;调用三次会输出三次 &lt;code&gt;2&lt;/code&gt;。改为静态局部变量后：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void incrementAndPrint()
+{
+    static int s_value{ 1 };
+    ++s_value;
+    std::cout &amp;lt;&amp;lt; s_value &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;初始化只发生一次。函数结束时，&lt;code&gt;s_value&lt;/code&gt; 离开作用域而暂时不可访问，但对象不会被销毁。三次调用依次输出 &lt;code&gt;2&lt;/code&gt;、&lt;code&gt;3&lt;/code&gt;、&lt;code&gt;4&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;静态局部变量兼具两类属性：名称具有局部变量的块作用域，对象却具有延续到程序结束的生命周期。它适合需要局部状态在多次函数调用之间保留的场景。&lt;/p&gt;
+&lt;h3&gt;初始化规则&lt;/h3&gt;
+&lt;p&gt;可零初始化或具有常量表达式初始化器的静态局部变量可以在程序启动时初始化。&lt;/p&gt;
+&lt;p&gt;没有初始化器或具有非常量表达式初始化器的静态局部变量会在程序启动时先零初始化。具有非常量表达式初始化器的变量在程序第一次执行到定义处时完成初始化；后续调用跳过该定义，不会再次初始化。未显式初始化的静态局部变量最终保持默认的零值。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;显式初始化静态局部变量。常用 &lt;code&gt;s&lt;/code&gt; 或 &lt;code&gt;s_&lt;/code&gt; 前缀表明局部变量具有静态存储期。&lt;/p&gt;
+&lt;h3&gt;唯一 ID 生成器&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;int generateID()
+{
+    static int s_itemID{ 0 };
+    return s_itemID++;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;第一次调用返回 &lt;code&gt;0&lt;/code&gt;，第二次返回 &lt;code&gt;1&lt;/code&gt;，之后每次递增。状态只能通过该函数改变，其他函数无法直接篡改 &lt;code&gt;s_itemID&lt;/code&gt;。这种写法获得了全局变量“持续存在”的特征，同时把可见性限制在函数块内。&lt;/p&gt;
+&lt;p&gt;该方案只有在整个程序确实只需要一个永不重置的 ID 序列时才合适。&lt;/p&gt;
+&lt;h3&gt;静态局部常量&lt;/h3&gt;
+&lt;p&gt;静态局部变量可以声明为 &lt;code&gt;const&lt;/code&gt; 或 &lt;code&gt;constexpr&lt;/code&gt;。如果函数需要一个创建或初始化成本较高的常量对象，普通局部变量会在每次调用时重复构造；静态局部常量只初始化一次，之后所有调用都复用该对象。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;关键点&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;静态局部变量最适合用来避免每次函数调用都重复初始化昂贵的局部对象。静态局部常量通常可以安全使用。&lt;/p&gt;
+&lt;h3&gt;不要用静态局部状态改变函数流程&lt;/h3&gt;
+&lt;p&gt;非 &lt;code&gt;const&lt;/code&gt; 静态局部变量会让函数调用隐式依赖先前调用。例如，用 &lt;code&gt;static bool s_isFirstCall&lt;/code&gt; 让第一次调用显示一种提示、以后显示另一种提示，会造成相同参数的两次调用表现不同。调用者仅阅读调用点无法发现这种内部状态。&lt;/p&gt;
+&lt;p&gt;这种函数难以复用：内部状态不能由调用者重置；当另一段流程希望重新执行“第一次调用”时，旧状态仍然存在。更好的做法是把差异作为参数传入，让调用者显式控制行为。若需要传入提示文本，&lt;code&gt;std::string_view&lt;/code&gt; 参数通常比布尔标记更通用。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;const&lt;/code&gt; 静态局部变量通常可以使用。&lt;/li&gt;
+&lt;li&gt;非 &lt;code&gt;const&lt;/code&gt; 静态局部变量通常应避免。&lt;/li&gt;
+&lt;li&gt;确实使用非 &lt;code&gt;const&lt;/code&gt; 静态局部变量时，应确认该状态在整个程序中只有唯一实例、永远不需要重置，并且不用于改变控制流。&lt;/li&gt;
+&lt;li&gt;需要多个各自保留状态的实例时，应使用函数对象等可实例化方案，而不是单个静态局部变量。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;7.13 using 声明与 using 指令&lt;/h2&gt;
+&lt;p&gt;标准库的名称最初位于全局命名空间，容易与程序名称冲突。命名空间在 1995 年标准化后，标准库功能迁移到 &lt;code&gt;std&lt;/code&gt;。为兼容大量使用未限定标准库名称的旧代码，并减少反复书写限定符，C++ 提供了 using 语句。&lt;/p&gt;
+&lt;h3&gt;限定名称与未限定名称&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;限定名称&lt;/strong&gt;带有关联作用域：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;std::cout // 由命名空间 std 限定
+::foo     // 由全局命名空间限定
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;名称还可以由类名通过 &lt;code&gt;::&lt;/code&gt; 限定，或由类对象、对象指针通过 &lt;code&gt;.&lt;/code&gt;、&lt;code&gt;-&amp;gt;&lt;/code&gt; 限定：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;C::s_member;
+obj.x;
+ptr-&amp;gt;y;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;未限定名称&lt;/strong&gt;不带作用域限定符，例如 &lt;code&gt;cout&lt;/code&gt; 和 &lt;code&gt;x&lt;/code&gt;。&lt;/p&gt;
+&lt;h3&gt;using 声明&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;using 声明&lt;/strong&gt;让一个限定名称可以通过未限定名称使用：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    using std::cout;
+
+    cout &amp;lt;&amp;lt; &quot;Hello world!\n&quot;;
+} // using 声明在此失效
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;using std::cout;&lt;/code&gt; 表明当前作用域中的未限定 &lt;code&gt;cout&lt;/code&gt; 应解析为 &lt;code&gt;std::cout&lt;/code&gt;。若 &lt;code&gt;std::cout&lt;/code&gt; 与另一个可见的 &lt;code&gt;cout&lt;/code&gt; 发生名称冲突，该 using 声明指定的 &lt;code&gt;std::cout&lt;/code&gt; 优先。&lt;/p&gt;
+&lt;p&gt;每个名称需要单独的 using 声明，例如 &lt;code&gt;std::cout&lt;/code&gt; 与 &lt;code&gt;std::cin&lt;/code&gt; 各写一条。using 声明从声明点生效，持续到当前作用域末尾。它不如显式 &lt;code&gt;std::&lt;/code&gt; 清晰，但放在源文件中所有 &lt;code&gt;#include&lt;/code&gt; 指令之后时通常安全且可接受。&lt;/p&gt;
+&lt;h3&gt;using 指令&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;using 指令&lt;/strong&gt;使指定命名空间中的所有标识符都可以在作用域内以未限定名称参与查找：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    using namespace std;
+
+    cout &amp;lt;&amp;lt; &quot;Hello world!\n&quot;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;从技术上说，using 指令并非真正把新名称声明到当前作用域，而是让这些名称在某个外层作用域中参与查找。实际结果仍是该命名空间的大量名称都成为未限定名称查找的候选项。&lt;/p&gt;
+&lt;p&gt;using 指令曾用于让命名空间出现前的旧代码以很小改动继续使用标准库。现代 C++ 中，它节省的输入量通常不足以抵消风险：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;它让命名空间中的所有名称参与未限定查找，包括完全不会使用的名称。&lt;/li&gt;
+&lt;li&gt;它不会让该命名空间的名称优先于其他候选名称。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;同时引入 &lt;code&gt;A&lt;/code&gt; 与 &lt;code&gt;B&lt;/code&gt; 后，若两者都有 &lt;code&gt;x&lt;/code&gt;，未限定 &lt;code&gt;x&lt;/code&gt; 会产生歧义。可通过删除某条 using 指令、改用 using 声明，或显式写成 &lt;code&gt;A::x&lt;/code&gt;、&lt;code&gt;B::x&lt;/code&gt; 解决。&lt;/p&gt;
+&lt;h3&gt;对未来库版本的脆弱性&lt;/h3&gt;
+&lt;p&gt;using 指令即使当前没有冲突，也会让代码暴露给库将来新增的所有名称。&lt;/p&gt;
+&lt;p&gt;假设程序有全局 &lt;code&gt;print()&lt;/code&gt;，并使用 &lt;code&gt;using namespace Foo;&lt;/code&gt;。库升级后新增 &lt;code&gt;Foo::print()&lt;/code&gt;，原本正常的 &lt;code&gt;print()&lt;/code&gt; 调用可能突然变成歧义并停止编译。&lt;/p&gt;
+&lt;p&gt;更隐蔽的情况是库新增同名重载，而且它比原函数更匹配：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int get(long)
+{
+    return 1;
+}
+
+int main()
+{
+    using namespace Foo;
+    std::cout &amp;lt;&amp;lt; get(0) &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;若 &lt;code&gt;Foo&lt;/code&gt; 后来新增 &lt;code&gt;int get(int)&lt;/code&gt;，整型字面量 &lt;code&gt;0&lt;/code&gt; 与它精确匹配，优于需要 &lt;code&gt;int&lt;/code&gt; 到 &lt;code&gt;long&lt;/code&gt; 转换的全局函数。程序无需修改即可从输出 &lt;code&gt;1&lt;/code&gt; 变为输出 &lt;code&gt;2&lt;/code&gt;。显式限定名称或只引入目标名称的 using 声明不会产生这种扩大候选集的问题。&lt;/p&gt;
+&lt;p&gt;using 指令还隐藏名称来源。&lt;code&gt;NS::foo()&lt;/code&gt; 明确表明它来自库；未限定的 &lt;code&gt;foo()&lt;/code&gt; 无法直接显示它属于库还是程序。个别库头可能把名称放入全局命名空间，因此未限定名称来自程序只是倾向而非保证。&lt;/p&gt;
+&lt;h3&gt;using 语句的作用域与位置&lt;/h3&gt;
+&lt;p&gt;块内的 using 声明或 using 指令仅在该块内生效，遵循普通块作用域规则。命名空间作用域（包括全局命名空间）中的 using 语句从声明点影响文件剩余部分。&lt;/p&gt;
+&lt;p&gt;using 语句不应放在头文件中，也不应放在任何 &lt;code&gt;#include&lt;/code&gt; 指令之前。基本原则是：不要把 using 语句放到可能影响其他文件代码的位置，也不要放到其他文件代码可能反过来改变它的位置。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;头文件全局或命名空间作用域中的 using 语句会传播到每个包含该头文件的源文件。&lt;/li&gt;
+&lt;li&gt;即使 using 语句位于头文件中定义的函数内部也不安全，因为在它之前包含了哪些头文件由包含者决定。&lt;/li&gt;
+&lt;li&gt;using 声明能引入的重载集合取决于声明处此前已经可见的声明，因此具有顺序依赖。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;例如，&lt;code&gt;using Foo::print;&lt;/code&gt; 写在 &lt;code&gt;Foo::print(int)&lt;/code&gt; 的声明可见之后，会同时引入已知重载并为整数实参选择 &lt;code&gt;print(int)&lt;/code&gt;。若把 using 声明移到该头文件之前，当时只可见 &lt;code&gt;print(double)&lt;/code&gt;，随后出现的 &lt;code&gt;print(int)&lt;/code&gt; 不会自动加入这条 using 声明的候选集合，调用将改为 &lt;code&gt;print(double)&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;using 语句真正安全的位置是源文件中所有 &lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/p&gt;
+&lt;h3&gt;不能在同一作用域中取消或替换&lt;/h3&gt;
+&lt;p&gt;using 语句一旦在某个作用域中声明，就无法在该作用域内取消，也无法用另一条 using 语句替换。只能从一开始就利用嵌套块限制其作用域；显式使用 &lt;code&gt;::&lt;/code&gt; 通常能避免这类管理负担。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;优先使用显式命名空间限定符，而不是 using 语句。&lt;/li&gt;
+&lt;li&gt;避免 using 指令；&lt;code&gt;using namespace std::literals;&lt;/code&gt; 为访问 &lt;code&gt;s&lt;/code&gt; 与 &lt;code&gt;sv&lt;/code&gt; 字面量后缀的常见例外。&lt;/li&gt;
+&lt;li&gt;using 声明可放在 &lt;code&gt;.cpp&lt;/code&gt; 源文件中，但必须位于所有 &lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/li&gt;
+&lt;li&gt;不要在头文件中使用 using 语句，尤其不要在头文件的全局命名空间中使用。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;using&lt;/code&gt; 还可定义类型别名；类型别名与本节的 using 语句是不同功能。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;参考来源&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/compound-statements-blocks/&quot;&gt;7.1 — Compound statements (blocks)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/user-defined-namespaces-and-the-scope-resolution-operator/&quot;&gt;7.2 — User-defined namespaces and the scope resolution operator&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/local-variables/&quot;&gt;7.3 — Local variables&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/introduction-to-global-variables/&quot;&gt;7.4 — Introduction to global variables&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/variable-shadowing-name-hiding/&quot;&gt;7.5 — Variable shadowing (name hiding)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/static-local-variables/&quot;&gt;7.11 — Static local variables&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/using-declarations-and-using-directives/&quot;&gt;7.13 — Using declarations and using directives&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
 </content:encoded></item><item><title>LearnCpp 类型转换</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/</guid><description>LearnCpp 类型转换笔记，介绍隐式转换、数值提升、数值转换、窄化转换、通常算术转换及 static_cast。</description><pubDate>Wed, 19 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 类型转换&lt;/h1&gt;
 &lt;h2&gt;10.1 隐式类型转换&lt;/h2&gt;
 &lt;h3&gt;类型转换产生新值&lt;/h3&gt;
@@ -4866,486 +5911,6 @@ auto value = uint{ ch };
 &lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/narrowing-conversions-list-initialization-and-constexpr-initializers/&quot;&gt;10.4 — Narrowing conversions, list initialization, and constexpr initializers&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/arithmetic-conversions/&quot;&gt;10.5 — Arithmetic conversions&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/explicit-type-conversion-casting-and-static-cast/&quot;&gt;10.6 — Explicit type conversion (casting) and static_cast&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
-</content:encoded></item><item><title>LearnCpp 作用域、变量与命名空间</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</guid><description>LearnCpp 作用域、变量与命名空间笔记，介绍代码块、用户命名空间、局部与全局变量、变量遮蔽、静态局部变量以及 using 语句。</description><pubDate>Wed, 19 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 作用域、变量与命名空间&lt;/h1&gt;
-&lt;h2&gt;7.1 复合语句（代码块）&lt;/h2&gt;
-&lt;p&gt;&lt;strong&gt;复合语句&lt;/strong&gt;（compound statement）也称为&lt;strong&gt;代码块&lt;/strong&gt;（block）或&lt;strong&gt;块语句&lt;/strong&gt;（block statement），由零条或多条语句组成，但编译器把整个代码块当作一条语句处理。&lt;/p&gt;
-&lt;p&gt;代码块以 &lt;code&gt;{&lt;/code&gt; 开始，以 &lt;code&gt;}&lt;/code&gt; 结束。凡是语法要求一条语句的地方，都可以放置一个代码块。代码块的右花括号后不需要分号。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int add(int x, int y)
-{ // 代码块开始
-    return x + y;
-} // 代码块结束，无分号
-
-int main()
-{
-    int value{}; // 这里的花括号用于初始化，不是代码块
-    add(3, 4);
-
-    return 0;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;函数体本身就是代码块。用于列表初始化的花括号并不构成代码块。&lt;/p&gt;
-&lt;h3&gt;嵌套代码块&lt;/h3&gt;
-&lt;p&gt;函数不能定义在另一个函数内部，但代码块可以嵌套在其他代码块中。包含其他代码块的块称为&lt;strong&gt;外层代码块&lt;/strong&gt;，被包含的块称为&lt;strong&gt;内层代码块&lt;/strong&gt;或&lt;strong&gt;嵌套代码块&lt;/strong&gt;。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{ // 外层代码块
-    int value{};
-
-    { // 内层代码块
-        value = 7;
-    }
-
-    return 0;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;代码块的常见用途是让 &lt;code&gt;if&lt;/code&gt; 或 &lt;code&gt;else&lt;/code&gt; 条件控制多条语句。&lt;code&gt;if&lt;/code&gt; 默认只控制紧随其后的一条语句；以代码块替代该语句后，块内所有语句会作为一个整体执行。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;if (value &amp;gt;= 0)
-{
-    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &quot; is non-negative\n&quot;;
-    std::cout &amp;lt;&amp;lt; &quot;Double: &quot; &amp;lt;&amp;lt; value * 2 &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-else
-{
-    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &quot; is negative\n&quot;;
-    std::cout &amp;lt;&amp;lt; &quot;Absolute value: &quot; &amp;lt;&amp;lt; -value &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;嵌套层级&lt;/h3&gt;
-&lt;p&gt;函数的&lt;strong&gt;嵌套层级&lt;/strong&gt;或&lt;strong&gt;嵌套深度&lt;/strong&gt;，是执行到函数中某一点时最多能同时位于多少层代码块之内，函数最外层代码块也计入。嵌套层级不是代码块总数：两个并列的三级代码块仍只产生三级深度。&lt;/p&gt;
-&lt;p&gt;C++ 标准建议编译器至少支持 256 层嵌套，但并非所有实现都达到这一数量。可编译不等于易读；过深嵌套会使控制关系难以追踪。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;函数的嵌套层级尽量不超过 3。需要更深嵌套时，通常应把最深处的代码提取为独立函数。&lt;/p&gt;
-&lt;h2&gt;7.2 用户定义命名空间与作用域解析运算符&lt;/h2&gt;
-&lt;p&gt;当两个相同标识符被引入同一作用域，而编译器无法判断应使用哪一个时，就会发生&lt;strong&gt;命名冲突&lt;/strong&gt;（naming collision）。冲突可能由编译器报告，也可能在多个翻译单元链接时由链接器报告。&lt;/p&gt;
-&lt;p&gt;同一作用域中的每个名称都可能与其他名称冲突。因此，标识符数量线性增加时，潜在冲突组合会大幅增加。这也是应把标识符定义在最小可用作用域内的重要原因。&lt;/p&gt;
-&lt;p&gt;例如，两个源文件都在全局作用域定义 &lt;code&gt;doSomething(int, int)&lt;/code&gt;，即使程序从未调用该函数，链接器仍会在处理重复定义时报告错误。直接改名能够消除冲突，却需要同步修改所有调用点。命名空间可以让名称保持不变，同时把它们放入不同作用域。&lt;/p&gt;
-&lt;h3&gt;定义命名空间&lt;/h3&gt;
-&lt;p&gt;程序定义的命名空间使用 &lt;code&gt;namespace&lt;/code&gt; 关键字：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Foo
-{
-    int doSomething(int x, int y)
-    {
-        return x + y;
-    }
-}
-
-namespace Goo
-{
-    int doSomething(int x, int y)
-    {
-        return x - y;
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;命名空间只能定义在全局作用域或另一个命名空间内，不能定义在函数内部。命名空间内容通常缩进一级；右花括号后的分号是可选的。&lt;/p&gt;
-&lt;p&gt;历史上，命名空间名通常使用小写，许多风格指南仍采用这种约定。LearnCpp 推荐程序定义的命名空间以大写字母开头，理由包括：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;与程序定义类型的命名约定保持一致；&lt;/li&gt;
-&lt;li&gt;降低与系统或库提供的小写名称冲突的概率；&lt;/li&gt;
-&lt;li&gt;C++20 标准文本与 C++ Core Guidelines 采用这种风格。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;大写与小写两种风格都有效，项目内保持一致更重要。&lt;/p&gt;
-&lt;h3&gt;作用域解析运算符&lt;/h3&gt;
-&lt;p&gt;把函数移入 &lt;code&gt;Foo&lt;/code&gt; 和 &lt;code&gt;Goo&lt;/code&gt; 后，原先位于全局作用域的前置声明不再与它们匹配。编译器可能接受该全局声明，但链接器找不到对应的全局定义。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;作用域解析运算符&lt;/strong&gt; &lt;code&gt;::&lt;/code&gt; 用于明确指定标识符所在的作用域。左操作数是要查找的作用域，右操作数是该作用域内的标识符。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;std::cout &amp;lt;&amp;lt; Foo::doSomething(4, 3) &amp;lt;&amp;lt; &apos;\n&apos;; // 7
-std::cout &amp;lt;&amp;lt; Goo::doSomething(4, 3) &amp;lt;&amp;lt; &apos;\n&apos;; // 1
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;显式限定名称能够消除两个同名函数之间的歧义。&lt;code&gt;::name&lt;/code&gt; 没有左侧命名空间名时，表示从全局命名空间查找 &lt;code&gt;name&lt;/code&gt;：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;void print()
-{
-    std::cout &amp;lt;&amp;lt; &quot;global\n&quot;;
-}
-
-namespace Foo
-{
-    void print()
-    {
-        std::cout &amp;lt;&amp;lt; &quot;Foo\n&quot;;
-    }
-
-    void callBoth()
-    {
-        print();   // Foo::print()
-        ::print(); // 全局命名空间中的 print()
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;在命名空间内部使用未限定名称时，编译器先查找当前命名空间，再依次查找各层外部命名空间，最后查找全局命名空间。&lt;code&gt;::&lt;/code&gt; 可以跳过这套逐层查找，直接要求使用全局名称。&lt;/p&gt;
-&lt;h3&gt;声明、定义与多个命名空间块&lt;/h3&gt;
-&lt;p&gt;命名空间中标识符的前置声明和定义必须位于同一命名空间。头文件中的声明、源文件中的定义以及调用点应保持一致：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;// add.h
-namespace BasicMath
-{
-    int add(int x, int y);
-}
-
-// add.cpp
-#include &quot;add.h&quot;
-
-namespace BasicMath
-{
-    int add(int x, int y)
-    {
-        return x + y;
-    }
-}
-
-// main.cpp
-#include &quot;add.h&quot;
-
-int result{ BasicMath::add(4, 3) };
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;若声明留在全局命名空间，编译器看不到 &lt;code&gt;BasicMath::add&lt;/code&gt; 的声明；若定义留在全局命名空间，链接器找不到 &lt;code&gt;BasicMath::add&lt;/code&gt; 的定义。&lt;/p&gt;
-&lt;p&gt;同一命名空间可以在同一文件的多个位置或不同文件中反复打开。所有同名命名空间块的声明都属于同一命名空间。标准库头文件正是通过多个 &lt;code&gt;namespace std&lt;/code&gt; 块共同组成 &lt;code&gt;std&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;警告&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;不要向 &lt;code&gt;std&lt;/code&gt; 命名空间添加自定义功能。除标准明确允许的少数情况外，这通常会导致未定义行为。&lt;/p&gt;
-&lt;h3&gt;嵌套命名空间&lt;/h3&gt;
-&lt;p&gt;命名空间可以嵌套：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Foo
-{
-    namespace Goo
-    {
-        int add(int x, int y)
-        {
-            return x + y;
-        }
-    }
-}
-
-int sum{ Foo::Goo::add(1, 2) };
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;C++17 可以使用等价的紧凑语法：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Foo::Goo
-{
-    int add(int x, int y)
-    {
-        return x + y;
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;之后仍可单独重新打开 &lt;code&gt;namespace Foo&lt;/code&gt;，向 &lt;code&gt;Foo&lt;/code&gt; 而不是 &lt;code&gt;Foo::Goo&lt;/code&gt; 添加声明。选择传统嵌套写法还是 C++17 紧凑写法属于风格问题。&lt;/p&gt;
-&lt;h3&gt;命名空间别名&lt;/h3&gt;
-&lt;p&gt;长命名空间链可以通过别名临时缩短：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Active = Foo::Goo;
-
-int result{ Active::add(1, 2) };
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;命名空间别名遵循其声明位置的作用域规则。例如，函数块内声明的 &lt;code&gt;Active&lt;/code&gt; 会在该块结束时失效。别名还提供一层间接性：实现迁移到 &lt;code&gt;V2&lt;/code&gt; 后，只需把别名改为 &lt;code&gt;namespace Active = V2;&lt;/code&gt;，调用点仍可保持 &lt;code&gt;Active::add()&lt;/code&gt;。&lt;/p&gt;
-&lt;h3&gt;命名空间的使用尺度&lt;/h3&gt;
-&lt;p&gt;命名空间的首要目的不是建立信息层次，而是防止命名冲突。标准库主体位于单一顶层命名空间 &lt;code&gt;std&lt;/code&gt;；名称较多的新组件也会采用嵌套命名空间，例如 &lt;code&gt;std::ranges&lt;/code&gt;。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;小型、仅供个人使用的程序通常不必放入自定义命名空间。&lt;/li&gt;
-&lt;li&gt;引入大量第三方库的较大项目可用命名空间降低冲突风险。&lt;/li&gt;
-&lt;li&gt;会分发给其他项目使用的代码应放入命名空间；一个独特的顶层命名空间通常已经足够，也便于编辑器自动补全展示库的公开名称。&lt;/li&gt;
-&lt;li&gt;多团队项目常采用“项目或库::模块”“组织::项目或库”，或“组织::项目或库::模块”的两至三级结构。&lt;/li&gt;
-&lt;li&gt;模块级命名空间可区分可复用代码与应用专用代码；目录结构也能承担一部分组织职责。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;命名空间一般不应嵌套超过 3 层。&lt;/p&gt;
-&lt;h2&gt;7.3 局部变量&lt;/h2&gt;
-&lt;p&gt;定义在函数内部的变量，包括函数形参，称为&lt;strong&gt;局部变量&lt;/strong&gt;。C++ 并不存在一个单独属性来判定“局部”；局部变量的行为由作用域、存储期和链接属性共同构成。&lt;/p&gt;
-&lt;h3&gt;块作用域&lt;/h3&gt;
-&lt;p&gt;标识符的&lt;strong&gt;作用域&lt;/strong&gt;决定源代码中哪些位置可以访问它。能够访问时称为“在作用域内”，不能访问时称为“超出作用域”。作用域是编译期属性；访问超出作用域的标识符会产生编译错误。&lt;/p&gt;
-&lt;p&gt;局部变量具有&lt;strong&gt;块作用域&lt;/strong&gt;：从定义点开始进入作用域，到所在代码块末尾离开作用域。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    int i{ 5 };      // i 从这里进入作用域
-    double d{ 4.0 }; // d 从这里进入作用域
-
-    return 0;
-} // d 和 i 在这里离开作用域
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;普通函数的形参虽然写在函数体之前，但通常可以把它们视为处于函数体代码块的作用域中。&lt;/p&gt;
-&lt;p&gt;同一作用域中的变量名必须唯一。形参与函数体顶层局部变量属于同一作用域，因此不能重名：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;void someFunction(int x)
-{
-    int x{}; // 错误：与形参 x 冲突
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;自动存储期与生命周期&lt;/h3&gt;
-&lt;p&gt;变量的&lt;strong&gt;存储期&lt;/strong&gt;（storage duration）规定变量何时以及如何创建和销毁；多数情况下，存储期直接决定变量的&lt;strong&gt;生命周期&lt;/strong&gt;，即对象从实际创建到实际销毁的时间。&lt;/p&gt;
-&lt;p&gt;局部变量默认具有&lt;strong&gt;自动存储期&lt;/strong&gt;：执行到定义处时创建，在所在代码块结束时销毁。因此局部变量也称为&lt;strong&gt;自动变量&lt;/strong&gt;。&lt;/p&gt;
-&lt;p&gt;作用域与生命周期描述不同维度：作用域是名称能否在某段源代码中被使用的编译期属性；生命周期是对象在运行时是否存在。&lt;/p&gt;
-&lt;h3&gt;嵌套块中的局部变量&lt;/h3&gt;
-&lt;p&gt;内层变量只能从其定义点使用到内层块末尾；离开内层块后，它既超出作用域，也被销毁。外层块的作用域包含其嵌套块，因此外层变量在内层块中仍然可见。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    int x{ 5 };
-
-    {
-        int y{ 7 };
-        std::cout &amp;lt;&amp;lt; x + y &amp;lt;&amp;lt; &apos;\n&apos;; // x 与 y 都在作用域内
-    } // y 离开作用域并被销毁
-
-    // y 在这里不可访问
-    return 0;
-} // x 离开作用域并被销毁
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;无链接&lt;/h3&gt;
-&lt;p&gt;标识符的&lt;strong&gt;链接属性&lt;/strong&gt;决定不同作用域中的同名声明是否指向同一对象或函数。局部变量没有链接属性（no linkage）；每个声明都表示一个独立对象。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    int x{ 2 };
-
-    {
-        int x{ 3 }; // 与外层 x 是不同对象
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;作用域回答“单个声明在哪里可见”，链接属性回答“多个声明是否指向同一实体”，二者不能混为一谈。&lt;/p&gt;
-&lt;h3&gt;使用最小的现有作用域&lt;/h3&gt;
-&lt;p&gt;变量应定义在能够满足使用需求的最小现有作用域内。较小的作用域减少同时活跃的变量数量，也让变量可能被使用的位置更容易辨认。&lt;/p&gt;
-&lt;p&gt;如果变量只在嵌套块中使用，就在该块中定义。如果变量离开内层块后仍要使用，则必须在外层块中定义；这种需求可能导致变量早于首次使用声明。&lt;/p&gt;
-&lt;p&gt;不应仅为缩短变量作用域而额外创建代码块，因为这会让整个函数变长并增加结构复杂度。若一段代码确实值得形成独立作用域，通常更适合提取为函数。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;在最小的现有作用域内定义变量。不要创建唯一目的只是限制变量作用域的新代码块。&lt;/p&gt;
-&lt;h2&gt;7.4 全局变量简介&lt;/h2&gt;
-&lt;p&gt;定义在函数外部的变量称为&lt;strong&gt;全局变量&lt;/strong&gt;。按惯例，全局变量放在文件顶部、&lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;#include &amp;lt;iostream&amp;gt;
-
-int g_x{}; // 全局变量
-
-void setValue()
-{
-    g_x = 3;
-}
-
-int main()
-{
-    setValue();
-    std::cout &amp;lt;&amp;lt; g_x &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;全局命名空间作用域&lt;/h3&gt;
-&lt;p&gt;在全局命名空间中声明的标识符具有&lt;strong&gt;全局命名空间作用域&lt;/strong&gt;，常简称为全局作用域，也会被非正式地称为文件作用域。它从声明点持续到所在文件末尾。&lt;/p&gt;
-&lt;p&gt;全局变量也可以定义在用户命名空间中：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Foo
-{
-    int x{};
-}
-
-void setValue()
-{
-    Foo::x = 3;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;code&gt;x&lt;/code&gt; 的名称受 &lt;code&gt;Foo&lt;/code&gt; 限定，但仍可通过 &lt;code&gt;Foo::x&lt;/code&gt; 在文件各处访问，所以它仍是全局变量。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;全局变量优先定义在用户命名空间中，而不是直接放在全局命名空间。&lt;/p&gt;
-&lt;h3&gt;静态存储期&lt;/h3&gt;
-&lt;p&gt;全局变量具有&lt;strong&gt;静态存储期&lt;/strong&gt;：在程序启动时、&lt;code&gt;main()&lt;/code&gt; 执行前创建，在程序结束时销毁。具有静态存储期的变量有时也称为静态变量；这里的“静态”描述存储期，不要求变量写出 &lt;code&gt;static&lt;/code&gt; 关键字。&lt;/p&gt;
-&lt;h3&gt;命名全局变量&lt;/h3&gt;
-&lt;p&gt;一些项目使用 &lt;code&gt;g&lt;/code&gt; 或 &lt;code&gt;g_&lt;/code&gt; 前缀标记全局变量。该前缀可以：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;降低与全局命名空间中其他标识符冲突的概率；&lt;/li&gt;
-&lt;li&gt;减少无意遮蔽全局变量的可能；&lt;/li&gt;
-&lt;li&gt;表明该变量会在当前函数结束后继续存在，对它的修改也会保留。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;命名空间中的全局变量常省略 &lt;code&gt;g_&lt;/code&gt;，因为命名空间限定已经能降低冲突并表明其非局部来源；保留前缀仍可强调其静态存储期。&lt;/p&gt;
-&lt;p&gt;用名称前缀编码类型的匈牙利命名法在现代 C++ 中通常价值有限；用 &lt;code&gt;g_&lt;/code&gt;、&lt;code&gt;s_&lt;/code&gt;、&lt;code&gt;m_&lt;/code&gt; 表达作用域或存储期则仍能提供有用信息。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;尤其对全局命名空间中的变量，可考虑使用 &lt;code&gt;g&lt;/code&gt; 或 &lt;code&gt;g_&lt;/code&gt; 前缀，将其与局部变量和函数形参区分。&lt;/p&gt;
-&lt;h3&gt;初始化&lt;/h3&gt;
-&lt;p&gt;具有静态存储期的变量在没有显式初始化器时会默认零初始化，这与默认未初始化的普通局部变量不同：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int g_x;       // 默认零初始化
-int g_y{};     // 值初始化，结果为零
-int g_z{ 1 };  // 初始化为 1
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;非常量全局变量可以省略初始化器。&lt;code&gt;const&lt;/code&gt; 和 &lt;code&gt;constexpr&lt;/code&gt; 全局变量必须初始化：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;const int g_a;          // 错误
-constexpr int g_b;      // 错误
-const int g_c{ 1 };     // 正确
-constexpr int g_d{ 2 }; // 正确
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;strong&gt;警告&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;通常应完全避免使用非常量全局变量。它们让任何可访问位置都能改变共享状态，使函数行为产生难以追踪的隐式依赖。&lt;/p&gt;
-&lt;h2&gt;7.5 变量遮蔽（名称隐藏）&lt;/h2&gt;
-&lt;p&gt;每个代码块都定义自己的作用域区域。内层块声明与外层变量同名的变量后，在两者作用域重叠的区域中，内层变量会&lt;strong&gt;隐藏&lt;/strong&gt;外层变量。这称为&lt;strong&gt;名称隐藏&lt;/strong&gt;（name hiding）或&lt;strong&gt;变量遮蔽&lt;/strong&gt;（shadowing）。&lt;/p&gt;
-&lt;h3&gt;局部变量之间的遮蔽&lt;/h3&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    int apples{ 5 };
-
-    {
-        std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 外层 apples：5
-
-        int apples{ 0 }; // 从这里开始隐藏外层 apples
-        apples = 10;
-
-        std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 内层 apples：10
-    } // 内层 apples 被销毁
-
-    std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 外层 apples：5
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;输出为：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;5
-10
-5
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;遮蔽不会修改或销毁外层对象。内层声明出现前，未限定名称仍指向外层变量；从内层声明到代码块结束，名称指向内层变量。内层块结束后，外层名称重新可见，其值保持不变。&lt;/p&gt;
-&lt;p&gt;如果没有声明内层 &lt;code&gt;apples&lt;/code&gt;，内层块中的读取和赋值都会作用于外层变量，输出会是 &lt;code&gt;5&lt;/code&gt;、&lt;code&gt;10&lt;/code&gt;、&lt;code&gt;10&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;在内层块中，没有语法可以直接访问被同名局部变量遮蔽的外层局部变量。&lt;/p&gt;
-&lt;h3&gt;局部变量遮蔽全局变量&lt;/h3&gt;
-&lt;p&gt;局部变量也可以遮蔽同名全局变量。局部变量在作用域内时，未限定名称指向局部对象：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int value{ 5 };
-
-int main()
-{
-    int value{ 7 };
-
-    ++value;     // 局部 value 变为 8
-    --(::value); // 全局 value 变为 4
-
-    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &apos;\n&apos;;   // 8
-    std::cout &amp;lt;&amp;lt; ::value &amp;lt;&amp;lt; &apos;\n&apos;; // 4
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;全局变量属于全局命名空间，所以即使被局部变量遮蔽，仍可通过无前缀作用域解析 &lt;code&gt;::value&lt;/code&gt; 明确访问。这个办法不适用于被遮蔽的外层局部变量。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;避免变量遮蔽。遮蔽容易让代码读取或修改错误的对象。为全局变量统一使用 &lt;code&gt;g_&lt;/code&gt; 前缀可以简单地避免局部变量与全局变量同名。&lt;/p&gt;
-&lt;p&gt;GCC 和 Clang 可用 &lt;code&gt;-Wshadow&lt;/code&gt; 启用遮蔽警告，并提供 &lt;code&gt;-Wshadow=global&lt;/code&gt;、&lt;code&gt;-Wshadow=local&lt;/code&gt;、&lt;code&gt;-Wshadow=compatible-local&lt;/code&gt; 等变体。Visual Studio 默认启用相应警告。&lt;/p&gt;
-&lt;h2&gt;7.11 静态局部变量&lt;/h2&gt;
-&lt;p&gt;&lt;code&gt;static&lt;/code&gt; 在不同上下文中含义不同：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;全局变量本身具有静态存储期；&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;static&lt;/code&gt; 修饰全局标识符时赋予其内部链接；&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;static&lt;/code&gt; 修饰局部变量时，把它的存储期从自动存储期改为静态存储期。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;本节的 &lt;code&gt;static&lt;/code&gt; 指第三种用法。&lt;/p&gt;
-&lt;h3&gt;跨函数调用保留值&lt;/h3&gt;
-&lt;p&gt;普通局部变量每次执行到定义处都会创建，并在离开代码块时销毁：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;void incrementAndPrint()
-{
-    int value{ 1 };
-    ++value;
-    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;调用三次会输出三次 &lt;code&gt;2&lt;/code&gt;。改为静态局部变量后：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;void incrementAndPrint()
-{
-    static int s_value{ 1 };
-    ++s_value;
-    std::cout &amp;lt;&amp;lt; s_value &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;初始化只发生一次。函数结束时，&lt;code&gt;s_value&lt;/code&gt; 离开作用域而暂时不可访问，但对象不会被销毁。三次调用依次输出 &lt;code&gt;2&lt;/code&gt;、&lt;code&gt;3&lt;/code&gt;、&lt;code&gt;4&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;静态局部变量兼具两类属性：名称具有局部变量的块作用域，对象却具有延续到程序结束的生命周期。它适合需要局部状态在多次函数调用之间保留的场景。&lt;/p&gt;
-&lt;h3&gt;初始化规则&lt;/h3&gt;
-&lt;p&gt;可零初始化或具有常量表达式初始化器的静态局部变量可以在程序启动时初始化。&lt;/p&gt;
-&lt;p&gt;没有初始化器或具有非常量表达式初始化器的静态局部变量会在程序启动时先零初始化。具有非常量表达式初始化器的变量在程序第一次执行到定义处时完成初始化；后续调用跳过该定义，不会再次初始化。未显式初始化的静态局部变量最终保持默认的零值。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;显式初始化静态局部变量。常用 &lt;code&gt;s&lt;/code&gt; 或 &lt;code&gt;s_&lt;/code&gt; 前缀表明局部变量具有静态存储期。&lt;/p&gt;
-&lt;h3&gt;唯一 ID 生成器&lt;/h3&gt;
-&lt;pre&gt;&lt;code&gt;int generateID()
-{
-    static int s_itemID{ 0 };
-    return s_itemID++;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;第一次调用返回 &lt;code&gt;0&lt;/code&gt;，第二次返回 &lt;code&gt;1&lt;/code&gt;，之后每次递增。状态只能通过该函数改变，其他函数无法直接篡改 &lt;code&gt;s_itemID&lt;/code&gt;。这种写法获得了全局变量“持续存在”的特征，同时把可见性限制在函数块内。&lt;/p&gt;
-&lt;p&gt;该方案只有在整个程序确实只需要一个永不重置的 ID 序列时才合适。&lt;/p&gt;
-&lt;h3&gt;静态局部常量&lt;/h3&gt;
-&lt;p&gt;静态局部变量可以声明为 &lt;code&gt;const&lt;/code&gt; 或 &lt;code&gt;constexpr&lt;/code&gt;。如果函数需要一个创建或初始化成本较高的常量对象，普通局部变量会在每次调用时重复构造；静态局部常量只初始化一次，之后所有调用都复用该对象。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;关键点&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;静态局部变量最适合用来避免每次函数调用都重复初始化昂贵的局部对象。静态局部常量通常可以安全使用。&lt;/p&gt;
-&lt;h3&gt;不要用静态局部状态改变函数流程&lt;/h3&gt;
-&lt;p&gt;非 &lt;code&gt;const&lt;/code&gt; 静态局部变量会让函数调用隐式依赖先前调用。例如，用 &lt;code&gt;static bool s_isFirstCall&lt;/code&gt; 让第一次调用显示一种提示、以后显示另一种提示，会造成相同参数的两次调用表现不同。调用者仅阅读调用点无法发现这种内部状态。&lt;/p&gt;
-&lt;p&gt;这种函数难以复用：内部状态不能由调用者重置；当另一段流程希望重新执行“第一次调用”时，旧状态仍然存在。更好的做法是把差异作为参数传入，让调用者显式控制行为。若需要传入提示文本，&lt;code&gt;std::string_view&lt;/code&gt; 参数通常比布尔标记更通用。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;const&lt;/code&gt; 静态局部变量通常可以使用。&lt;/li&gt;
-&lt;li&gt;非 &lt;code&gt;const&lt;/code&gt; 静态局部变量通常应避免。&lt;/li&gt;
-&lt;li&gt;确实使用非 &lt;code&gt;const&lt;/code&gt; 静态局部变量时，应确认该状态在整个程序中只有唯一实例、永远不需要重置，并且不用于改变控制流。&lt;/li&gt;
-&lt;li&gt;需要多个各自保留状态的实例时，应使用函数对象等可实例化方案，而不是单个静态局部变量。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;7.13 using 声明与 using 指令&lt;/h2&gt;
-&lt;p&gt;标准库的名称最初位于全局命名空间，容易与程序名称冲突。命名空间在 1995 年标准化后，标准库功能迁移到 &lt;code&gt;std&lt;/code&gt;。为兼容大量使用未限定标准库名称的旧代码，并减少反复书写限定符，C++ 提供了 using 语句。&lt;/p&gt;
-&lt;h3&gt;限定名称与未限定名称&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;限定名称&lt;/strong&gt;带有关联作用域：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;std::cout // 由命名空间 std 限定
-::foo     // 由全局命名空间限定
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;名称还可以由类名通过 &lt;code&gt;::&lt;/code&gt; 限定，或由类对象、对象指针通过 &lt;code&gt;.&lt;/code&gt;、&lt;code&gt;-&amp;gt;&lt;/code&gt; 限定：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;C::s_member;
-obj.x;
-ptr-&amp;gt;y;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;strong&gt;未限定名称&lt;/strong&gt;不带作用域限定符，例如 &lt;code&gt;cout&lt;/code&gt; 和 &lt;code&gt;x&lt;/code&gt;。&lt;/p&gt;
-&lt;h3&gt;using 声明&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;using 声明&lt;/strong&gt;让一个限定名称可以通过未限定名称使用：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    using std::cout;
-
-    cout &amp;lt;&amp;lt; &quot;Hello world!\n&quot;;
-} // using 声明在此失效
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;code&gt;using std::cout;&lt;/code&gt; 表明当前作用域中的未限定 &lt;code&gt;cout&lt;/code&gt; 应解析为 &lt;code&gt;std::cout&lt;/code&gt;。若 &lt;code&gt;std::cout&lt;/code&gt; 与另一个可见的 &lt;code&gt;cout&lt;/code&gt; 发生名称冲突，该 using 声明指定的 &lt;code&gt;std::cout&lt;/code&gt; 优先。&lt;/p&gt;
-&lt;p&gt;每个名称需要单独的 using 声明，例如 &lt;code&gt;std::cout&lt;/code&gt; 与 &lt;code&gt;std::cin&lt;/code&gt; 各写一条。using 声明从声明点生效，持续到当前作用域末尾。它不如显式 &lt;code&gt;std::&lt;/code&gt; 清晰，但放在源文件中所有 &lt;code&gt;#include&lt;/code&gt; 指令之后时通常安全且可接受。&lt;/p&gt;
-&lt;h3&gt;using 指令&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;using 指令&lt;/strong&gt;使指定命名空间中的所有标识符都可以在作用域内以未限定名称参与查找：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    using namespace std;
-
-    cout &amp;lt;&amp;lt; &quot;Hello world!\n&quot;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;从技术上说，using 指令并非真正把新名称声明到当前作用域，而是让这些名称在某个外层作用域中参与查找。实际结果仍是该命名空间的大量名称都成为未限定名称查找的候选项。&lt;/p&gt;
-&lt;p&gt;using 指令曾用于让命名空间出现前的旧代码以很小改动继续使用标准库。现代 C++ 中，它节省的输入量通常不足以抵消风险：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;它让命名空间中的所有名称参与未限定查找，包括完全不会使用的名称。&lt;/li&gt;
-&lt;li&gt;它不会让该命名空间的名称优先于其他候选名称。&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;同时引入 &lt;code&gt;A&lt;/code&gt; 与 &lt;code&gt;B&lt;/code&gt; 后，若两者都有 &lt;code&gt;x&lt;/code&gt;，未限定 &lt;code&gt;x&lt;/code&gt; 会产生歧义。可通过删除某条 using 指令、改用 using 声明，或显式写成 &lt;code&gt;A::x&lt;/code&gt;、&lt;code&gt;B::x&lt;/code&gt; 解决。&lt;/p&gt;
-&lt;h3&gt;对未来库版本的脆弱性&lt;/h3&gt;
-&lt;p&gt;using 指令即使当前没有冲突，也会让代码暴露给库将来新增的所有名称。&lt;/p&gt;
-&lt;p&gt;假设程序有全局 &lt;code&gt;print()&lt;/code&gt;，并使用 &lt;code&gt;using namespace Foo;&lt;/code&gt;。库升级后新增 &lt;code&gt;Foo::print()&lt;/code&gt;，原本正常的 &lt;code&gt;print()&lt;/code&gt; 调用可能突然变成歧义并停止编译。&lt;/p&gt;
-&lt;p&gt;更隐蔽的情况是库新增同名重载，而且它比原函数更匹配：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int get(long)
-{
-    return 1;
-}
-
-int main()
-{
-    using namespace Foo;
-    std::cout &amp;lt;&amp;lt; get(0) &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;若 &lt;code&gt;Foo&lt;/code&gt; 后来新增 &lt;code&gt;int get(int)&lt;/code&gt;，整型字面量 &lt;code&gt;0&lt;/code&gt; 与它精确匹配，优于需要 &lt;code&gt;int&lt;/code&gt; 到 &lt;code&gt;long&lt;/code&gt; 转换的全局函数。程序无需修改即可从输出 &lt;code&gt;1&lt;/code&gt; 变为输出 &lt;code&gt;2&lt;/code&gt;。显式限定名称或只引入目标名称的 using 声明不会产生这种扩大候选集的问题。&lt;/p&gt;
-&lt;p&gt;using 指令还隐藏名称来源。&lt;code&gt;NS::foo()&lt;/code&gt; 明确表明它来自库；未限定的 &lt;code&gt;foo()&lt;/code&gt; 无法直接显示它属于库还是程序。个别库头可能把名称放入全局命名空间，因此未限定名称来自程序只是倾向而非保证。&lt;/p&gt;
-&lt;h3&gt;using 语句的作用域与位置&lt;/h3&gt;
-&lt;p&gt;块内的 using 声明或 using 指令仅在该块内生效，遵循普通块作用域规则。命名空间作用域（包括全局命名空间）中的 using 语句从声明点影响文件剩余部分。&lt;/p&gt;
-&lt;p&gt;using 语句不应放在头文件中，也不应放在任何 &lt;code&gt;#include&lt;/code&gt; 指令之前。基本原则是：不要把 using 语句放到可能影响其他文件代码的位置，也不要放到其他文件代码可能反过来改变它的位置。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;头文件全局或命名空间作用域中的 using 语句会传播到每个包含该头文件的源文件。&lt;/li&gt;
-&lt;li&gt;即使 using 语句位于头文件中定义的函数内部也不安全，因为在它之前包含了哪些头文件由包含者决定。&lt;/li&gt;
-&lt;li&gt;using 声明能引入的重载集合取决于声明处此前已经可见的声明，因此具有顺序依赖。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;例如，&lt;code&gt;using Foo::print;&lt;/code&gt; 写在 &lt;code&gt;Foo::print(int)&lt;/code&gt; 的声明可见之后，会同时引入已知重载并为整数实参选择 &lt;code&gt;print(int)&lt;/code&gt;。若把 using 声明移到该头文件之前，当时只可见 &lt;code&gt;print(double)&lt;/code&gt;，随后出现的 &lt;code&gt;print(int)&lt;/code&gt; 不会自动加入这条 using 声明的候选集合，调用将改为 &lt;code&gt;print(double)&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;using 语句真正安全的位置是源文件中所有 &lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/p&gt;
-&lt;h3&gt;不能在同一作用域中取消或替换&lt;/h3&gt;
-&lt;p&gt;using 语句一旦在某个作用域中声明，就无法在该作用域内取消，也无法用另一条 using 语句替换。只能从一开始就利用嵌套块限制其作用域；显式使用 &lt;code&gt;::&lt;/code&gt; 通常能避免这类管理负担。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;优先使用显式命名空间限定符，而不是 using 语句。&lt;/li&gt;
-&lt;li&gt;避免 using 指令；&lt;code&gt;using namespace std::literals;&lt;/code&gt; 为访问 &lt;code&gt;s&lt;/code&gt; 与 &lt;code&gt;sv&lt;/code&gt; 字面量后缀的常见例外。&lt;/li&gt;
-&lt;li&gt;using 声明可放在 &lt;code&gt;.cpp&lt;/code&gt; 源文件中，但必须位于所有 &lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/li&gt;
-&lt;li&gt;不要在头文件中使用 using 语句，尤其不要在头文件的全局命名空间中使用。&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;using&lt;/code&gt; 还可定义类型别名；类型别名与本节的 using 语句是不同功能。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;参考来源&lt;/h2&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/compound-statements-blocks/&quot;&gt;7.1 — Compound statements (blocks)&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/user-defined-namespaces-and-the-scope-resolution-operator/&quot;&gt;7.2 — User-defined namespaces and the scope resolution operator&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/local-variables/&quot;&gt;7.3 — Local variables&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/introduction-to-global-variables/&quot;&gt;7.4 — Introduction to global variables&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/variable-shadowing-name-hiding/&quot;&gt;7.5 — Variable shadowing (name hiding)&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/static-local-variables/&quot;&gt;7.11 — Static local variables&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/using-declarations-and-using-directives/&quot;&gt;7.13 — Using declarations and using directives&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;
 </content:encoded></item><item><title>LearnCpp 函数重载与函数模板</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E5%87%BD%E6%95%B0%E9%87%8D%E8%BD%BD%E4%B8%8E%E5%87%BD%E6%95%B0%E6%A8%A1%E6%9D%BF/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E5%87%BD%E6%95%B0%E9%87%8D%E8%BD%BD%E4%B8%8E%E5%87%BD%E6%95%B0%E6%A8%A1%E6%9D%BF/</guid><description>LearnCpp 函数重载与函数模板笔记，介绍重载区分与决议、删除函数、默认实参、函数模板、实例化、实参推导、多类型模板及模板偏序。</description><pubDate>Wed, 19 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 函数重载与函数模板&lt;/h1&gt;
 &lt;h2&gt;11.1 函数重载简介&lt;/h2&gt;
