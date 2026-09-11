@@ -1,10 +1,10 @@
 ---
 title: Pandas Illustrated
-image: /assets/post-card/post-card-37-v20260908.jpg
-cardImagePosition: center 50%
+image: /assets/post-card/post-card-42-v20260908.png
+cardImagePosition: center 25%
 published: 2026-09-11
 updated: 2026-09-11
-description: 通过 128 张图解与代码示例，从常用操作和 NumPy 对照出发，系统介绍 Pandas 的 Series、Index、DataFrame 与 MultiIndex。
+description: 从常用操作和 NumPy 对照出发，介绍 Pandas 的 Series、Index、DataFrame 与 MultiIndex。
 tags:
   - Pandas
   - Python
@@ -13,24 +13,12 @@ category:
   - Tutorial
 section: notes
 author: nikonikoni
-sourceLink: https://www.geekdao.cn/pandas-%E5%B8%B8%E7%94%A8%E6%93%8D%E4%BD%9C%E5%9B%BE%E8%A7%A3/
-licenseName: CC BY-SA 4.0
-licenseUrl: https://creativecommons.org/licenses/by-sa/4.0/
 draft: false
 ---
 
-# Pandas 图解：从常用操作到多重索引的完整指南
+# Pandas Illustrated
 
-Pandas Illustrated: The Definitive Visual Guide to Pandas
-
-Pandas 为表格数据提供了标签、缺失值处理、连接、分组和重塑等工具。理解这些工具怎样组织数据，比记住一长串函数名称更有用。本文先通过 NumPy 与 Pandas 的对照建立直觉，再依次介绍 Series、Index、DataFrame 和 MultiIndex。
-
-本文以 NumPy 2.5 和 Pandas 3.0 的公开接口为基准。截至 2026 年 9 月 8 日，官方公布的稳定版本分别为 NumPy 2.5.1 和 Pandas 3.0.5。各节示例围绕对应图中的数据展开，默认已执行以下导入。[NumPy 发布信息](https://numpy.org/news/)、[Pandas 发布信息](https://pandas.pydata.org/)
-
-```python
-import numpy as np
-import pandas as pd
-```
+原文链接：[Pandas Illustrated: The Definitive Visual Guide to Pandas | by Lev Maximov | Better Programming](https://medium.com/better-programming/pandas-illustrated-the-definitive-visual-guide-to-pandas-c31fa921a43)
 
 ## 第一部分：Pandas 常用操作与 NumPy 对照
 
@@ -1645,6 +1633,3 @@ result = pd.concat([df, density_block], axis=1)
 
 这保留了数据与坐标之间的关系：先在相同年份和城市上计算，再给结果附上新的指标名称。掌握标签对齐、聚合和级别移动之后，复杂的多重索引表也可以拆成一系列含义明确的操作。
 
----
-
-文章与图解来源：用户提供的《Pandas 常用操作图解》中文网页，原作 *Pandas Illustrated: The Definitive Visual Guide to Pandas*；配套工具作者为 Lev Maximov。中文来源页为[极客道：Pandas 常用操作图解](https://www.geekdao.cn/pandas-%E5%B8%B8%E7%94%A8%E6%93%8D%E4%BD%9C%E5%9B%BE%E8%A7%A3/)，提供页面标注的许可为 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)。本文保留全部正文插图，技术用法参照文中链接的 NumPy、Pandas 官方文档。
