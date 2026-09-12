@@ -1,0 +1,37 @@
+---
+import type { getSeriesList } from "../utils/content-utils";
+import type { getSeriesChapter } from "../utils/series-utils";
+import { getPostUrl, getSeriesUrl } from "../utils/url-utils";
+import UiText from "./UiText.astro";
+
+interface Props {
+	chapter: NonNullable<
+		ReturnType<
+			typeof getSeriesChapter<
+				Awaited<ReturnType<typeof getSeriesList>>[number]["posts"][number]
+			>
+		>
+	>;
+}
+const { chapter } = Astro.props;
+const { series, previous, next, index } = chapter;
+---
+
+<nav class="series-navigation card-base p-5 mb-4 rounded-2xl" data-pagefind-ignore aria-label="专栏章节 / Series chapters">
+	<a class="series-home" href={getSeriesUrl(series.id)}><UiText zh="返回专栏" en="Back to series" /> · {series.title}</a>
+	<p class="chapter-count"><UiText zh={`第 ${index + 1} 篇，共 ${series.posts.length} 篇`} en={`Post ${index + 1} of ${series.posts.length}`} /></p>
+	<div class="chapter-links">
+		{previous ? <a href={getPostUrl(previous)}><small>← <UiText zh="上一章" en="Previous chapter" /></small><span>{previous.data.title}</span></a> : <p><UiText zh="已是本专栏第一篇" en="First post in this series" /></p>}
+		{next ? <a href={getPostUrl(next)}><small><UiText zh="下一章" en="Next chapter" /> →</small><span>{next.data.title}</span></a> : <p><UiText zh="已读到最新章节" en="You have reached the latest chapter" /></p>}
+	</div>
+</nav>
+
+<style>
+	.series-home { @apply font-bold text-[var(--primary)]; }
+	.chapter-count { @apply mt-1 text-sm text-black/50 dark:text-white/50; }
+	.chapter-links { @apply mt-4 grid gap-3 sm:grid-cols-2; }
+	.chapter-links a { @apply flex min-w-0 flex-col gap-2 rounded-xl border border-black/10 p-4 transition hover:border-[var(--primary)] dark:border-white/10; overflow-wrap: anywhere; }
+	small { @apply text-[var(--primary)]; }
+	.chapter-links span { @apply text-sm text-black/80 dark:text-white/80; }
+	.chapter-links p { @apply p-4 text-sm text-black/45 dark:text-white/45; }
+</style>

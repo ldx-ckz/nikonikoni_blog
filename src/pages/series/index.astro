@@ -1,0 +1,17 @@
+---
+import SeriesCards from "../../components/SeriesCards.astro";
+import UiText from "../../components/UiText.astro";
+import MainGridLayout from "../../layouts/MainGridLayout.astro";
+import { getSeriesList } from "../../utils/content-utils";
+
+const series = await getSeriesList();
+---
+
+<MainGridLayout title="系列专栏" titleEn="Series" hideSidebar standardContentWidth>
+	<main class="card-base mx-auto w-full max-w-5xl rounded-2xl p-6 md:p-9 text-black/85 dark:text-white/85">
+		<h1 class="text-3xl font-bold mb-3"><UiText zh="系列专栏" en="Series" /></h1>
+		<p class="mb-7 text-black/60 dark:text-white/60"><UiText zh="按主题与章节顺序阅读学习笔记。" en="Explore learning notes by topic and chapter order." /></p>
+		<SeriesCards series={series} />
+		{series.length === 0 && <p><UiText zh="暂无已发布的专栏。" en="No published series yet." /></p>}
+	</main>
+</MainGridLayout>

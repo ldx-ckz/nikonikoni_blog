@@ -1,0 +1,30 @@
+---
+import type { getSeriesList } from "../utils/content-utils";
+import { getSeriesUrl } from "../utils/url-utils";
+import UiText from "./UiText.astro";
+
+interface Props {
+	series: Awaited<ReturnType<typeof getSeriesList>>;
+}
+const { series } = Astro.props;
+---
+
+<div class="series-cards">
+	{series.map((item) => (
+		<a class="series-card" href={getSeriesUrl(item.id)}>
+			<div class="series-card-meta"><UiText zh="系列专栏" en="Series" /><span>{item.posts.length} <UiText zh="篇文章" en="posts" /></span></div>
+			<h3>{item.title}</h3>
+			<p>{item.description}</p>
+			<span class="series-card-action"><UiText zh="查看章节" en="Browse chapters" /> →</span>
+		</a>
+	))}
+</div>
+
+<style>
+	.series-cards { @apply grid min-w-0 gap-4 sm:grid-cols-2; }
+	.series-card { @apply flex min-w-0 flex-col gap-3 rounded-2xl border border-black/10 p-5 transition hover:border-[var(--primary)] dark:border-white/10; overflow-wrap: anywhere; }
+	.series-card-meta { @apply flex flex-wrap justify-between gap-2 text-xs text-black/50 dark:text-white/50; }
+	h3 { @apply text-lg font-bold text-black/85 dark:text-white/85; }
+	p { @apply text-sm leading-7 text-black/60 dark:text-white/60; }
+	.series-card-action { @apply mt-auto pt-2 text-sm font-bold text-[var(--primary)]; }
+</style>

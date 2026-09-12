@@ -38,7 +38,32 @@ src/content/ + src/data/ + public/
 
 ## 首页与内容分区
 
-首页由 `HomeDashboard.astro` 汇总内容统计和文章活动。`/blog/[section]/` 根据文章分类提供 Notes、Technical、Daily Life 分区；分类、标签、归档和站点地图提供横向浏览入口。
+首页由 `HomeDashboard.astro` 汇总内容统计、文章活动和专栏入口。`/blog/[section]/` 根据文章 `section` 字段提供 Notes、Technical、Daily Life 分区；分类、标签、归档和站点地图提供横向浏览入口。
+
+## 系列专栏与章节导航
+
+`/series/` 展示非空专栏，`/series/[id]/` 展示介绍、适合人群、前置知识和章节列表。
+专栏定义位于 `src/data/series.ts`，首页展示定义顺序中的前两个非空专栏，其余通过“查看全部”进入。
+添加专栏时在该文件中提供唯一的英文小写连字符 `id`、标题、介绍、适合人群和前置知识；不要把模板内容当成个人经历。
+
+文章 frontmatter 示例：
+
+```yaml
+section: notes
+category: [MIT Missing Semester, Tutorial]
+tags: [Shell]
+series: mit-missing-semester-2026
+seriesOrder: 1
+```
+
+- `series` 必须匹配专栏定义的 `id`；`seriesOrder` 为专栏内唯一的正整数，越小越靠前。两项一起填写或一起省略。
+- 顺序号可以不连续（例如原课程第 1、2、5 课），列表中的“第几篇”是已发布文章的位置，不代表原课程课号。
+- 分类、标签、分区和专栏互相独立。改变分类或发布日期不会改变专栏阅读顺序。
+- 草稿不进入专栏。加密文章仅展示原本公开的标题和描述，并标注需密码；点击仍进入原密码页面。
+- 专栏文章使用同专栏上一章、下一章，首尾不循环；没有专栏的文章保留全站前后篇导航。
+- 专栏页和导航复用现有文章 URL，不移动文章或修改固定链接。新增章节只需添加文章及上述字段，无需修改路由代码。
+- `src/utils/series-utils.ts` 统一处理排序与导航；未知专栏、缺少顺序或重复顺序会使构建失败并提示对应文章。
+- 界面标签支持中英文切换，专栏标题与介绍等编辑内容保持 `src/data/series.ts` 中的原文。
 
 ## 配置边界
 

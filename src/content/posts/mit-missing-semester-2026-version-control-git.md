@@ -12,6 +12,8 @@ category:
   - MIT Missing Semester
   - Tutorial
 section: notes
+series: mit-missing-semester-2026
+seriesOrder: 5
 author: nikonikoni
 draft: false
 ---

@@ -3,12 +3,14 @@ import { render } from "astro:content";
 import { execFileSync } from "node:child_process";
 import { Icon } from "astro-icon/components";
 import { profileConfig, siteConfig } from "../config";
-import { getSortedPosts } from "../utils/content-utils";
+import { getSeriesList, getSortedPosts } from "../utils/content-utils";
 import { getPostUrl, url } from "../utils/url-utils";
 import ImageWrapper from "./misc/ImageWrapper.astro";
+import SeriesCards from "./SeriesCards.astro";
 import UiText from "./UiText.astro";
 
 const posts = await getSortedPosts();
+const series = await getSeriesList();
 const latestPost = posts[0];
 const renderedPosts = await Promise.all(posts.map((post) => render(post)));
 const totalWords = renderedPosts.reduce(
@@ -260,6 +262,15 @@ if (monthLabels.length > 1 && monthLabels[1].week - monthLabels[0].week < 3) {
 	</section>
 
 
+
+	{series.length > 0 && <section class="dashboard-section" aria-labelledby="series-title">
+		<div class="section-heading">
+			<p class="section-index">03</p>
+			<h2 id="series-title"><UiText zh="系列专栏" en="Series" /></h2>
+			<a class="text-link" href={url("/series/")}><UiText zh="查看全部" en="View all" /> →</a>
+		</div>
+		<SeriesCards series={series.slice(0, 2)} />
+	</section>}
 
 	<section class="dashboard-section" aria-labelledby="stats-title">
 		<div class="section-heading">

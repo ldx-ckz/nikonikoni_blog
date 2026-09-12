@@ -47,6 +47,10 @@ export function getTagUrl(tag: string): string {
 	return url(`/archive/?tag=${encodeURIComponent(tag.trim())}`);
 }
 
+export function getSeriesUrl(id: string): string {
+	return url(`/series/${encodeURIComponent(id)}/`);
+}
+
 export function getCategoryUrl(category: string | null): string {
 	if (
 		!category ||

@@ -12,6 +12,34 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { getUmamiStats } from "../src/utils/umami-stats.server.ts";
+import { collectSeries, getSeriesChapter } from "../src/utils/series-utils.ts";
+
+test("series use chapter order, exclude drafts and preserve protected entries", () => {
+	const definitions = [{ id: "course", title: "Course" }];
+	const post = (id, order, extra = {}) => ({ id, data: { title: id, series: "course", seriesOrder: order, ...extra } });
+	const entries = [post("last", 5), post("draft", 3, { draft: true }), post("first", 1), post("locked", 2, { passwordRequired: true }), { id: "other", data: { title: "Other" } }];
+	const groups = collectSeries(entries, definitions);
+	assert.deepEqual(groups[0].posts.map((p) => p.id), ["first", "locked", "last"]);
+	assert.deepEqual(entries.map((p) => p.id), ["last", "draft", "first", "locked", "other"]);
+	const chapter = getSeriesChapter(groups, "locked");
+	assert.equal(chapter.previous.id, "first");
+	assert.equal(chapter.next.id, "last");
+	assert.equal(getSeriesChapter(groups, "first").previous, undefined);
+	assert.equal(getSeriesChapter(groups, "last").next, undefined);
+	assert.equal(getSeriesChapter(groups, "other"), undefined);
+	assert.equal(getSeriesChapter(groups, "draft"), undefined);
+	assert.deepEqual(collectSeries([], definitions), []);
+	assert.equal(getSeriesChapter(collectSeries([post("only", 1)], definitions), "only").next, undefined);
+});
+
+test("invalid or ambiguous series metadata fails with an actionable message", () => {
+	const definitions = [{ id: "course", title: "Course" }];
+	const post = (data) => ({ id: "post", data: { title: "Post", ...data } });
+	for (const data of [{ series: "unknown", seriesOrder: 1 }, { series: "course" }, { seriesOrder: 1 }, { series: "course", seriesOrder: 0 }, { series: "course", seriesOrder: 1.5 }]) {
+		assert.throws(() => collectSeries([post(data)], definitions), /seriesOrder/);
+	}
+	assert.throws(() => collectSeries([post({ series: "course", seriesOrder: 1 }), post({ series: "course", seriesOrder: 1 })], definitions), /重复/);
+});
 
 const config = {
 	enabled: true,

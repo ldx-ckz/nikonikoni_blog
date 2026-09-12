@@ -11,6 +11,8 @@ category:
   - LearnCpp
   - Tutorial
 section: notes
+series: learncpp
+seriesOrder: 10
 author: nikonikoni
 draft: false
 ---

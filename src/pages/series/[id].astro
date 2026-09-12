@@ -1,0 +1,54 @@
+---
+import UiText from "../../components/UiText.astro";
+import MainGridLayout from "../../layouts/MainGridLayout.astro";
+import { getSeriesList } from "../../utils/content-utils";
+import { getPostUrl, url } from "../../utils/url-utils";
+
+export async function getStaticPaths() {
+	return (await getSeriesList()).map((series) => ({
+		params: { id: series.id },
+		props: { series },
+	}));
+}
+const { series } = Astro.props;
+---
+
+<MainGridLayout title={series.title} description={series.description} hideSidebar standardContentWidth>
+	<main class="series-page card-base mx-auto w-full max-w-5xl rounded-2xl p-6 md:p-9 text-black/85 dark:text-white/85">
+		<a class="text-sm text-[var(--primary)]" href={url("/series/")}>← <UiText zh="所有专栏" en="All series" /></a>
+		<header class="my-6">
+			<h1 class="text-3xl font-bold mb-3">{series.title}</h1>
+			<p>{series.description}</p>
+			<p class="mt-3 text-sm"><UiText zh={`已收录 ${series.posts.length} 篇文章`} en={`${series.posts.length} published posts`} /></p>
+		</header>
+		<div class="series-context">
+			<section><h2><UiText zh="适合谁" en="Who this is for" /></h2><p>{series.audience}</p></section>
+			<section><h2><UiText zh="前置知识" en="Prerequisites" /></h2><p>{series.prerequisites}</p></section>
+		</div>
+		<h2 class="mt-8 mb-4"><UiText zh="章节列表" en="Chapters" /></h2>
+		<ol class="chapter-list">
+			{series.posts.map((post, index) => (
+				<li><a href={getPostUrl(post)}>
+					<span class="chapter-number">{String(index + 1).padStart(2, "0")}</span>
+					<div><h3>{post.data.title}</h3><p>{post.data.description}</p>{post.data.passwordRequired && <small><UiText zh="需密码阅读" en="Password required" /></small>}</div>
+					<span aria-hidden="true">→</span>
+				</a></li>
+			))}
+		</ol>
+	</main>
+</MainGridLayout>
+
+<style>
+	.series-page { overflow-wrap: anywhere; }
+	h2 { @apply text-lg font-bold; }
+	p { @apply text-black/60 dark:text-white/60 leading-7; }
+	.series-context { @apply grid gap-5 rounded-2xl bg-black/[0.025] p-5 sm:grid-cols-2 dark:bg-white/[0.035]; }
+	.series-context p { @apply mt-2 text-sm; }
+	.chapter-list { @apply grid gap-3; }
+	.chapter-list a { @apply flex items-start gap-4 rounded-xl border border-black/10 p-4 transition hover:border-[var(--primary)] dark:border-white/10; }
+	.chapter-number { @apply font-mono text-[var(--primary)]; }
+	.chapter-list div { @apply min-w-0 flex-1; }
+	h3 { @apply font-bold; }
+	.chapter-list p { @apply mt-1 text-sm; }
+	small { @apply mt-2 block text-[var(--primary)]; }
+</style>

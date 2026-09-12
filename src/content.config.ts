@@ -24,6 +24,11 @@ const postsCollection = defineCollection({
 			.optional()
 			.default("technical"),
 		lang: z.string().optional().default(""),
+		series: z
+			.string()
+			.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+			.optional(),
+		seriesOrder: z.number().int().positive().optional(),
 		pinned: z.boolean().optional().default(false),
 		author: z.string().optional().default(""),
 		sourceLink: z.string().optional().default(""),
