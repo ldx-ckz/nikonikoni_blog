@@ -1,13 +1,23 @@
 import { type CollectionEntry, getCollection } from "astro:content";
+import { globSync } from "node:fs";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { getCategoryUrl } from "@utils/url-utils";
 
 // // Retrieve posts and sort them by publication date
 async function getRawSortedPosts() {
-	const allBlogPosts = await getCollection("posts", ({ data }) => {
-		return import.meta.env.PROD ? data.draft !== true : true;
-	});
+	const loadedPosts = await getCollection("posts");
+	if (
+		loadedPosts.length === 0 &&
+		Array.from(globSync("src/content/posts/**/*.md")).length > 0
+	) {
+		throw new Error(
+			"文章文件存在，但 Astro posts 集合为空。已停止构建，避免发布空博客。请使用 pnpm build（astro build --force）重建内容缓存，并检查内容同步配置。",
+		);
+	}
+	const allBlogPosts = loadedPosts.filter(
+		({ data }) => !import.meta.env.PROD || data.draft !== true,
+	);
 
 	const sorted = allBlogPosts.sort((a, b) => {
 		// 首先按置顶状态排序，置顶文章在前

@@ -5,6 +5,7 @@
 - Node.js：24 LTS 或更高版本
 - pnpm：10.22.0（以 `package.json#packageManager` 为准）
 - 构建命令：`pnpm build`
+- 构建使用 `astro build --force` 重建内容集合缓存，避免托管平台复用异常内容缓存而发布空文章列表；图片缓存与原始 Markdown 文件不受影响。如果文章文件存在但 `posts` 集合为空，构建会报错并停止发布。
 - 输出目录：`dist/`
 
 ## 本地验证

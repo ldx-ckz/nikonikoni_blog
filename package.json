@@ -20,7 +20,7 @@
 		"dev": "astro dev",
 		"start": "astro dev",
 		"check": "astro check",
-		"build": "astro build && pagefind --site dist && node scripts/compress-fonts.js",
+		"build": "astro build --force && pagefind --site dist && node scripts/compress-fonts.js",
 		"preview": "astro preview",
 		"astro": "astro",
 		"type-check": "tsc --noEmit --isolatedDeclarations",
