@@ -1,10 +1,11 @@
 ---
+import { Icon } from "astro-icon/components";
 import UiText from "./UiText.astro";
 ---
 
 <article-search class="article-search" data-pagefind-ignore>
-	<button type="button" class="search-open" aria-expanded="false" aria-controls="article-find-panel">
-		<UiText zh="搜索本文" en="Find in article" />
+	<button type="button" class="search-open" aria-label="搜索本文 / Find in article" title="搜索本文 / Find in article" aria-expanded="false" aria-controls="article-find-panel">
+		<Icon name="material-symbols:search-rounded" />
 	</button>
 	<section id="article-find-panel" class="find-panel" popover="manual" hidden aria-label="搜索本文 / Find in article">
 		<form role="search">
@@ -188,7 +189,9 @@ import UiText from "./UiText.astro";
 </script>
 
 <style>
-	.article-search { display: block; margin-bottom: 1rem; }
+	.article-search { display: block; }
+	.search-open { position: fixed; left: max(.5rem, calc(var(--article-left, 15vw) - 3.75rem)); top: 50vh; width: 2.75rem; height: 2.75rem; display: grid; place-items: center; padding: 0; background: var(--card-bg); box-shadow: 0 2px 10px #0001; font-size: 1.5rem; }
+	@media (max-width: 1023px) { .search-open { left: .5rem; top: auto; bottom: max(1rem, env(safe-area-inset-bottom)); } }
 	button { border: 1px solid var(--primary); border-radius: .6rem; padding: .4rem .8rem; color: var(--primary); }
 	button:disabled { opacity: .4; cursor: default; }
 	button:focus-visible, input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

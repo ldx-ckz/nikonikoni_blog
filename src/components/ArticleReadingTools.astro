@@ -1,0 +1,113 @@
+---
+import ArticleSearch from "./ArticleSearch.astro";
+---
+
+<!-- The top layer keeps controls fixed while Swup transforms the article. -->
+<article-reading-tools popover="manual" data-pagefind-ignore>
+    <ArticleSearch />
+    <div class="article-scrollbar" role="scrollbar" tabindex="0"
+        aria-label="正文滚动 / Scroll article" aria-controls="post-container"
+        aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="article-scroll-thumb"></div>
+    </div>
+</article-reading-tools>
+
+<script>
+    class ArticleReadingTools extends HTMLElement {
+        private cleanup?: () => void;
+
+        connectedCallback() {
+            const controller = new AbortController();
+            const options = { signal: controller.signal };
+            const rail = this.querySelector<HTMLElement>(".article-scrollbar")!;
+            const thumb = this.querySelector<HTMLElement>(".article-scroll-thumb")!;
+            let frame = 0;
+            let start = 0;
+            let end = 0;
+            let travel = 0;
+            let dragOffset: number | null = null;
+            const update = () => {
+                const article = document.getElementById("post-container");
+                if (!article) return;
+                const rect = article.getBoundingClientRect();
+                const top = Math.max(88, rect.top);
+                const bottom = Math.min(innerHeight - 24, rect.bottom);
+                const height = Math.max(0, bottom - top);
+                start = Math.max(0, rect.top + scrollY - 88);
+                end = Math.min(document.documentElement.scrollHeight - innerHeight,
+                    rect.bottom + scrollY - innerHeight + 24);
+                this.style.setProperty("--article-left", `${rect.left}px`);
+                rail.hidden = innerWidth < 1024 || height < 80 || end <= start;
+                rail.style.left = `${rect.right - 12}px`;
+                rail.style.top = `${top}px`;
+                rail.style.height = `${height}px`;
+                const thumbHeight = Math.min(height, Math.max(36, height * height / rect.height));
+                travel = height - thumbHeight;
+                const progress = end > start ? Math.max(0, Math.min(1, (scrollY - start) / (end - start))) : 0;
+                thumb.style.height = `${thumbHeight}px`;
+                thumb.style.transform = `translateY(${progress * travel}px)`;
+                rail.setAttribute("aria-valuenow", String(Math.round(progress * 100)));
+            };
+            const schedule = () => {
+                cancelAnimationFrame(frame);
+                frame = requestAnimationFrame(update);
+            };
+            const drag = (event: PointerEvent) => {
+                if (dragOffset === null || travel <= 0) return;
+                const progress = Math.max(0, Math.min(1,
+                    (event.clientY - rail.getBoundingClientRect().top - dragOffset) / travel));
+                window.scrollTo({ top: start + progress * (end - start), behavior: "instant" });
+            };
+            rail.addEventListener("pointerdown", (event) => {
+                if (event.button !== 0) return;
+                event.preventDefault();
+                rail.focus({ preventScroll: true });
+                dragOffset = event.target === thumb
+                    ? event.clientY - thumb.getBoundingClientRect().top
+                    : thumb.getBoundingClientRect().height / 2;
+                rail.setPointerCapture(event.pointerId);
+                drag(event);
+            }, options);
+            rail.addEventListener("pointermove", drag, options);
+            rail.addEventListener("lostpointercapture", () => { dragOffset = null; }, options);
+            rail.addEventListener("keydown", (event) => {
+                const targets: Record<string, number> = {
+                    ArrowDown: scrollY + 60, ArrowUp: scrollY - 60,
+                    PageDown: scrollY + innerHeight * .8, PageUp: scrollY - innerHeight * .8,
+                    Home: start, End: end,
+                };
+                if (!(event.key in targets)) return;
+                event.preventDefault();
+                window.scrollTo({ top: Math.max(start, Math.min(end, targets[event.key])), behavior: "instant" });
+            }, options);
+            window.addEventListener("scroll", schedule, { ...options, passive: true });
+            window.addEventListener("resize", schedule, options);
+            const observer = new ResizeObserver(schedule);
+            const initialFrame = requestAnimationFrame(() => {
+                const article = document.getElementById("post-container");
+                if (article) observer.observe(article);
+                this.showPopover();
+                update();
+            });
+            this.cleanup = () => {
+                controller.abort();
+                observer.disconnect();
+                cancelAnimationFrame(frame);
+                cancelAnimationFrame(initialFrame);
+            };
+        }
+
+        disconnectedCallback() { this.cleanup?.(); }
+    }
+    if (!customElements.get("article-reading-tools")) customElements.define("article-reading-tools", ArticleReadingTools);
+</script>
+
+<style>
+    article-reading-tools { position: fixed; inset: 0 auto auto 0; width: 0; height: 0; margin: 0; padding: 0; border: 0; overflow: visible; background: transparent; color: inherit; }
+    .article-scrollbar { position: fixed; width: 10px; border-radius: 10px; background: rgb(128 128 128 / 12%); touch-action: none; cursor: pointer; }
+    .article-scrollbar[hidden] { display: none; }
+    .article-scrollbar:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .article-scroll-thumb { width: 100%; min-height: 36px; border-radius: inherit; background: rgb(128 128 128 / 60%); }
+    .article-scrollbar:hover .article-scroll-thumb { background: var(--primary); }
+    @media (max-width: 1023px) { .article-scrollbar { display: none; } }
+</style>

@@ -2,7 +2,7 @@
 import type { CollectionEntry } from "astro:content";
 import { render } from "astro:content";
 import path from "node:path";
-import ArticleSearch from "@components/ArticleSearch.astro";
+import ArticleReadingTools from "@components/ArticleReadingTools.astro";
 import Comment from "@components/comment/index.astro";
 import License from "@components/misc/License.astro";
 import Markdown from "@components/misc/Markdown.astro";
@@ -164,6 +164,7 @@ const jsonLd = {
     headings={isPasswordRequired ? [] : headings}
 >
     <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <ArticleReadingTools />
     <div
         class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative mb-4"
     >
@@ -229,7 +230,6 @@ const jsonLd = {
 
             <!-- metadata -->
             <div class="onload-animation">
-                <ArticleSearch />
                 <PostMetadata
                     className="mb-5"
                     published={entry.data.published}

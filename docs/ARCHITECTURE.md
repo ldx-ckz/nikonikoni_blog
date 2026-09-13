@@ -42,7 +42,9 @@ src/content/ + src/data/ + public/
 
 ## 文章内搜索
 
-每篇文章标题下的“搜索本文 / Find in article”由 `src/components/ArticleSearch.astro` 提供，只搜索当前已渲染正文，不搜索目录、评论或其他文章。输入关键词后高亮匹配内容，使用上一处／下一处（Enter 下一处，Shift+Enter 上一处）定位，Escape 关闭并清除高亮。加密文章解锁后才能搜索；搜索在本地浏览器完成，不发送关键词，也不修改 Markdown 文件。数学公式的辅助渲染内容不参与文本搜索。
+每篇文章左侧固定的搜索图标由 `src/components/ArticleSearch.astro` 提供（手机端位于左下角），只搜索当前已渲染正文，不搜索目录、评论或其他文章。输入关键词后高亮匹配内容，使用上一处／下一处（Enter 下一处，Shift+Enter 上一处）定位，Escape 关闭并清除高亮。加密文章解锁后才能搜索；搜索在本地浏览器完成，不发送关键词，也不修改 Markdown 文件。数学公式的辅助渲染内容不参与文本搜索。
+
+`src/components/ArticleReadingTools.astro` 将阅读工具置于浏览器顶层，避免页面切换动画影响固定定位。桌面端在正文右边缘提供可拖动、支持方向键/PageUp/PageDown/Home/End 的滚动条，与页面滚动同步，不创建独立滚动容器，因此目录和搜索定位沿用原有逻辑。手机端保留原生页面滚动。
 
 ## 配置边界
 
