@@ -37,6 +37,8 @@ import ArticleSearch from "./ArticleSearch.astro";
                 end = Math.min(document.documentElement.scrollHeight - innerHeight,
                     rect.bottom + scrollY - innerHeight + 24);
                 this.style.setProperty("--article-left", `${rect.left}px`);
+                const title = article.querySelector<HTMLElement>('[data-pagefind-meta="title"]');
+                this.style.setProperty("--article-title-top", `${title?.getBoundingClientRect().top ?? rect.top}px`);
                 rail.hidden = innerWidth < 1024 || height < 80 || end <= start;
                 rail.style.left = `${rect.right - 12}px`;
                 rail.style.top = `${top}px`;
