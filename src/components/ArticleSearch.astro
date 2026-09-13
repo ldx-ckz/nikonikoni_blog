@@ -1,0 +1,204 @@
+---
+import UiText from "./UiText.astro";
+---
+
+<article-search class="article-search" data-pagefind-ignore>
+	<button type="button" class="search-open" aria-expanded="false" aria-controls="article-find-panel">
+		<UiText zh="搜索本文" en="Find in article" />
+	</button>
+	<section id="article-find-panel" class="find-panel" popover="manual" hidden aria-label="搜索本文 / Find in article">
+		<form role="search">
+			<label for="article-find-input"><UiText zh="搜索本文" en="Find in article" /></label>
+			<div class="find-controls">
+				<input id="article-find-input" type="search" autocomplete="off" spellcheck="false" />
+				<button type="button" data-action="close" aria-label="关闭 / Close">×</button>
+			</div>
+			<div class="find-controls">
+				<output aria-live="polite"></output>
+				<button type="button" data-action="previous"><UiText zh="上一处" en="Previous" /></button>
+				<button type="submit" data-action="next"><UiText zh="下一处" en="Next" /></button>
+			</div>
+		</form>
+	</section>
+</article-search>
+
+<script>
+	import { findTextMatches } from "../utils/article-search";
+
+	class ArticleSearch extends HTMLElement {
+		private cleanup?: () => void;
+
+		connectedCallback() {
+			const open = this.querySelector<HTMLButtonElement>(".search-open")!;
+			const panel = this.querySelector<HTMLElement>(".find-panel")!;
+			const input = this.querySelector<HTMLInputElement>("input")!;
+			const output = this.querySelector<HTMLOutputElement>("output")!;
+			const previous = this.querySelector<HTMLButtonElement>('[data-action="previous"]')!;
+			const next = this.querySelector<HTMLButtonElement>('[data-action="next"]')!;
+			const controller = new AbortController();
+			const options = { signal: controller.signal };
+			let matches: HTMLElement[][] = [];
+			let active = -1;
+			let searchedQuery = "";
+			let timer: ReturnType<typeof setTimeout>;
+			const body = () => document.querySelector<HTMLElement>("#post-container .markdown-content");
+			const update = () => {
+				const english = document.documentElement.dataset.uiLang === "en";
+				input.placeholder = english ? "Enter a keyword…" : "输入关键词…";
+				output.textContent = !body()
+					? (english ? "Unlock this article first" : "请先解锁文章")
+					: !input.value.trim()
+						? (english ? "Enter a keyword" : "请输入关键词")
+						: matches.length
+							? `${active + 1} / ${matches.length}`
+							: (english ? "No matches" : "未找到匹配内容");
+				previous.disabled = next.disabled = matches.length === 0;
+			};
+			const clear = () => {
+				for (const parts of matches) {
+					for (const mark of parts) {
+						const parent = mark.parentNode;
+						mark.replaceWith(...mark.childNodes);
+						parent?.normalize();
+					}
+				}
+				matches = [];
+				active = -1;
+			};
+			const move = (step: number) => {
+				if (!matches.length) return;
+				for (const mark of matches[active] ?? []) mark.classList.remove("is-current");
+				active = (active + step + matches.length) % matches.length;
+				for (const mark of matches[active]) {
+					mark.classList.add("is-current");
+					const code = mark.closest(".expressive-code.collapsed");
+					if (code) {
+						code.classList.remove("collapsed");
+						code.classList.add("expanded");
+					}
+					let details = mark.closest("details");
+					while (details) {
+						details.open = true;
+						details = details.parentElement?.closest("details") ?? null;
+					}
+				}
+				matches[active][0].scrollIntoView({ block: "center", inline: "nearest" });
+				update();
+			};
+			const search = () => {
+				clearTimeout(timer);
+				clear();
+				searchedQuery = input.value;
+				const root = body();
+				if (root && input.value.trim()) {
+					const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+					const groups: { block: Element; nodes: Text[]; text: string }[] = [];
+					while (walker.nextNode()) {
+						const node = walker.currentNode as Text;
+						const parent = node.parentElement;
+						if (!parent || parent.closest('script, style, button, svg, math, .katex, [hidden], [aria-hidden="true"], .sr-only, .anchor, .copy')) continue;
+						const block = parent.closest("p, h1, h2, h3, h4, h5, h6, li, td, th, pre, summary, div") ?? root;
+						let group = groups.at(-1);
+						if (!group || group.block !== block) {
+							group = { block, nodes: [], text: "" };
+							groups.push(group);
+						}
+						group.nodes.push(node);
+						group.text += node.data;
+					}
+					for (const group of groups) {
+						const offsets = findTextMatches(group.text, input.value);
+						const parts = offsets.map(() => [] as HTMLElement[]);
+						let position = 0;
+						for (const node of group.nodes) {
+							const end = position + node.length;
+							// Work backwards so earlier offsets remain valid when splitting nodes.
+							for (let i = offsets.length - 1; i >= 0; i--) {
+								const startOffset = Math.max(0, offsets[i].start - position);
+								const endOffset = Math.min(node.length, offsets[i].end - position);
+								if (startOffset >= endOffset) continue;
+								const selected = node.splitText(startOffset);
+								selected.splitText(endOffset - startOffset);
+								const mark = document.createElement("mark");
+								mark.className = "article-find-match";
+								selected.replaceWith(mark);
+								mark.append(selected);
+								parts[i].push(mark);
+							}
+							position = end;
+						}
+						matches.push(...parts);
+					}
+				}
+				move(1);
+				update();
+			};
+			const close = () => {
+				clearTimeout(timer);
+				clear();
+				panel.hidePopover();
+				panel.hidden = true;
+				open.setAttribute("aria-expanded", "false");
+				open.focus({ preventScroll: true });
+			};
+			open.addEventListener("click", () => {
+				panel.hidden = false;
+				panel.showPopover();
+				open.setAttribute("aria-expanded", "true");
+				update();
+				input.focus();
+				input.select();
+				search();
+			}, options);
+			input.addEventListener("input", (event) => {
+				clearTimeout(timer);
+				if ((event as InputEvent).isComposing) return;
+				timer = setTimeout(search, 150);
+			}, options);
+			input.addEventListener("compositionend", search, options);
+			this.querySelector("form")!.addEventListener("submit", (event) => {
+				event.preventDefault();
+				if (searchedQuery !== input.value) search();
+				else move(1);
+			}, options);
+			previous.addEventListener("click", () => move(-1), options);
+			this.querySelector('[data-action="close"]')!.addEventListener("click", close, options);
+			document.addEventListener("keydown", (event) => {
+				if (panel.hidden) return;
+				if (event.key === "Escape") close();
+				if (event.key === "Enter" && event.shiftKey && event.target === input) {
+					event.preventDefault();
+					move(-1);
+				}
+			}, options);
+			document.addEventListener("article:unlocked", () => { if (!panel.hidden) search(); }, options);
+			const language = new MutationObserver(update);
+			language.observe(document.documentElement, { attributes: true, attributeFilter: ["data-ui-lang"] });
+			this.cleanup = () => {
+				controller.abort();
+				language.disconnect();
+				clearTimeout(timer);
+				clear();
+			};
+		}
+
+		disconnectedCallback() { this.cleanup?.(); }
+	}
+	if (!customElements.get("article-search")) customElements.define("article-search", ArticleSearch);
+</script>
+
+<style>
+	.article-search { display: block; margin-bottom: 1rem; }
+	button { border: 1px solid var(--primary); border-radius: .6rem; padding: .4rem .8rem; color: var(--primary); }
+	button:disabled { opacity: .4; cursor: default; }
+	button:focus-visible, input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+	.find-panel { position: fixed; z-index: 100; top: 6rem; right: 1rem; left: auto; bottom: auto; margin: 0; width: min(26rem, calc(100vw - 2rem)); padding: 1rem; border-radius: 1rem; background: var(--card-bg); color: #473440; box-shadow: 0 6px 30px #0003; border: 1px solid var(--primary); }
+	:global(.dark) .find-panel { color: #f1dce9; }
+	.find-panel[hidden] { display: none; }
+	label { display: block; margin-bottom: .5rem; font-weight: 600; }
+	.find-controls { display: flex; align-items: center; gap: .5rem; margin-top: .5rem; }
+	input { width: 0; min-width: 0; flex: 1; border-radius: .5rem; border: 1px solid var(--primary); padding: .5rem; background: transparent; color: inherit; }
+	output { flex: 1; font-size: .875rem; }
+	:global(mark.article-find-match) { background: #ffe58f; color: #302400; border-radius: .15rem; scroll-margin-block: 10rem; }
+	:global(mark.article-find-match.is-current) { background: #ff963b; color: #211000; outline: 2px solid #c45b00; }
+</style>

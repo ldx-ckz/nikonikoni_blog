@@ -11,35 +11,8 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { findTextMatches } from "../src/utils/article-search.ts";
 import { getUmamiStats } from "../src/utils/umami-stats.server.ts";
-import { collectSeries, getSeriesChapter } from "../src/utils/series-utils.ts";
-
-test("series use chapter order, exclude drafts and preserve protected entries", () => {
-	const definitions = [{ id: "course", title: "Course" }];
-	const post = (id, order, extra = {}) => ({ id, data: { title: id, series: "course", seriesOrder: order, ...extra } });
-	const entries = [post("last", 5), post("draft", 3, { draft: true }), post("first", 1), post("locked", 2, { passwordRequired: true }), { id: "other", data: { title: "Other" } }];
-	const groups = collectSeries(entries, definitions);
-	assert.deepEqual(groups[0].posts.map((p) => p.id), ["first", "locked", "last"]);
-	assert.deepEqual(entries.map((p) => p.id), ["last", "draft", "first", "locked", "other"]);
-	const chapter = getSeriesChapter(groups, "locked");
-	assert.equal(chapter.previous.id, "first");
-	assert.equal(chapter.next.id, "last");
-	assert.equal(getSeriesChapter(groups, "first").previous, undefined);
-	assert.equal(getSeriesChapter(groups, "last").next, undefined);
-	assert.equal(getSeriesChapter(groups, "other"), undefined);
-	assert.equal(getSeriesChapter(groups, "draft"), undefined);
-	assert.deepEqual(collectSeries([], definitions), []);
-	assert.equal(getSeriesChapter(collectSeries([post("only", 1)], definitions), "only").next, undefined);
-});
-
-test("invalid or ambiguous series metadata fails with an actionable message", () => {
-	const definitions = [{ id: "course", title: "Course" }];
-	const post = (data) => ({ id: "post", data: { title: "Post", ...data } });
-	for (const data of [{ series: "unknown", seriesOrder: 1 }, { series: "course" }, { seriesOrder: 1 }, { series: "course", seriesOrder: 0 }, { series: "course", seriesOrder: 1.5 }]) {
-		assert.throws(() => collectSeries([post(data)], definitions), /seriesOrder/);
-	}
-	assert.throws(() => collectSeries([post({ series: "course", seriesOrder: 1 }), post({ series: "course", seriesOrder: 1 })], definitions), /重复/);
-});
 
 const config = {
 	enabled: true,
@@ -47,6 +20,14 @@ const config = {
 	baseUrl: "https://api.umami.is/",
 	apiKey: "test-only-secret",
 };
+
+test("article search is literal, bilingual and keeps original text offsets", () => {
+	assert.deepEqual(findTextMatches("中文 Shell shell", "shell"), [{ start: 3, end: 8 }, { start: 9, end: 14 }]);
+	assert.deepEqual(findTextMatches("C++ [!warning]", "C++"), [{ start: 0, end: 3 }]);
+	assert.deepEqual(findTextMatches("中文中文", "中文"), [{ start: 0, end: 2 }, { start: 2, end: 4 }]);
+	assert.deepEqual(findTextMatches("abc", "   "), []);
+	assert.deepEqual(findTextMatches("abc", "missing"), []);
+});
 
 test("Umami returns only public counts and sends credentials in a header", async (t) => {
 	t.mock.method(globalThis, "fetch", async (endpoint, options) => {

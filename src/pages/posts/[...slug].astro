@@ -2,6 +2,7 @@
 import type { CollectionEntry } from "astro:content";
 import { render } from "astro:content";
 import path from "node:path";
+import ArticleSearch from "@components/ArticleSearch.astro";
 import Comment from "@components/comment/index.astro";
 import License from "@components/misc/License.astro";
 import Markdown from "@components/misc/Markdown.astro";
@@ -9,14 +10,12 @@ import PasswordProtection from "@components/PasswordProtection.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
-import { getSeriesList, getSortedPosts } from "@utils/content-utils";
+import { getSortedPosts } from "@utils/content-utils";
 import { getPostPassword } from "@utils/post-passwords";
-import { getSeriesChapter } from "@utils/series-utils";
 import {
 	getDir,
 	getFileDirFromPath,
 	getPostUrlBySlug,
-	getSeriesUrl,
 	removeFileExtension,
 } from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
@@ -26,8 +25,6 @@ import utc from "dayjs/plugin/utc";
 import { licenseConfig } from "src/config";
 import ImageWrapper from "../../components/misc/ImageWrapper.astro";
 import PostMetadata from "../../components/PostMeta.astro";
-import SeriesNavigation from "../../components/SeriesNavigation.astro";
-import UiText from "../../components/UiText.astro";
 import {
 	commentConfig,
 	pageviewCounterConfig,
@@ -74,7 +71,6 @@ export async function getStaticPaths() {
 }
 
 const { entry } = Astro.props;
-const seriesChapter = getSeriesChapter(await getSeriesList(), entry.id);
 const { Content, headings } = await render(entry);
 
 const { remarkPluginFrontmatter } = await render(entry);
@@ -233,10 +229,7 @@ const jsonLd = {
 
             <!-- metadata -->
             <div class="onload-animation">
-                {seriesChapter && <p class="mb-4 text-sm text-[var(--primary)]" data-pagefind-ignore>
-                    <a href={getSeriesUrl(seriesChapter.series.id)}><UiText zh="所属专栏" en="Series" /> · {seriesChapter.series.title}</a>
-                    <span class="ml-3"><UiText zh={`第 ${seriesChapter.index + 1} / ${seriesChapter.series.posts.length} 篇`} en={`Post ${seriesChapter.index + 1} / ${seriesChapter.series.posts.length}`} /></span>
-                </p>}
+                <ArticleSearch />
                 <PostMetadata
                     className="mb-5"
                     published={entry.data.published}
@@ -411,7 +404,7 @@ const jsonLd = {
         </>
     )}
 
-    {seriesChapter ? <SeriesNavigation chapter={seriesChapter} /> : <div
+    <div
         class="flex flex-col md:flex-row justify-between mb-4 gap-4 overflow-hidden w-full"
     >
         <a
@@ -461,7 +454,7 @@ const jsonLd = {
                 )
             }
         </a>
-    </div>}
+    </div>
 </MainGridLayout>
 
 <style>
