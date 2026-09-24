@@ -12,7 +12,7 @@ category:
   - 深度学习
 section: technical
 author: nikonikoni
-draft: true
+draft: false
 ---
 
 # 正则化
