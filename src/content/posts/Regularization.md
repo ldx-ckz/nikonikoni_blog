@@ -1,7 +1,7 @@
 ---
 title: Regularization
 image: /assets/post-card/post-card-38-v20260908.png
-cardImagePosition: center 25%
+cardImagePosition: center 50%
 published: 2026-09-24
 updated: 2026-09-24
 description: 围绕正则化，解释参数惩罚、优化偏好及常见泛化方法的原理与联系。
