@@ -1,6 +1,6 @@
 ---
 title: Regularization
-image: /assets/post-card/post-card-38-v20260908.png
+image: /assets/post-card/post-card-38-v20260908.jpg
 cardImagePosition: center 50%
 published: 2026-09-24
 updated: 2026-09-24
