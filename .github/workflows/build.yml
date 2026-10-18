@@ -22,7 +22,7 @@ jobs:
     name: Astro Check for Node.js ${{ matrix.node }}
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: ${{ matrix.node }} # Use LTS
 
@@ -53,7 +53,7 @@ jobs:
     name: Astro Build for Node.js ${{ matrix.node }} # Corrected job name
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: ${{ matrix.node }}
 
