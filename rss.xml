@@ -928,8 +928,8 @@ $$&lt;/p&gt;
 &lt;p&gt;实践中常将偏置排除在权重惩罚之外，因为偏置主要调节整体位置，而非线性模型的斜率。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/udl-9-02-l2-strength.JfXU3Ptq_Z1Ptm5m.webp&quot; alt=&quot;不同 L2 正则化强度下的回归函数&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 9.2｜弱正则化时，拟合函数可能追随样本中的局部波动；适中的正则化抑制不必要的变化；正则化过强时，模型难以表达真实函数的变化。图中的系数只适用于该示例的损失定义与模型。&lt;/em&gt;&lt;/p&gt;
-&lt;h3&gt;线性回归中的解析形式&lt;/h3&gt;
-&lt;p&gt;对于中心化后的线性回归问题，暂不单独讨论截距，目标为&lt;/p&gt;
+&lt;h3&gt;2.2.2 线性回归中的解析形式&lt;/h3&gt;
+&lt;p&gt;对于中心化后的线性回归问题，暂不考虑截距，目标为&lt;/p&gt;
 &lt;p&gt;$$
 J(w)=\frac{1}{2N}|Xw-y|_2^2+\frac{\lambda}{2}|w|_2^2.
 $$&lt;/p&gt;
@@ -942,7 +942,7 @@ $$&lt;/p&gt;
 \hat w=(X^\top X+N\lambda I)^{-1}X^\top y,
 \qquad\lambda&amp;gt;0.
 $$&lt;/p&gt;
-&lt;p&gt;即使 $X^\top X$ 存在零特征值，加上 $N\lambda I$ 后也成为正定矩阵，因而解唯一。正则化降低了模型对数据中约束较弱方向的敏感性，但也引入向零收缩的偏差。&lt;/p&gt;
+&lt;p&gt;其中，$\nabla^2J(w)=\frac1N(X^\top X+N\lambda I)$必为正定矩阵，目标函数为严格凸函数，因而最优解唯一。正则化降低了模型对数据中约束较弱方向的敏感性，但也引入向零收缩的偏差。&lt;/p&gt;
 &lt;p&gt;最简单的单参数例子是&lt;/p&gt;
 &lt;p&gt;$$
 J(w)=\frac12(w-a)^2+\frac{\lambda}{2}w^2,
@@ -950,7 +950,7 @@ J(w)=\frac12(w-a)^2+\frac{\lambda}{2}w^2,
 \hat w=\frac{a}{1+\lambda}.
 $$&lt;/p&gt;
 &lt;p&gt;未经正则化时最优解为 $a$，加入 L2 后其绝对值缩小。当 $a\neq0$ 且 $\lambda$ 有限时，解仍然不为零。这也说明 L2 通常产生连续收缩，而不是直接产生稀疏解。&lt;/p&gt;
-&lt;h3&gt;L2 与权重衰减&lt;/h3&gt;
+&lt;h3&gt;2.2.3 权重衰减&lt;/h3&gt;
 &lt;p&gt;设 $g_t=\nabla_wL(\theta_t)$。在不含动量的普通梯度下降或 SGD 中，对正则化目标求梯度得到&lt;/p&gt;
 &lt;p&gt;$$
 \nabla_wJ(\theta_t)=g_t+\lambda w_t.
@@ -963,15 +963,13 @@ w_{t+1}
 &amp;amp;=(1-\alpha\lambda)w_t-\alpha g_t.
 \end{aligned}
 $$&lt;/p&gt;
-&lt;p&gt;更新包含两部分：按数据梯度更新权重，以及将原权重乘以 $1-\alpha\lambda$。当 $0&amp;lt;\alpha\lambda&amp;lt;1$ 时，后一部分使权重向零收缩，称为权重衰减。&lt;/p&gt;
-&lt;p&gt;若单独将每步衰减比例记作 $\delta$，即 $w_{t+1}=(1-\delta)w_t-\alpha g_t$，则在上述约定下 $\delta=\alpha\lambda$。若正则项没有 $1/2$，则变为 $\delta=2\alpha\lambda$。学习率变化时，固定正则化系数与固定每步衰减比例不是同一设置。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE1&quot;&gt;[1]&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;这一等价关系依赖具体更新规则。对 Adam 而言，将 $\lambda w_t$ 加入梯度会使它进入一阶矩、二阶矩和逐坐标缩放，通常不等价于直接收缩参数。AdamW 将两部分分开：&lt;/p&gt;
+&lt;p&gt;更新包含两部分：按数据梯度更新权重，以及将原权重乘以 $1-\alpha\lambda$。当 $0&amp;lt;\alpha\lambda&amp;lt;1$ 时，后一部分使权重向零收缩，称为权重衰减。若单独将每步衰减比例记作 $\delta$，即 $w_{t+1}=(1-\delta)w_t-\alpha g_t$，则在上述约定下 $\delta=\alpha\lambda$。&lt;/p&gt;
+&lt;p&gt;但对 Adam 而言，将 $\lambda w_t$ 加入梯度会使它进入一阶矩、二阶矩和逐坐标缩放，通常不等价于直接收缩参数。AdamW 将两部分分开：&lt;/p&gt;
 &lt;p&gt;$$
 w_{t+1}=(1-\alpha\lambda)w_t
 -\alpha\frac{\hat m_{t+1}}{\sqrt{\hat v_{t+1}}+\epsilon},
 $$&lt;/p&gt;
-&lt;p&gt;其中矩估计只使用数据损失梯度。这里的 $\lambda$ 是解耦衰减系数，不能直接赋予与 L2 惩罚完全相同的作用。&lt;/p&gt;
-&lt;h3&gt;稀疏性与其他惩罚&lt;/h3&gt;
+&lt;h3&gt;2.2.4 稀疏性与其他惩罚&lt;/h3&gt;
 &lt;p&gt;正则项的形状决定它所偏好的参数结构：&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;
@@ -1011,13 +1009,11 @@ $$&lt;/p&gt;
 \quad\Longrightarrow\quad
 \hat w=\operatorname{sign}(a)\max(|a|-\lambda,0).
 $$&lt;/p&gt;
-&lt;p&gt;当 $|a|\leq\lambda$ 时，最优解精确为零；而 L2 的解为 $a/(1+\lambda)$。两者差异来自惩罚在零附近的形状。一般网络中，L1 的稀疏最优解性质不意味着普通固定步长 SGD 的每个迭代值都会精确变为零。&lt;/p&gt;
-&lt;p&gt;还可以使用 $\sum_j|w_j|^p$ 且 $0&amp;lt;p&amp;lt;1$ 的惩罚增强稀疏偏好，但这类目标非凸，求解更困难。选择正则项应依据希望引入的结构，而非只比较惩罚大小。&lt;/p&gt;
-&lt;h2&gt;5. 隐式正则化&lt;/h2&gt;
-&lt;h3&gt;优化过程的选择偏好&lt;/h3&gt;
+&lt;p&gt;当 $|a|\leq\lambda$ 时，最优解精确为零；而 L2 的解为 $a/(1+\lambda)$。一般网络中，L1 的稀疏最优解性质不意味着普通固定步长 SGD 的每个迭代值都会精确变为零，参数可能在零附件来回变化。&lt;/p&gt;
+&lt;p&gt;还可以使用 $\sum_j|w_j|^p$ 且 $0&amp;lt;p&amp;lt;1$ 的惩罚增强稀疏偏好，但这类目标非凸，求解更困难。&lt;/p&gt;
+&lt;h2&gt;3. 隐式正则化&lt;/h2&gt;
 &lt;p&gt;在过参数化模型中，可能存在许多训练误差相近甚至相同的解。训练算法从何处出发、以何种步长更新以及如何抽取批次，会影响最终到达的解。因此，即使没有加入显式惩罚，优化过程也可能具有正则化作用。&lt;/p&gt;
-&lt;p&gt;隐式正则化不是一个对所有算法都相同的隐藏损失。下文的修正目标用于解释特定条件下 GD 和 SGD 的有限步长效应，不应直接推广到动量、Adam 或任意学习率。&lt;/p&gt;
-&lt;h3&gt;梯度下降的有限步长效应&lt;/h3&gt;
+&lt;h3&gt;3.1 梯度下降的有限步长效应&lt;/h3&gt;
 &lt;p&gt;连续梯度流满足&lt;/p&gt;
 &lt;p&gt;$$
 \frac{\mathrm d\theta}{\mathrm dt}=-\nabla L(\theta),
@@ -1026,23 +1022,21 @@ $$&lt;/p&gt;
 &lt;p&gt;$$
 \theta_{t+1}=\theta_t-\alpha\nabla L(\theta_t).
 $$&lt;/p&gt;
-&lt;p&gt;离散更新并不严格沿着原损失的连续梯度流运动。对足够光滑的损失和足够小的有限步长，保留学习率的一阶修正，可以用下列修正损失的梯度流近似解释离散轨迹：&lt;/p&gt;
+&lt;p&gt;离散更新并不严格沿着原损失的连续梯度流运动。对足够光滑的损失和足够小的有限步长，可以用下列修正损失的梯度流近似解释离散轨迹：&lt;/p&gt;
 &lt;p&gt;$$
 \widetilde L_{\mathrm{GD}}(\theta)
 =L(\theta)+\frac{\alpha}{4}|\nabla L(\theta)|_2^2.
 $$&lt;/p&gt;
-&lt;p&gt;附加项与损失梯度的平方范数成正比。它描述有限步长对优化路径的影响，而不是算法实际计算并加入了这个惩罚项。&lt;/p&gt;
-&lt;p&gt;为理解它与局部几何的关系，记 $g=\nabla L$、$H=\nabla^2L$，则&lt;/p&gt;
-&lt;p&gt;$$
+&lt;p&gt;为理解它与局部几何的关系，记 $g=\nabla L$、$H=\nabla^2L$，则
+$$
 \nabla|g|&lt;em&gt;2^2=2Hg,
 \qquad
 \nabla\widetilde L&lt;/em&gt;{\mathrm{GD}}=g+\frac{\alpha}{2}Hg.
 $$&lt;/p&gt;
-&lt;p&gt;修正后的方向同时依赖梯度和曲率。原损失的驻点满足 $g=0$，在该近似修正目标中仍是驻点；变化主要体现在驻点附近的几何与到达它们的路径，不能解释为“所有尖锐极小值都被删除”。&lt;/p&gt;
+&lt;p&gt;修正后的方向同时依赖梯度和曲率。原损失的驻点满足 $g=0$，在该近似修正目标中仍是驻点；变化主要体现在驻点附近的几何与到达它们的路径。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/udl-9-03-implicit-gd.Cbun0zJy_Z2q89bQ.webp&quot; alt=&quot;梯度下降的隐式正则化示意&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;图 9.3｜有限步长带来的修正可改变连续路径的形状。显式加入的参数惩罚与此处的梯度范数修正作用对象不同：前者直接限制参数，后者与损失地形及步长相关。&lt;/em&gt;&lt;/p&gt;
-&lt;p&gt;该近似不能推出学习率越大泛化越好。学习率过大可能使迭代振荡或发散，也会超出近似成立的范围。&lt;/p&gt;
-&lt;h3&gt;随机梯度下降的批量效应&lt;/h3&gt;
+&lt;p&gt;&lt;em&gt;图 9.3｜有限步长带来的修正可改变连续路径的形状。&lt;/em&gt;&lt;/p&gt;
+&lt;h3&gt;3.2 随机梯度下降的批量效应&lt;/h3&gt;
 &lt;p&gt;设训练集被划分为 $M$ 个等大的批次，每个批次含 $b$ 个样本，$N=Mb$。第 $m$ 个批次的平均损失与梯度记作 $L_m$ 和 $g_m$，则&lt;/p&gt;
 &lt;p&gt;$$
 L=\frac{1}{M}\sum_{m=1}^{M}L_m,
@@ -1071,12 +1065,9 @@ $$&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 9.4｜GD 的修正与全梯度有关，SGD 还受到批次梯度差异的影响。修正后的低值区域可能变化，这为不同采样方式产生不同解提供了一种解释。&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;当批次扩大至整个训练集时，$M=1$ 且 $g_1=g$，梯度分歧项消失。较小批次通常具有较大的梯度波动，但具体大小仍取决于样本之间的相关性、采样方法与模型所处位置。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/udl-9-05-learning-rate-batch-size.KVhyHTZO_ZWaIU9.webp&quot; alt=&quot;学习率与批量大小对训练和测试误差的影响&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;图 9.5｜示例中横轴为隐藏层宽度，纵轴为分类错误率。左图改变全批量 GD 的学习率，右图改变 SGD 的批量大小。较低的训练误差不一定对应较低的测试误差；图中的趋势不能当作所有任务的固定规律。&lt;/em&gt;&lt;/p&gt;
-&lt;h3&gt;平坦性与泛化&lt;/h3&gt;
-&lt;p&gt;在相同参数表示和扰动尺度下，若参数受到小扰动时损失变化较小，可以称该区域相对平坦。平坦区域对参数扰动具有一定稳定性，这使它成为理解某些正则化现象的直观工具。&lt;/p&gt;
-&lt;p&gt;但是，参数空间中的平坦性依赖参数化方式。同一个预测函数可能通过不同权重缩放获得不同的曲率，而实际预测与泛化表现不变。因此，“更平坦”不能脱离参数尺度直接等同于“泛化必然更好”。&lt;/p&gt;
-&lt;h2&gt;6. 泛化改进方法&lt;/h2&gt;
-&lt;h3&gt;6.1 早停&lt;/h3&gt;
+&lt;p&gt;&lt;em&gt;图 9.5｜示例中横轴为隐藏层宽度，纵轴为分类错误率。左图改变全批量 GD 的学习率，右图改变 SGD 的批量大小。较低的训练误差不一定对应较低的测试误差。&lt;/em&gt;&lt;/p&gt;
+&lt;h2&gt;4. 泛化改进方法&lt;/h2&gt;
+&lt;h3&gt;4.1 早停&lt;/h3&gt;
 &lt;p&gt;训练的早期阶段，模型通常先学习数据中较显著的结构；继续优化可能进一步拟合样本中的局部波动。早停通过限制训练时长，选择训练过程中的某个中间解，而非一直降低训练损失。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/udl-9-06-early-stopping.B2zWz80i_1j3BeF.webp&quot; alt=&quot;训练时长与回归函数的变化&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 9.6｜随着迭代增加，训练损失持续下降，但拟合函数也可能逐渐追随观测噪声。适当的中间迭代结果可能更接近生成数据的真实函数。&lt;/em&gt;&lt;/p&gt;
@@ -1090,8 +1081,8 @@ $$&lt;/p&gt;
 &lt;p&gt;$$
 w_t=\bigl[1-(1-\alpha a)^t\bigr]w^*.
 $$&lt;/p&gt;
-&lt;p&gt;有限时刻的解只走向最优参数的一部分。多维情况下，不同曲率方向以不同速度学习，因此停止时刻也会影响模型已学到哪些变化方向。这为早停的收缩作用提供了简单解释，但不要求一般网络都遵循相同的学习顺序。&lt;/p&gt;
-&lt;h3&gt;6.2 集成学习&lt;/h3&gt;
+&lt;p&gt;有限时刻的解只走向最优参数的一部分。多维情况下，不同曲率方向以不同速度学习，因此停止时刻也会影响模型已学到哪些变化方向。&lt;/p&gt;
+&lt;h3&gt;4.2 集成学习&lt;/h3&gt;
 &lt;p&gt;集成学习将多个模型的预测组合起来。对于回归，最常见的形式是预测平均：&lt;/p&gt;
 &lt;p&gt;$$
 \bar f(x)=\frac1K\sum_{k=1}^{K}f_k(x).
@@ -1102,7 +1093,7 @@ $$&lt;/p&gt;
 =\frac{1}{K^2}\left[K\sigma^2+K(K-1)\rho\sigma^2\right]
 =\sigma^2\left[\rho+\frac{1-\rho}{K}\right].
 $$&lt;/p&gt;
-&lt;p&gt;当误差不相关时，方差变为 $\sigma^2/K$；当误差完全一致时，平均不能降低方差。该推导针对误差的波动，不能说明平均会自动消除所有模型共有的系统偏差。&lt;/p&gt;
+&lt;p&gt;当误差不相关时，方差变为 $\sigma^2/K$；当误差完全一致时，平均不能降低方差。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/udl-9-07-ensemble.DzYgcdWS_x5gNN.webp&quot; alt=&quot;自助采样与预测集成&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 9.7｜从原始数据中有放回地抽样，得到不同训练集并分别训练模型；各模型在局部的变化不同，预测平均可以减弱部分变化。图中重复抽到的样本以较大的点表示。&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;模型多样性可以来自不同初始化、不同数据子集、不同结构或不同超参数。Bagging 使用有放回抽样生成多个训练集；每个训练集可与原数据等大，但会包含重复样本，也会遗漏一些原始样本。&lt;/p&gt;
@@ -1110,9 +1101,9 @@ $$&lt;/p&gt;
 &lt;p&gt;$$
 \bar p(y=c\mid x)=\frac1K\sum_kp_k(y=c\mid x),
 $$&lt;/p&gt;
-&lt;p&gt;也可以平均 logits 后再应用 softmax，或者对预测类别投票。这些规则并不相同，尤其因为 softmax 是非线性的，平均 logits 通常不等于平均概率。&lt;/p&gt;
+&lt;p&gt;也可以平均 logits 后再应用 softmax，或者对预测类别投票。这些规则并不相同，因为 softmax 是非线性的，平均 logits 通常不等于平均概率。&lt;/p&gt;
 &lt;p&gt;集成通常需要保存和评估多个模型，因而增加训练或推理开销。也可利用一次训练中的多个快照构建集成，但这些模型之间往往有较强相关性。参数平均则是另一种操作：对于一般神经网络，平均参数后得到的预测不等于平均多个模型的预测。&lt;/p&gt;
-&lt;h3&gt;6.3 Dropout&lt;/h3&gt;
+&lt;h3&gt;4.3 Dropout&lt;/h3&gt;
 &lt;p&gt;Dropout 在训练时随机将部分隐藏单元的激活置零，使每次前向传播使用不同的子网络。保留下来的单元必须在其他单元可能缺失的条件下完成预测，从而减少对特定激活组合的依赖。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/udl-9-08-dropout-network.DtiFkpW4_2swwy4.webp&quot; alt=&quot;Dropout 随机选择子网络&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 9.8｜灰色单元在当前计算中被丢弃，其相连路径不再贡献输出。不同随机掩码产生不同子网络，但这些子网络共享原网络中的参数&lt;/em&gt;&lt;/p&gt;
@@ -1133,16 +1124,16 @@ $$&lt;/p&gt;
 &lt;p&gt;实际训练用随机掩码近似这个期望。因此，Dropout 与集成具有联系，但它没有独立训练所有子网络，而是让大量子网络共享权重。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/udl-9-09-dropout-function.DeVs0lxN_1pGERR.webp&quot; alt=&quot;Dropout 对回归函数局部波动的影响&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 9.9｜某些隐藏单元共同产生训练点之间的额外突起。随机丢弃会破坏这种依赖关系，继续训练可使模型减少不稳定的局部变化。该例解释一种作用机制，并非保证所有网络都会得到更平滑的函数。&lt;/em&gt;&lt;/p&gt;
-&lt;p&gt;丢弃率过高会减少每次计算可用的信息，使拟合更困难。Dropout 的效果也依赖网络结构和数据规模，不能仅凭训练损失增加就判断它有益或有害。&lt;/p&gt;
-&lt;h3&gt;6.4 噪声与标签平滑&lt;/h3&gt;
-&lt;h4&gt;输入噪声&lt;/h4&gt;
+&lt;p&gt;丢弃率过高会减少每次计算可用的信息，使拟合更困难。&lt;/p&gt;
+&lt;h3&gt;4.4 噪声与标签平滑&lt;/h3&gt;
+&lt;h4&gt;4.4.1 输入噪声&lt;/h4&gt;
 &lt;p&gt;训练时给输入施加扰动，要求模型在原样本附近也具有合理预测。其目标可以写成&lt;/p&gt;
 &lt;p&gt;$$
 J_{\mathrm{noise}}(\theta)
 =\frac1N\sum_i\mathbb E_\varepsilon
 \left[\ell(f(x_i+\varepsilon;\theta),y_i)\right].
 $$&lt;/p&gt;
-&lt;p&gt;当扰动不改变样本语义时，这种训练可以抑制模型对无关细节的过度敏感。但如果噪声使输入不再对应原标签，就可能破坏监督信号。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE1&quot;&gt;[1]&lt;/a&gt;&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE7&quot;&gt;[7]&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;当扰动不改变样本语义时，这种训练可以抑制模型对无关细节的过度敏感。但如果噪声使输入不再对应原标签，就可能破坏监督信号。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/udl-9-10-input-noise.Dgcthj_Q_Z1GTaQH.webp&quot; alt=&quot;输入噪声强度对拟合的影响&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 9.10｜带噪输入使训练点在输入方向扩散，模型需要适应原样本附近的一片区域。过强的噪声也会掩盖原始函数的结构，导致欠拟合。&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;在线性模型中，可以直接推导输入噪声与 L2 的联系。设 $f(x)=a+bx$，噪声满足 $\mathbb E[\varepsilon]=0$、$\mathbb E[\varepsilon^2]=\sigma_x^2$。记 $e_i=a+bx_i-y_i$，则&lt;/p&gt;
@@ -1167,7 +1158,7 @@ $$&lt;/p&gt;
 =\frac{\partial L_{\mathrm{clean}}}{\partial b}+\sigma_x^2b.
 $$&lt;/p&gt;
 &lt;p&gt;多维线性模型中，若输入噪声协方差为 $\Sigma$，附加项为 $\frac12w^\top\Sigma w$；只有各向同性噪声 $\Sigma=\sigma_x^2I$ 才得到相同强度的 L2 惩罚。对非线性网络，噪声的作用与函数对输入的局部导数有关，一般不能直接等同于普通权重 L2。&lt;/p&gt;
-&lt;h4&gt;权重噪声&lt;/h4&gt;
+&lt;h4&gt;4.4.2 权重噪声&lt;/h4&gt;
 &lt;p&gt;另一种方法是在训练时扰动权重，并降低扰动后的平均损失：&lt;/p&gt;
 &lt;p&gt;$$
 \mathbb E_\eta[L(\theta+\eta)].
@@ -1178,8 +1169,8 @@ $$&lt;/p&gt;
 \approx L(\theta)+\frac{\sigma_w^2}{2}\operatorname{tr}(H(\theta)).
 $$&lt;/p&gt;
 &lt;p&gt;这里 $\operatorname{tr}(H)$ 是 Hessian 对角元素之和。在局部极小值附近，较大的正曲率会增加扰动后的平均损失，从而解释了权重噪声对宽阔低损失区域的偏好。这是小扰动下的局部解释，仍受参数尺度影响。&lt;/p&gt;
-&lt;p&gt;随机噪声也可以改为有目的地选择较不利的输入扰动，即对抗训练。它在指定扰动范围内提高预测稳定性，所要求的鲁棒性比对随机噪声取平均更强；扰动范围仍须符合任务语义。&lt;/p&gt;
-&lt;h4&gt;标签平滑&lt;/h4&gt;
+&lt;p&gt;随机噪声也可以改为有目的地选择较不利的输入扰动，即对抗训练。它在指定扰动范围内提高预测稳定性，所要求的鲁棒性比对随机噪声取平均更强。&lt;/p&gt;
+&lt;h4&gt;4.4.3 标签平滑&lt;/h4&gt;
 &lt;p&gt;分类的独热标签将正确类别的目标概率设为 $1$，其他类别设为 $0$。最小化交叉熵会持续鼓励正确类别概率接近 $1$，使模型可能形成过度确定的预测。&lt;/p&gt;
 &lt;p&gt;设类别数为 $C\geq2$，真实类别为 $y$。采用将较小的总质量 $\rho\in[0,1)$ 分给其余类别的约定：&lt;/p&gt;
 &lt;p&gt;$$
@@ -1202,9 +1193,9 @@ $$&lt;/p&gt;
 \frac{\partial\ell_{\mathrm{LS}}}{\partial z_c}=p_c-q_c.
 $$&lt;/p&gt;
 &lt;p&gt;当模型已经给正确类别非常高的概率时，平滑标签不再持续要求它向 $1$ 靠近。对于单个样本，如果模型能够精确匹配目标 $q$，其最优概率为 $p=q$，而非独热分布。&lt;/p&gt;
-&lt;p&gt;另一种常见定义是 $q=(1-\varepsilon)y_{\mathrm{onehot}}+\varepsilon\mathbf1/C$，将均匀质量分配给包括正确类别在内的所有类别。此时正确类别为 $1-\varepsilon+\varepsilon/C$，它与前述约定对应于 $\rho=\varepsilon(C-1)/C$。因此，同一个数值的 $\rho$ 与 $\varepsilon$ 表示不同的平滑强度。&lt;/p&gt;
+&lt;p&gt;另一种常见定义是 $q=(1-\varepsilon)y_{\mathrm{onehot}}+\varepsilon\mathbf1/C$，将均匀质量分配给包括正确类别在内的所有类别。此时正确类别为 $1-\varepsilon+\varepsilon/C$。&lt;/p&gt;
 &lt;p&gt;标签平滑改变的是训练目标，能够限制过强的类别置信度，但是否改善准确率或概率校准，仍需要在独立数据上评价。&lt;/p&gt;
-&lt;h3&gt;6.5 贝叶斯推理&lt;/h3&gt;
+&lt;h3&gt;4.5 贝叶斯推理&lt;/h3&gt;
 &lt;p&gt;最大后验估计仅使用后验分布中概率密度最高的一组参数。贝叶斯预测则对所有可能参数的预测进行加权，权重由参数后验决定：&lt;/p&gt;
 &lt;p&gt;$$
 p(y\mid x,\mathcal D)
@@ -1229,8 +1220,8 @@ $$&lt;/p&gt;
 $$&lt;/p&gt;
 &lt;p&gt;第一部分来自给定参数后仍存在的观测随机性，第二部分来自参数不确定性。增加相关数据通常主要帮助减少后一部分，但这一解释依赖模型及其概率假设是否合理。&lt;/p&gt;
 &lt;p&gt;大型网络的精确后验积分通常不可行，需要采样或变分近似等方法。MC Dropout 是一种相关近似：推理时继续随机丢弃单元，多次计算预测，再统计均值与波动。它在特定假设下具有贝叶斯近似解释，但随机前向传播的方差不自动等于全部预测不确定性；如果还要表示观测噪声，需要相应的输出概率模型。&lt;/p&gt;
-&lt;h3&gt;6.6 迁移学习与多任务学习&lt;/h3&gt;
-&lt;h4&gt;迁移学习&lt;/h4&gt;
+&lt;h3&gt;4.6 迁移学习与多任务学习&lt;/h3&gt;
+&lt;h4&gt;4.6.1 迁移学习&lt;/h4&gt;
 &lt;p&gt;迁移学习利用源任务中已经学到的表示，帮助目标任务训练。将网络写成&lt;/p&gt;
 &lt;p&gt;$$
 f(x)=h_\omega(g_\psi(x)),
@@ -1238,7 +1229,7 @@ $$&lt;/p&gt;
 &lt;p&gt;其中 $g_\psi$ 是特征提取部分，$h_\omega$ 是任务输出部分。源任务训练后，可以更换输出层以适应目标任务。&lt;/p&gt;
 &lt;p&gt;常见方式包括：固定 $\psi$、只学习新的 $\omega$；或者以预训练参数为起点，继续微调部分或全部网络。前者对可训练部分施加更强限制，后者允许表示适应新任务。&lt;/p&gt;
 &lt;p&gt;迁移学习的作用不仅来自初始化更好。源数据还提供了目标训练集之外的统计结构，使模型无需仅凭少量目标标签重新学习全部特征。若源任务与目标任务不相关，已有偏好也可能妨碍学习，产生负迁移。&lt;/p&gt;
-&lt;h4&gt;多任务学习&lt;/h4&gt;
+&lt;h4&gt;4.6.1 多任务学习&lt;/h4&gt;
 &lt;p&gt;多任务学习同时训练若干相关任务。网络共享表示参数 $\psi$，为第 $k$ 个任务保留独立输出参数 $\omega_k$，其目标可以写成&lt;/p&gt;
 &lt;p&gt;$$
 J(\psi,\omega_1,\ldots,\omega_K)
@@ -1249,13 +1240,13 @@ $$&lt;/p&gt;
 &lt;p&gt;不同任务的损失尺度和数据量可能不同，权重 $a_k$ 决定它们对共享参数的相对影响。如果任务要求相互冲突，共享参数的梯度也可能相互干扰。因此，任务数量增加不必然提高每个任务的性能。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/udl-9-12-transfer-multitask.D1uuhN6-_zbxFg.webp&quot; alt=&quot;迁移学习、多任务学习与自监督学习&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 9.12｜上图展示从一个任务迁移到另一个任务；中图用共享表示同时预测语义分割与深度；下图通过补全缺失图像区域学习表示。前两种方法利用任务之间的相关性，第三种方法从数据本身构造监督信号。&lt;/em&gt;&lt;/p&gt;
-&lt;h3&gt;6.7 自监督学习&lt;/h3&gt;
+&lt;h3&gt;4.7 自监督学习&lt;/h3&gt;
 &lt;p&gt;自监督学习从数据本身构造训练目标，不依赖逐样本的人工标签。它仍然有明确的监督信号，只是该信号由输入的一部分、变换结果或其他可观测结构自动生成。&lt;/p&gt;
 &lt;p&gt;例如，将图像的一块区域遮挡，要求模型根据剩余区域预测缺失内容；或者遮挡文本中的词，要求模型根据上下文预测。模型只有利用数据中的结构关系，才能完成这些任务。&lt;/p&gt;
 &lt;p&gt;另一类方法使用同一样本的不同增强视图学习表示。以对比学习为例，相关视图的表示应接近，与无关样本的表示应有所区分。也存在不显式使用负样本的自监督方法，因此“自监督学习”不能简单等同于“对比正负样本”。&lt;/p&gt;
 &lt;p&gt;自监督学习通常先在大量未标注数据上预训练，再将表示迁移到下游任务。这使它与迁移学习形成衔接：前者说明监督信号的来源，后者说明学到的知识如何用于另一个任务。&lt;/p&gt;
 &lt;p&gt;预训练任务必须提供与下游任务相关的结构。仅仅能够很好地完成重建，不代表一定保留了所有下游判别信息；同样，过强的增强也可能使模型丢失目标任务所需要的细节。&lt;/p&gt;
-&lt;h3&gt;6.8 数据增强&lt;/h3&gt;
+&lt;h3&gt;4.8 数据增强&lt;/h3&gt;
 &lt;p&gt;数据增强通过变换已有样本，构造额外的训练输入。其核心假设是：某些输入变化不应改变目标，或者目标应当按已知方式同步变化。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/udl-9-13-augmentation.xxKfRcIw_Z29eG1h.webp&quot; alt=&quot;图像数据增强的常见变换&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 9.13｜翻转、旋转裁剪、拉伸、色彩变化、模糊与畸变等变换可生成同一图像的不同视图。具体变换是否合理，取决于任务中哪些信息必须保留。&lt;/em&gt;&lt;/p&gt;
