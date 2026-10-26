@@ -1,20 +1,844 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>nikonikoni&apos;s blog</title><description>a blog website</description><link>https://miku.nikonikoni.blog/</link><language>zh_CN</language><item><title>Regularization</title><link>https://miku.nikonikoni.blog/posts/regularization/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/regularization/</guid><description>围绕正则化，解释参数惩罚、优化偏好及常见泛化方法的原理与联系。</description><pubDate>Thu, 24 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;正则化&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>nikonikoni&apos;s blog</title><description>a blog website</description><link>https://miku.nikonikoni.blog/</link><language>zh_CN</language><item><title>Random Variables</title><link>https://miku.nikonikoni.blog/posts/random-variables/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/random-variables/</guid><description>概率论中随机变量的学习笔记。</description><pubDate>Mon, 26 Oct 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h2&gt;2.1 随机变量&lt;/h2&gt;
+&lt;h3&gt;定义&lt;/h3&gt;
+&lt;p&gt;随机变量是定义在样本空间上的实值函数：&lt;/p&gt;
+&lt;p&gt;$$
+X:\Omega\longrightarrow\mathbb{R},\qquad \omega\longmapsto X(\omega).
+$$&lt;/p&gt;
+&lt;p&gt;试验前，不确定的是将发生哪个样本结果 $\omega$；一旦结果确定，$X(\omega)$ 就随之确定。例如掷两枚骰子，$\omega=(i,j)$，若关心点数和，则 $X(i,j)=i+j$。于是&lt;/p&gt;
+&lt;p&gt;$$
+{X=7}={(1,6),(2,5),(3,4),(4,3),(5,2),(6,1)}.
+$$&lt;/p&gt;
+&lt;p&gt;两枚骰子独立且均匀时，$\mathbb{P}(X=7)=6/36=1/6$。这里 ${X=7}$ 是样本空间中的&lt;strong&gt;事件&lt;/strong&gt;，所以可以对它取概率。&lt;/p&gt;
+&lt;h3&gt;示性随机变量&lt;/h3&gt;
+&lt;p&gt;对事件 $E$，定义&lt;/p&gt;
+&lt;p&gt;$$
+I_E(\omega)=\begin{cases}1,&amp;amp;\omega\in E,\0,&amp;amp;\omega\notin E.\end{cases}
+\qquad \mathbb{P}(I_E=1)=\mathbb{P}(E),\quad \mathbb{P}(I_E=0)=1-\mathbb{P}(E).
+$$&lt;/p&gt;
+&lt;p&gt;它只记录事件是否发生。若 $\mathbb{P}(E)=p$，则 $I_E$ 服从参数为 $p$ 的伯努利分布。&lt;/p&gt;
+&lt;h3&gt;离散与连续&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;**离散型：**全部概率集中在有限个或可数个点上。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;**连续型：**存在概率密度 $f$，使 $\mathbb{P}(X\in B)=\int_B f(x),dx$。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;2.2 离散随机变量&lt;/h2&gt;
+&lt;h3&gt;分布函数 CDF&lt;/h3&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;适用于任意实值随机变量&lt;/strong&gt;
+$$
+F_X(b)=\mathbb{P}(X\le b),\qquad b\in\mathbb{R}.
+$$&lt;/p&gt;
+&lt;p&gt;它记录“随机变量不超过 $b$”的概率。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;分布函数单调不减，且 $\lim_{b\to+\infty}F(b)=1$、$\lim_{b\to-\infty}F(b)=0$。&lt;/p&gt;
+&lt;p&gt;**分布函数还具有右连续性。**若 $b_n\downarrow b$，则事件 ${X\le b_n}$ 递减到 ${X\le b}$，故 $F(b_n)\to F(b)$。定义左极限&lt;/p&gt;
+&lt;p&gt;$$
+F(b^-)=\lim_{x\uparrow b}F(x)=\mathbb{P}(X&amp;lt;b).
+$$&lt;/p&gt;
+&lt;p&gt;因此，处理端点时应使用&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\mathbb{P}(a&amp;lt;X\le b)    &amp;amp; =F(b)-F(a),   \
+\mathbb{P}(X=b)         &amp;amp; =F(b)-F(b^-), \
+\mathbb{P}(a\le X\le b) &amp;amp; =F(b)-F(a^-).
+\end{aligned}
+$$&lt;/p&gt;
+&lt;h3&gt;离散型的 PMF&lt;/h3&gt;
+&lt;p&gt;令 $p_X(x)=\mathbb{P}(X=x)$，取值点为 $x_1,x_2,\ldots$，则&lt;/p&gt;
+&lt;p&gt;$$
+p_X(x_i)\ge0,\qquad \sum_i p_X(x_i)=1,
+\qquad \boxed{F_X(b)=\sum_{x_i\le b}p_X(x_i)}.
+$$&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;PMF 给出单点概率，CDF 给出累计概率；CDF 的跳跃高度就是该点的概率。&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;如图&lt;/strong&gt;  $p_X(1)=1/2,\ p_X(2)=1/3,\ p_X(3)=1/6$。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./images/random-variables/discrete-cdf.svg&quot; alt=&quot;离散随机变量的分布函数：在 1、2、3 处分别跳跃至 1/2、5/6、1，实心点表示右连续取值。&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;例如 $\mathbb{P}(1&amp;lt;X\le2)=F(2)-F(1)=5/6-1/2=1/3$。&lt;/p&gt;
+&lt;h3&gt;2.2.1 伯努利随机变量&lt;/h3&gt;
+&lt;p&gt;设一次试验只有成功和失败两类结果，成功概率为 $p$。用 $X=1$ 表示成功，$X=0$ 表示失败，记为 $X\sim\operatorname{Bernoulli}(p)$，其中 $0\le p\le1$。&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}(X=0)=1-p,\qquad \mathbb{P}(X=1)=p.
+$$&lt;/p&gt;
+&lt;h3&gt;2.2.2 二项随机变量&lt;/h3&gt;
+&lt;p&gt;进行 $n$ 次&lt;strong&gt;相互独立&lt;/strong&gt;的伯努利试验，且每次成功概率&lt;strong&gt;相同&lt;/strong&gt;，均为 $p$。令 $I_j$ 表示第 $j$ 次是否成功，则&lt;/p&gt;
+&lt;p&gt;$$
+X=I_1+I_2+\cdots+I_n\sim\operatorname{Bin}(n,p).
+$$&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;概率质量函数&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}(X=i)=\binom ni p^i(1-p)^{n-i},\qquad i=0,1,\ldots,n.
+$$&lt;/p&gt;
+&lt;p&gt;其中 $\displaystyle\binom ni=\frac{n!}{i!(n-i)!}$。$p=0$ 或 $p=1$ 时分别退化为恒取 $0$ 或 $n$。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;**归一化验证：**由二项式定理，&lt;/p&gt;
+&lt;p&gt;$$
+\sum_{i=0}^n\binom ni p^i(1-p)^{n-i}=(p+1-p)^n=1.
+$$&lt;/p&gt;
+&lt;h3&gt;2.2.3 几何随机变量&lt;/h3&gt;
+&lt;p&gt;连续进行相互独立、成功概率恒为 $p$ 的试验，直到首次成功。令 $X$ 为&lt;strong&gt;包含成功那一次在内的总试验次数&lt;/strong&gt;，则&lt;/p&gt;
+&lt;p&gt;$$
+X\sim\operatorname{Geom}(p),\qquad 0&amp;lt;p\le1,\qquad X\in{1,2,3,\ldots}.
+$$&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;概率质量函数&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+{X=k}={\underbrace{\mathrm F\cdots\mathrm F}_{k-1\text{ 次失败}}\mathrm S},
+\qquad \mathbb{P}(X=k)=(1-p)^{k-1}p.
+$$&lt;/p&gt;
+&lt;p&gt;前 $k-1$ 次都失败，第 $k$ 次成功；独立性使概率可以相乘。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;归一化验证：&lt;/strong&gt;
+当 $0&amp;lt;p\le1$ 时，由几何级数，&lt;/p&gt;
+&lt;p&gt;$$
+\sum_{k=1}^{\infty}\mathbb{P}(X=k)
+=p\sum_{k=1}^{\infty}(1-p)^{k-1}
+=\frac{p}{1-(1-p)}=1.
+$$&lt;/p&gt;
+&lt;p&gt;对整数 $m\ge0$，“首次成功晚于第 $m$ 次”等价于“前 $m$ 次全失败”：&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{\mathbb{P}(X&amp;gt;m)=(1-p)^m},\qquad
+\boxed{\mathbb{P}(X\le m)=1-(1-p)^m}.
+$$&lt;/p&gt;
+&lt;p&gt;对任意实数 $b$，分布函数可以写为&lt;/p&gt;
+&lt;p&gt;$$
+F_X(b)=\begin{cases}
+0,                          &amp;amp; b&amp;lt;1,   \
+1-(1-p)^{\lfloor b\rfloor}, &amp;amp; b\ge1.
+\end{cases}
+$$&lt;/p&gt;
+&lt;h3&gt;2.2.4 泊松随机变量&lt;/h3&gt;
+&lt;p&gt;若 $X$ 取非负整数值，且对于某个 $\lambda&amp;gt;0$，有&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;概率质量函数&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+X\sim\operatorname{Pois}(\lambda),\qquad
+\mathbb{P}(X=i)=e^{-\lambda}\frac{\lambda^i}{i!},\quad i=0,1,2,\ldots.
+$$&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;它常用于给定时间、面积、体积等范围内的事件计数，例如一页中的印刷错误数、一日中的事故数。$\lambda$ 对应&lt;strong&gt;当前观察范围&lt;/strong&gt;的平均计数。&lt;/p&gt;
+&lt;p&gt;**参数 $\lambda$ 等于均值。**直接由 PMF 计算，&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\mathbb E[X]
+&amp;amp; =\sum_{i=1}^{\infty} i,e^{-\lambda}\frac{\lambda^i}{i!}
+=\lambda e^{-\lambda}\sum_{j=0}^{\infty}\frac{\lambda^j}{j!}
+=\lambda.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;归一化验证：&lt;/strong&gt;
+因为 $e^{\lambda}=\sum_{i=0}^{\infty}\lambda^i/i!$，所以&lt;/p&gt;
+&lt;p&gt;$$
+\sum_{i=0}^{\infty}\mathbb{P}(X=i)
+=e^{-\lambda}\sum_{i=0}^{\infty}\frac{\lambda^i}{i!}
+=e^{-\lambda}e^{\lambda}=1.
+$$&lt;/p&gt;
+&lt;p&gt;对 $b\ge0$，分布函数为 $F_X(b)=e^{-\lambda}\sum_{i=0}^{\lfloor b\rfloor}\lambda^i/i!$；对 $b&amp;lt;0$，有 $F_X(b)=0$。&lt;/p&gt;
+&lt;p&gt;固定 $\lambda&amp;gt;0$，令 $p_n=\lambda/n$，并设 $X_n\sim\operatorname{Bin}(n,p_n)$。取足够大的整数 $n$ 使 $p_n\le1$。当 $n\to\infty$ 时，$p_n\to0$，但 $np_n=\lambda$ 保持不变。对每个&lt;strong&gt;固定&lt;/strong&gt;的非负整数 $i$，我们考查 $\mathbb{P}(X_n=i)$。&lt;/p&gt;
+&lt;p&gt;当 $n\ge i$ 且 $n&amp;gt;\lambda$ 时，&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\mathbb{P}(X_n=i)
+&amp;amp; =\binom ni\left(\frac{\lambda}{n}\right)^i
+\left(1-\frac{\lambda}{n}\right)^{n-i}        \[3pt]
+&amp;amp; =\frac{\lambda^i}{i!}
+\underbrace{\frac{n(n-1)\cdots(n-i+1)}{n^i}}&lt;em&gt;{A_n}
+\underbrace{\left(1-\frac{\lambda}{n}\right)^n}&lt;/em&gt;{B_n}
+\underbrace{\left(1-\frac{\lambda}{n}\right)^{-i}}_{C_n}.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;$$
+A_n=\prod_{j=0}^{i-1}\left(1-\frac{j}{n}\right)
+\longrightarrow 1.
+$$&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;$$
+\log B_n
+=n\log\left(1-\frac{\lambda}{n}\right)
+=-\lambda,
+\frac{\log(1-\lambda/n)}{-\lambda/n}
+\longrightarrow -\lambda.
+$$&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;$$
+C_n\longrightarrow 1.
+$$&lt;/p&gt;
+&lt;p&gt;因此&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;极限结论&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{\lim_{n\to\infty}\mathbb{P}(X_n=i)=e^{-\lambda}\frac{\lambda^i}{i!}},
+\qquad i=0,1,2,\ldots.
+$$&lt;/p&gt;
+&lt;p&gt;有限 $n$ 下是近似：$\mathbb{P}(X_n=i)\approx e^{-np_n}(np_n)^i/i!$。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;2.3 连续随机变量&lt;/h2&gt;
+&lt;p&gt;若存在非负函数 $f_X$，使得对任意可测集合 $B$，有&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;概率密度函数 PDF&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}(X\in B)=\int_B f_X(x),dx,\qquad
+f_X(x)\ge0,\qquad \int_{-\infty}^{\infty}f_X(x),dx=1,
+$$&lt;/p&gt;
+&lt;p&gt;则称 $X$ 为连续随机变量，$f_X$ 为它的概率密度函数。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;概率由密度在区间上的积分给出：&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}(a\le X\le b)=\int_a^b f_X(x),dx,\qquad
+\mathbb{P}(X=a)=\int_a^a f_X(x),dx=0.
+$$&lt;/p&gt;
+&lt;p&gt;因此，连续型随机变量取某个指定值的概率为 0，区间端点是否包含不影响概率。&lt;strong&gt;密度值 $f_X(a)$ 不是单点概率 $\mathbb{P}(X=a)$&lt;/strong&gt;；密度可以大于 1，但在整个实数轴上的积分必须等于 1。&lt;/p&gt;
+&lt;p&gt;分布函数与密度的关系为&lt;/p&gt;
+&lt;p&gt;$$
+F_X(a)=\mathbb{P}(X\le a)=\int_{-\infty}^a f_X(x),dx.
+$$&lt;/p&gt;
+&lt;p&gt;若 $f_X$ 在 $a$ 处连续，则由微积分基本定理，$F_X&apos;(a)=f_X(a)$；一般情况下，此等式几乎处处成立。在密度连续点附近，对较小的 $\varepsilon&amp;gt;0$，有&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}\left(a-\frac{\varepsilon}{2}\le X\le a+\frac{\varepsilon}{2}\right)
+=\int_{a-\varepsilon/2}^{a+\varepsilon/2}f_X(x),dx
+\approx\varepsilon f_X(a).
+$$&lt;/p&gt;
+&lt;h3&gt;2.3.1 均匀随机变量&lt;/h3&gt;
+&lt;p&gt;若 $\alpha&amp;lt;\beta$，且&lt;/p&gt;
+&lt;p&gt;$$
+X\sim\operatorname{Unif}(\alpha,\beta),\qquad
+f_X(x)=\begin{cases}
+\dfrac{1}{\beta-\alpha}, &amp;amp; \alpha&amp;lt;x&amp;lt;\beta, \[3pt]
+0,                       &amp;amp; \text{其他},
+\end{cases}
+$$&lt;/p&gt;
+&lt;p&gt;则称 $X$ 在 $(\alpha,\beta)$ 上均匀分布。其概率密度在区间内为常数，等长子区间具有相同概率。由积分可得&lt;/p&gt;
+&lt;p&gt;$$
+F_X(a)=\begin{cases}
+0,                              &amp;amp; a\le\alpha,     \[2pt]
+\dfrac{a-\alpha}{\beta-\alpha}, &amp;amp; \alpha&amp;lt;a&amp;lt;\beta, \[5pt]
+1,                              &amp;amp; a\ge\beta.
+\end{cases}
+$$&lt;/p&gt;
+&lt;p&gt;当 $\alpha\le a&amp;lt;b\le\beta$ 时，&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}(a\le X\le b)=\frac{b-a}{\beta-\alpha}.
+$$&lt;/p&gt;
+&lt;p&gt;即子区间概率等于其长度占总区间长度的比例。&lt;/p&gt;
+&lt;h3&gt;2.3.2 指数随机变量&lt;/h3&gt;
+&lt;p&gt;对于 $\lambda&amp;gt;0$，若 $X$ 的密度为&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;指数分布&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+X\sim\operatorname{Exp}(\lambda),\qquad
+f_X(x)=\begin{cases}
+\lambda e^{-\lambda x}, &amp;amp; x\ge0, \
+0,                      &amp;amp; x&amp;lt;0,
+\end{cases}
+$$&lt;/p&gt;
+&lt;p&gt;这里 $\lambda$ 是率参数。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;对 $a\ge0$，积分得到&lt;/p&gt;
+&lt;p&gt;$$
+F_X(a)=\int_0^a\lambda e^{-\lambda x},dx
+=\left[-e^{-\lambda x}\right]_0^a=1-e^{-\lambda a}.
+$$&lt;/p&gt;
+&lt;p&gt;因此完整的分布函数和尾概率为&lt;/p&gt;
+&lt;p&gt;$$
+F_X(a)=\begin{cases}0,&amp;amp;a&amp;lt;0,\1-e^{-\lambda a},&amp;amp;a\ge0,\end{cases}
+\qquad \mathbb{P}(X&amp;gt;a)=e^{-\lambda a}\quad(a\ge0).
+$$&lt;/p&gt;
+&lt;p&gt;令 $a\to\infty$，有 $F_X(a)\to1$，也验证了密度的归一化。&lt;/p&gt;
+&lt;h3&gt;2.3.3 伽马随机变量&lt;/h3&gt;
+&lt;p&gt;对于形状参数 $\alpha&amp;gt;0$、率参数 $\lambda&amp;gt;0$，定义&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;伽马分布&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+X\sim\operatorname{Gamma}(\alpha,\lambda),\qquad
+f_X(x)=\begin{cases}
+\dfrac{\lambda e^{-\lambda x}(\lambda x)^{\alpha-1}}{\Gamma(\alpha)}, &amp;amp; x&amp;gt;0,   \[6pt]
+0,                                                                    &amp;amp; x\le0.
+\end{cases}
+$$&lt;/p&gt;
+&lt;p&gt;同一密度也可写为 $\lambda^\alpha x^{\alpha-1}e^{-\lambda x}/\Gamma(\alpha)$，$x&amp;gt;0$。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;伽马函数定义为&lt;/p&gt;
+&lt;p&gt;$$
+\Gamma(\alpha)=\int_0^\infty e^{-u}u^{\alpha-1},du,\qquad\alpha&amp;gt;0.
+$$&lt;/p&gt;
+&lt;p&gt;令 $u=\lambda x$，则&lt;/p&gt;
+&lt;p&gt;$$
+\int_0^\infty f_X(x),dx
+=\frac{1}{\Gamma(\alpha)}\int_0^\infty e^{-u}u^{\alpha-1},du=1.
+$$&lt;/p&gt;
+&lt;p&gt;分部积分可得 $\Gamma(\alpha+1)=\alpha\Gamma(\alpha)$。又因 $\Gamma(1)=1$，对正整数 $n$ 有&lt;/p&gt;
+&lt;p&gt;$$
+\Gamma(n)=(n-1)!.
+$$&lt;/p&gt;
+&lt;p&gt;当 $\alpha=1$ 时，伽马密度退化为指数密度，即 $\operatorname{Gamma}(1,\lambda)=\operatorname{Exp}(\lambda)$。密度在单个点 $x=0$ 的取值不影响分布；不同资料也可能使用尺度参数 $\theta=1/\lambda$，使用公式时应确认参数约定。&lt;/p&gt;
+&lt;h3&gt;2.3.4 正态随机变量&lt;/h3&gt;
+&lt;p&gt;若 $\mu\in\mathbb{R}$、$\sigma&amp;gt;0$，且 $X$ 的密度为&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;正态分布&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+X\sim\mathcal N(\mu,\sigma^2),\qquad
+f_X(x)=\frac{1}{\sqrt{2\pi},\sigma}
+\exp\left(-\frac{(x-\mu)^2}{2\sigma^2}\right),\quad x\in\mathbb{R},
+$$&lt;/p&gt;
+&lt;p&gt;则称 $X$ 服从参数为 $\mu$ 和 $\sigma^2$ 的正态分布。其密度呈钟形，关于 $x=\mu$ 对称。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;**线性变换。**设 $Y=aX+b$，其中 $a\ne0$，则&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{Y\sim\mathcal N(a\mu+b,a^2\sigma^2)}.
+$$&lt;/p&gt;
+&lt;p&gt;先设 $a&amp;gt;0$。由不等式变换，&lt;/p&gt;
+&lt;p&gt;$$
+F_Y(y)=\mathbb{P}(aX+b\le y)
+=F_X\left(\frac{y-b}{a}\right).
+$$&lt;/p&gt;
+&lt;p&gt;对 $y$ 求导，得到&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+f_Y(y)
+&amp;amp; =\frac1a f_X\left(\frac{y-b}{a}\right)                            \
+&amp;amp; =\frac{1}{\sqrt{2\pi},a\sigma}
+\exp\left[-\frac{\left(\frac{y-b}{a}-\mu\right)^2}{2\sigma^2}\right] \
+&amp;amp; =\frac{1}{\sqrt{2\pi},a\sigma}
+\exp\left[-\frac{(y-(a\mu+b))^2}{2a^2\sigma^2}\right].
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;这正是参数为 $a\mu+b$ 和 $a^2\sigma^2$ 的正态密度。&lt;/p&gt;
+&lt;p&gt;若 $a&amp;lt;0$，不等号方向改变，且由连续性有&lt;/p&gt;
+&lt;p&gt;$$
+F_Y(y)=\mathbb{P}\left(X\ge\frac{y-b}{a}\right)
+=1-F_X\left(\frac{y-b}{a}\right).
+$$&lt;/p&gt;
+&lt;p&gt;求导后，两种情况可统一写为&lt;/p&gt;
+&lt;p&gt;$$
+f_Y(y)=\frac1{|a|}f_X\left(\frac{y-b}{a}\right)
+=\frac{1}{\sqrt{2\pi},|a|\sigma}
+\exp\left[-\frac{(y-(a\mu+b))^2}{2a^2\sigma^2}\right].
+$$&lt;/p&gt;
+&lt;p&gt;当 $a=0$ 时，$Y=b$ 为常量，属于退化分布。&lt;/p&gt;
+&lt;p&gt;**标准化。**取 $a=1/\sigma$、$b=-\mu/\sigma$，则&lt;/p&gt;
+&lt;p&gt;$$
+Z=\frac{X-\mu}{\sigma}\sim\mathcal N(0,1),\qquad
+\varphi(z)=\frac{1}{\sqrt{2\pi}}e^{-z^2/2}.
+$$&lt;/p&gt;
+&lt;p&gt;$Z$ 称为标准正态随机变量。记其分布函数为 $\Phi$，则&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}(c\le X\le d)
+=\Phi\left(\frac{d-\mu}{\sigma}\right)
+-\Phi\left(\frac{c-\mu}{\sigma}\right).
+$$&lt;/p&gt;
+&lt;h2&gt;2.4 随机变量的期望&lt;/h2&gt;
+&lt;h3&gt;2.4.1 离散情形&lt;/h3&gt;
+&lt;p&gt;若 $X$ 为离散随机变量，概率质量函数为 $p_X$，则&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;期望：按概率加权的平均值&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb E[X]=\sum_{x:p_X(x)&amp;gt;0}x,p_X(x).
+$$&lt;/p&gt;
+&lt;p&gt;有限期望要求 $\sum_x|x|p_X(x)&amp;lt;\infty$；期望不一定是 $X$ 的某个可能取值。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;**伯努利分布。**若 $X\sim\operatorname{Bernoulli}(p)$，则&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb E[X]=0\cdot(1-p)+1\cdot p=p.
+$$&lt;/p&gt;
+&lt;p&gt;**二项分布。**若 $X\sim\operatorname{Bin}(n,p)$，当 $0&amp;lt;p&amp;lt;1$ 时，利用 $i\binom ni=n\binom{n-1}{i-1}$，有&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\mathbb E[X]
+&amp;amp; =\sum_{i=1}^n i\binom ni p^i(1-p)^{n-i}           \
+&amp;amp; =np\sum_{i=1}^n\binom{n-1}{i-1}p^{i-1}(1-p)^{n-i} \
+&amp;amp; =np\sum_{k=0}^{n-1}\binom{n-1}{k}p^k(1-p)^{n-1-k}
+=np.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;其中令 $k=i-1$，最后的和由二项式定理等于 1。$p=0,1$ 时直接计算，结论仍为 $\mathbb E[X]=np$。&lt;/p&gt;
+&lt;p&gt;**几何分布。**若 $X\sim\operatorname{Geom}(p)$，先设 $0&amp;lt;p&amp;lt;1$，令 $q=1-p$。由幂级数在 $|q|&amp;lt;1$ 内可逐项求导，&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\mathbb E[X]
+&amp;amp; =\sum_{k=1}^\infty k p q^{k-1}
+=p\frac{d}{dq}\sum_{k=1}^\infty q^k         \
+&amp;amp; =p\frac{d}{dq}\left(\frac{q}{1-q}\right)
+=\frac{p}{(1-q)^2}=\frac1p.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;当 $p=1$ 时，$X=1$，结论同样成立。因此，首次成功所需总试验次数的期望为成功概率的倒数。&lt;/p&gt;
+&lt;p&gt;**泊松分布。**若 $X\sim\operatorname{Pois}(\lambda)$，则&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\mathbb E[X]
+&amp;amp; =e^{-\lambda}\sum_{i=1}^\infty\frac{i\lambda^i}{i!}
+=\lambda e^{-\lambda}\sum_{i=1}^\infty\frac{\lambda^{i-1}}{(i-1)!} \
+&amp;amp; =\lambda e^{-\lambda}\sum_{j=0}^\infty\frac{\lambda^j}{j!}
+=\lambda.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;h3&gt;2.4.2 连续情形&lt;/h3&gt;
+&lt;p&gt;若 $X$ 是具有概率密度 $f_X$ 的连续随机变量，则&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;连续随机变量的期望&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb E[X]=\int_{-\infty}^{\infty}x f_X(x),dx.
+$$&lt;/p&gt;
+&lt;p&gt;有限期望要求 $\int_{-\infty}^{\infty}|x|f_X(x),dx&amp;lt;\infty$。这是离散加权求和在连续情形下的对应形式。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;**均匀分布。**若 $X\sim\operatorname{Unif}(\alpha,\beta)$，则&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\mathbb E[X]
+&amp;amp; =\int_\alpha^\beta\frac{x}{\beta-\alpha},dx
+=\frac{\beta^2-\alpha^2}{2(\beta-\alpha)}
+=\frac{\alpha+\beta}{2}.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;期望恰为区间中点。&lt;/p&gt;
+&lt;p&gt;**指数分布。**若 $X\sim\operatorname{Exp}(\lambda)$，分部积分得到&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\mathbb E[X]
+&amp;amp; =\int_0^\infty x\lambda e^{-\lambda x},dx             \
+&amp;amp; =\left[-xe^{-\lambda x}\right]_0^\infty
++\int_0^\infty e^{-\lambda x},dx                         \
+&amp;amp; =0+\left[-\frac1\lambda e^{-\lambda x}\right]_0^\infty
+=\frac1\lambda.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;其中 $xe^{-\lambda x}\to0$（$x\to\infty$）。这里的 $\lambda$ 是率参数，所以期望为其倒数。&lt;/p&gt;
+&lt;p&gt;**正态分布。**若 $X\sim\mathcal N(\mu,\sigma^2)$，将 $x$ 拆成 $(x-\mu)+\mu$：&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\mathbb E[X]
+&amp;amp; =\frac{1}{\sqrt{2\pi},\sigma}
+\int_{-\infty}^{\infty}x e^{-(x-\mu)^2/(2\sigma^2)},dx \
+&amp;amp; =\frac{1}{\sqrt{2\pi},\sigma}
+\int_{-\infty}^{\infty}(x-\mu)e^{-(x-\mu)^2/(2\sigma^2)},dx
++\mu\int_{-\infty}^{\infty}f_X(x),dx.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;在第一项中令 $y=x-\mu$，则被积函数 $y e^{-y^2/(2\sigma^2)}$ 为奇函数，且绝对可积，所以该积分为 0。第二项利用密度归一化，有&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb E[X]=0+\mu=\mu.
+$$&lt;/p&gt;
+&lt;h3&gt;2.4.3 随机变量的函数的期望&lt;/h3&gt;
+&lt;p&gt;设 $g$ 为实值可测函数。计算 $\mathbb E[g(X)]$ 时，可以直接按 $X$ 的分布加权，无须先求 $g(X)$ 的分布：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;函数的期望&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb E[g(X)]=\begin{cases}
+\displaystyle\sum_{x:p_X(x)&amp;gt;0}g(x)p_X(x),           &amp;amp; X\text{ 为离散型}, \[8pt]
+\displaystyle\int_{-\infty}^{\infty}g(x)f_X(x),dx, &amp;amp; X\text{ 为连续型}.
+\end{cases}
+$$&lt;/p&gt;
+&lt;p&gt;有限期望的条件为 $\mathbb E[|g(X)|]&amp;lt;\infty$。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;例如，若 $p_X(0)=0.2$、$p_X(1)=0.5$、$p_X(2)=0.3$，则&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb E[X^2]=0^2\cdot0.2+1^2\cdot0.5+2^2\cdot0.3=1.7,
+$$&lt;/p&gt;
+&lt;p&gt;而 $(\mathbb E[X])^2=(0\cdot0.2+1\cdot0.5+2\cdot0.3)^2=1.21$。因此，&lt;strong&gt;一般不能把函数与期望交换顺序&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;**仿射函数。**若 $a,b$ 为常数，且 $\mathbb E[|X|]&amp;lt;\infty$，则&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{\mathbb E[aX+b]=a\mathbb E[X]+b}.
+$$&lt;/p&gt;
+&lt;p&gt;以连续情形为例，&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\mathbb E[aX+b]
+&amp;amp; =\int_{-\infty}^{\infty}(ax+b)f_X(x),dx \
+&amp;amp; =a\int_{-\infty}^{\infty}x f_X(x),dx
++b\int_{-\infty}^{\infty}f_X(x),dx
+=a\mathbb E[X]+b.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;离散情形将积分换成求和，证明相同。&lt;/p&gt;
+&lt;p&gt;**矩。**期望 $\mathbb E[X]$ 也称均值或一阶矩。对正整数 $n$，$\mathbb E[X^n]$ 称为 $n$ 阶矩：&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb E[X^n]=\begin{cases}
+\displaystyle\sum_x x^n p_X(x),                     &amp;amp; X\text{ 为离散型}, \[8pt]
+\displaystyle\int_{-\infty}^{\infty}x^n f_X(x),dx, &amp;amp; X\text{ 为连续型}.
+\end{cases}
+$$&lt;/p&gt;
+&lt;p&gt;一阶矩反映平均位置；要描述随机变量在均值附近的离散程度，需要考察偏离均值的平方。&lt;/p&gt;
+&lt;p&gt;**方差。**当 $\mathbb E[X^2]&amp;lt;\infty$ 时，记 $\mu=\mathbb E[X]$，定义&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;方差与二阶矩&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+\operatorname{Var}(X)=\mathbb E\bigl[(X-\mathbb E[X])^2\bigr]
+=\mathbb E[(X-\mu)^2].
+$$&lt;/p&gt;
+&lt;p&gt;方差是偏离均值的平方的期望，因此 $\operatorname{Var}(X)\ge0$。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;展开平方，并利用期望的线性性质，得到&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\operatorname{Var}(X)
+&amp;amp; =\mathbb E[X^2-2\mu X+\mu^2]           \
+&amp;amp; =\mathbb E[X^2]-2\mu\mathbb E[X]+\mu^2 \
+&amp;amp; =\mathbb E[X^2]-\mu^2.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;于是&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{\operatorname{Var}(X)=\mathbb E[X^2]-(\mathbb E[X])^2}.
+$$&lt;/p&gt;
+&lt;p&gt;计算时既可以直接使用定义，也可以先求一阶、二阶矩，再相减。&lt;/p&gt;
+&lt;p&gt;**正态分布的方差。**设 $X\sim\mathcal N(\mu,\sigma^2)$，由 $\mathbb E[X]=\mu$，有&lt;/p&gt;
+&lt;p&gt;$$
+\operatorname{Var}(X)
+=\frac{1}{\sqrt{2\pi},\sigma}
+\int_{-\infty}^{\infty}(x-\mu)^2 e^{-(x-\mu)^2/(2\sigma^2)},dx.
+$$&lt;/p&gt;
+&lt;p&gt;作标准化代换 $y=(x-\mu)/\sigma$，则 $dx=\sigma,dy$，从而&lt;/p&gt;
+&lt;p&gt;$$
+\operatorname{Var}(X)
+=\frac{\sigma^2}{\sqrt{2\pi}}
+\int_{-\infty}^{\infty}y^2 e^{-y^2/2},dy.
+$$&lt;/p&gt;
+&lt;p&gt;对最后的积分分部积分，取 $u=y$、$dv=y e^{-y^2/2},dy$，则 $v=-e^{-y^2/2}$，所以&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\int_{-\infty}^{\infty}y^2e^{-y^2/2},dy
+&amp;amp; =\left[-y e^{-y^2/2}\right]&lt;em&gt;{-\infty}^{\infty}
++\int&lt;/em&gt;{-\infty}^{\infty}e^{-y^2/2},dy            \
+&amp;amp; =0+\sqrt{2\pi}.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;边界项为 0，而剩余积分由标准正态密度的归一化得到。因此&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{X\sim\mathcal N(\mu,\sigma^2)
+\quad\Longrightarrow\quad\mathbb E[X]=\mu,\quad\operatorname{Var}(X)=\sigma^2}.
+$$&lt;/p&gt;
+&lt;p&gt;这也说明正态分布的两个参数分别表示均值与方差。&lt;/p&gt;
+&lt;h2&gt;2.5 联合分布的随机变量&lt;/h2&gt;
+&lt;h3&gt;2.5.1 联合分布函数&lt;/h3&gt;
+&lt;p&gt;同时研究 $X$ 和 $Y$ 时，除了各自的分布，还需要知道它们如何共同取值。定义联合累积分布函数&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;联合 CDF 与边缘 CDF&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+F_{X,Y}(a,b)=\mathbb{P}(X\le a,\ Y\le b).
+$$&lt;/p&gt;
+&lt;p&gt;$$
+F_X(a)=\lim_{b\to\infty}F_{X,Y}(a,b),\qquad
+F_Y(b)=\lim_{a\to\infty}F_{X,Y}(a,b).
+$$&lt;/p&gt;
+&lt;p&gt;两个边缘分布描述各个变量，联合分布还包含变量之间的依赖关系。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;当不致混淆时，记 $F_{X,Y}$ 为 $F$，并把上述两个极限简写为 $F(a,\infty)$ 和 $F(\infty,b)$。对 $a_1&amp;lt;a_2$、$b_1&amp;lt;b_2$，有&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+&amp;amp; \mathbb{P}(a_1&amp;lt;X\le a_2,\ b_1&amp;lt;Y\le b_2)                    \
+&amp;amp; \qquad=F(a_2,b_2)-F(a_1,b_2)-F(a_2,b_1)+F(a_1,b_1).
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;**离散情形。**若 $(X,Y)$ 的概率集中在有限个或可数个点上，定义联合概率质量函数&lt;/p&gt;
+&lt;p&gt;$$
+p_{X,Y}(x,y)=\mathbb{P}(X=x,\ Y=y),\qquad
+p_{X,Y}(x,y)\ge0,\quad\sum_x\sum_y p_{X,Y}(x,y)=1.
+$$&lt;/p&gt;
+&lt;p&gt;边缘概率质量函数通过对另一个变量的所有可能值求和得到：&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{p_X(x)=\sum_y p_{X,Y}(x,y)},\qquad
+\boxed{p_Y(y)=\sum_x p_{X,Y}(x,y)}.
+$$&lt;/p&gt;
+&lt;p&gt;因此&lt;/p&gt;
+&lt;p&gt;$$
+F_{X,Y}(a,b)=\sum_{x\le a}\sum_{y\le b}p_{X,Y}(x,y).
+$$&lt;/p&gt;
+&lt;p&gt;更一般地，对平面上的集合 $D$，&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}\bigl((X,Y)\in D\bigr)=\sum_{(x,y)\in D}p_{X,Y}(x,y).
+$$&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;从联合分布可以得到边缘分布，但仅凭两个边缘分布一般不能恢复联合分布。&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;**联合连续情形。**若存在非负函数 $f_{X,Y}$，使得&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;联合概率密度与边缘密度&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}\bigl((X,Y)\in D\bigr)=\iint_D f_{X,Y}(x,y),dx,dy,
+\qquad \iint_{\mathbb{R}^2}f_{X,Y}(x,y),dx,dy=1,
+$$&lt;/p&gt;
+&lt;p&gt;则 $f_{X,Y}$ 称为联合概率密度。对另一个变量积分，可得边缘密度：&lt;/p&gt;
+&lt;p&gt;$$
+f_X(x)=\int_{-\infty}^{\infty}f_{X,Y}(x,y),dy,\qquad
+f_Y(y)=\int_{-\infty}^{\infty}f_{X,Y}(x,y),dx.
+$$&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;例如，对集合 $A,B$，有&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}(X\in A,\ Y\in B)=\int_B\int_A f_{X,Y}(x,y),dx,dy,
+$$&lt;/p&gt;
+&lt;p&gt;于是&lt;/p&gt;
+&lt;p&gt;$$
+F_{X,Y}(a,b)=\int_{-\infty}^b\int_{-\infty}^a
+f_{X,Y}(x,y),dx,dy.
+$$&lt;/p&gt;
+&lt;p&gt;**两个变量的函数的期望。**当 $\mathbb E[|g(X,Y)|]&amp;lt;\infty$ 时，&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb E[g(X,Y)]=\begin{cases}
+\displaystyle\sum_x\sum_y g(x,y)p_{X,Y}(x,y), &amp;amp; \text{离散情形},   \[8pt]
+\displaystyle\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}
+g(x,y)f_{X,Y}(x,y),dx,dy,                   &amp;amp; \text{联合连续情形}.
+\end{cases}
+$$&lt;/p&gt;
+&lt;p&gt;**期望的线性性质。**若各个期望有限，则&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{\mathbb E[aX+bY]=a\mathbb E[X]+b\mathbb E[Y]},\qquad
+\mathbb E\left[\sum_{i=1}^n a_iX_i\right]
+=\sum_{i=1}^n a_i\mathbb E[X_i].
+$$&lt;/p&gt;
+&lt;p&gt;这一性质&lt;strong&gt;不要求独立&lt;/strong&gt;。例如在离散情形，将 $g(x,y)=ax+by$ 代入，再利用边缘概率质量函数，得到&lt;/p&gt;
+&lt;p&gt;$$
+\sum_x\sum_y(ax+by)p_{X,Y}(x,y)
+=a\sum_x x p_X(x)+b\sum_y y p_Y(y).
+$$&lt;/p&gt;
+&lt;h3&gt;2.5.2 独立随机变量&lt;/h3&gt;
+&lt;p&gt;若对任意实数 $a,b$ 都有&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;独立性的分布函数&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}(X\le a,\ Y\le b)=\mathbb{P}(X\le a)\mathbb{P}(Y\le b),
+$$&lt;/p&gt;
+&lt;p&gt;即&lt;/p&gt;
+&lt;p&gt;$$
+F_{X,Y}(a,b)=F_X(a)F_Y(b),
+$$&lt;/p&gt;
+&lt;p&gt;则称 $X$ 和 $Y$ 独立。它等价于对任意可测集合 $A,B$，有&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}(X\in A,\ Y\in B)=\mathbb{P}(X\in A)\mathbb{P}(Y\in B).
+$$&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;**离散情形。**独立当且仅当对所有 $x,y$，&lt;/p&gt;
+&lt;p&gt;$$
+p_{X,Y}(x,y)=p_X(x)p_Y(y).
+$$&lt;/p&gt;
+&lt;p&gt;**联合连续情形。**独立当且仅当联合密度几乎处处满足&lt;/p&gt;
+&lt;p&gt;$$
+f_{X,Y}(x,y)=f_X(x)f_Y(y).
+$$&lt;/p&gt;
+&lt;p&gt;这里“几乎处处”表示忽略平面上面积为 0 的集合。&lt;/p&gt;
+&lt;p&gt;**独立变量的函数的乘积期望。**若 $X,Y$ 独立，且 $g(X),h(Y)$ 均可积，则&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{\mathbb E[g(X)h(Y)]=\mathbb E[g(X)]\mathbb E[h(Y)]}.
+$$&lt;/p&gt;
+&lt;p&gt;以联合连续情形为例，利用联合密度的分解，&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\mathbb E[g(X)h(Y)]
+&amp;amp; =\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}
+g(x)h(y)f_X(x)f_Y(y),dx,dy                           \
+&amp;amp; =\left(\int_{-\infty}^{\infty}g(x)f_X(x),dx\right)
+\left(\int_{-\infty}^{\infty}h(y)f_Y(y),dy\right).
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;特别地，取 $g(x)=x$、$h(y)=y$，得到 $\mathbb E[XY]=\mathbb E[X]\mathbb E[Y]$。&lt;strong&gt;期望的线性性质总可用于可积变量；乘积期望的这种分解则需要相应条件，独立性是充分条件。&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;对 $X_1,\ldots,X_n$，相互独立要求对所有阈值 $a_1,\ldots,a_n$，&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}(X_1\le a_1,\ldots,X_n\le a_n)
+=\prod_{i=1}^n F_{X_i}(a_i).
+$$&lt;/p&gt;
+&lt;p&gt;当 $n\ge3$ 时，仅仅两两独立一般不足以推出相互独立。“独立同分布”（i.i.d.）表示变量相互独立，且各自具有相同分布。&lt;/p&gt;
+&lt;h3&gt;2.5.3 协方差与随机变量和的方差&lt;/h3&gt;
+&lt;p&gt;以下均假设所涉及的随机变量具有有限二阶矩。记 $\mu_X=\mathbb E[X]$、$\mu_Y=\mathbb E[Y]$，定义&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;协方差&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+\operatorname{Cov}(X,Y)=\mathbb E[(X-\mu_X)(Y-\mu_Y)]
+=\mathbb E[XY]-\mathbb E[X]\mathbb E[Y].
+$$&lt;/p&gt;
+&lt;p&gt;若 $\operatorname{Cov}(X,Y)=0$，则称 $X,Y$ 不相关。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;第二个等式由展开乘积得到：&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\mathbb E[(X-\mu_X)(Y-\mu_Y)]
+&amp;amp; =\mathbb E[XY]-\mu_X\mathbb E[Y]-\mu_Y\mathbb E[X]+\mu_X\mu_Y \
+&amp;amp; =\mathbb E[XY]-\mu_X\mu_Y.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;一般地，可以证明 $\operatorname{Cov}(X,Y)$ 取正值是表明在 $X$ 增加时，$Y$ 倾向于增加，而负值表明在 $X$ 增加时，$Y$ 倾向于减少。&lt;/p&gt;
+&lt;p&gt;**基本性质。**对常数 $a,b,c,d$，有&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\operatorname{Cov}(X,X)       &amp;amp; =\operatorname{Var}(X),                           \
+\operatorname{Cov}(X,Y)       &amp;amp; =\operatorname{Cov}(Y,X),                         \
+\operatorname{Cov}(aX+b,cY+d) &amp;amp; =ac\operatorname{Cov}(X,Y),                       \
+\operatorname{Cov}\left(\sum_i a_iX_i,\sum_j b_jY_j\right)
+&amp;amp; =\sum_i\sum_j a_i b_j\operatorname{Cov}(X_i,Y_j).
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;独立时 $\mathbb E[XY]=\mathbb E[X]\mathbb E[Y]$，所以协方差为 0。但若 $X\sim\operatorname{Unif}(-1,1)$，并令 $Y=X^2$，则&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb E[X]=0,\qquad\mathbb E[XY]=\mathbb E[X^3]=0,
+\qquad\operatorname{Cov}(X,Y)=0.
+$$&lt;/p&gt;
+&lt;p&gt;它们仍不独立。例如 $A={|X|\le1/2}$、$B={Y\le1/4}$ 实际是同一个事件，而&lt;/p&gt;
+&lt;p&gt;$$
+\mathbb{P}(A\cap B)=\frac12\ne\frac14=\mathbb{P}(A)\mathbb{P}(B).
+$$&lt;/p&gt;
+&lt;p&gt;**随机变量和的方差。**利用 $\operatorname{Var}(S)=\operatorname{Cov}(S,S)$，得到&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+\operatorname{Var}\left(\sum_{i=1}^n X_i\right)
+&amp;amp; =\sum_{i=1}^n\sum_{j=1}^n\operatorname{Cov}(X_i,X_j) \
+&amp;amp; =\sum_{i=1}^n\operatorname{Var}(X_i)
++2\sum_{1\le i&amp;lt;j\le n}\operatorname{Cov}(X_i,X_j).
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;更一般地，&lt;/p&gt;
+&lt;p&gt;$$
+\operatorname{Var}\left(\sum_{i=1}^n a_iX_i\right)
+=\sum_{i=1}^n a_i^2\operatorname{Var}(X_i)
++2\sum_{1\le i&amp;lt;j\le n}a_i a_j\operatorname{Cov}(X_i,X_j).
+$$&lt;/p&gt;
+&lt;p&gt;若变量两两不相关，则交叉项为 0。因此，对相互独立的变量有&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{\operatorname{Var}\left(\sum_{i=1}^n X_i\right)
+=\sum_{i=1}^n\operatorname{Var}(X_i)}.
+$$&lt;/p&gt;
+&lt;p&gt;**样本均值。**设 $X_1,\ldots,X_n$ 独立同分布，且 $\mathbb E[X_i]=\mu$、$\operatorname{Var}(X_i)=\sigma^2$。定义&lt;/p&gt;
+&lt;p&gt;$$
+\overline X=\frac1n\sum_{i=1}^n X_i.
+$$&lt;/p&gt;
+&lt;p&gt;由期望的线性性质及独立变量和的方差公式，&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{\mathbb E[\overline X]=\mu},\qquad
+\boxed{\operatorname{Var}(\overline X)=\frac{\sigma^2}{n}}.
+$$&lt;/p&gt;
+&lt;p&gt;对任意 $i$，有&lt;/p&gt;
+&lt;p&gt;$$
+\operatorname{Cov}(\overline X,X_i)
+=\frac1n\sum_{j=1}^n\operatorname{Cov}(X_j,X_i)
+=\frac{\sigma^2}{n}.
+$$&lt;/p&gt;
+&lt;p&gt;所以样本均值与每个残差不相关：&lt;/p&gt;
+&lt;p&gt;$$
+\operatorname{Cov}(\overline X,X_i-\overline X)
+=\operatorname{Cov}(\overline X,X_i)-\operatorname{Var}(\overline X)=0.
+$$&lt;/p&gt;
+&lt;p&gt;**二项分布的方差。**若 $X\sim\operatorname{Bin}(n,p)$，可写成 $n$ 个独立伯努利变量之和 $X=\sum_{i=1}^n I_i$。由 $I_i^2=I_i$，有&lt;/p&gt;
+&lt;p&gt;$$
+\operatorname{Var}(I_i)=\mathbb E[I_i^2]-(\mathbb E[I_i])^2
+=p-p^2=p(1-p).
+$$&lt;/p&gt;
+&lt;p&gt;从而&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{\operatorname{Var}(X)=np(1-p)}.
+$$&lt;/p&gt;
+&lt;h3&gt;2.5.4 随机变量函数的联合概率分布&lt;/h3&gt;
+&lt;p&gt;**和的分布与卷积。**先设 $(X,Y)$ 具有联合密度 $f_{X,Y}$，令 $S=X+Y$。从事件对应的平面区域出发，&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+F_S(s)
+&amp;amp; =\mathbb{P}(X+Y\le s)                               \
+&amp;amp; =\int_{-\infty}^{\infty}\int_{-\infty}^{s-y}
+f_{X,Y}(x,y),dx,dy.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;对 $s$ 求导，可得 $S$ 的密度（几乎处处）&lt;/p&gt;
+&lt;p&gt;$$
+f_S(s)=\int_{-\infty}^{\infty}f_{X,Y}(s-y,y),dy.
+$$&lt;/p&gt;
+&lt;p&gt;若 $X,Y$ 独立，联合密度分解为 $f_X(x)f_Y(y)$，所以&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;独立连续随机变量之和的卷积公式&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+F_{X+Y}(s)=\int_{-\infty}^{\infty}F_X(s-y)f_Y(y),dy,
+$$&lt;/p&gt;
+&lt;p&gt;$$
+\boxed{f_{X+Y}(s)=\int_{-\infty}^{\infty}f_X(s-y)f_Y(y),dy}
+=\int_{-\infty}^{\infty}f_X(x)f_Y(s-x),dx.
+$$&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;对独立的整数值离散随机变量，同样有&lt;/p&gt;
+&lt;p&gt;$$
+p_{X+Y}(k)=\sum_j p_X(j)p_Y(k-j).
+$$&lt;/p&gt;
+&lt;p&gt;**二维变量变换。**设 $(X_1,X_2)$ 具有联合密度，且&lt;/p&gt;
+&lt;p&gt;$$
+Y_1=g_1(X_1,X_2),\qquad Y_2=g_2(X_1,X_2).
+$$&lt;/p&gt;
+&lt;p&gt;在原变量的支持区域 $D$ 上，假设变换一一对应到像区域 $G$，正向变换与逆变换连续可微，并且雅可比行列式不为 0：&lt;/p&gt;
+&lt;p&gt;$$
+J(x_1,x_2)=\det\begin{pmatrix}
+\dfrac{\partial g_1}{\partial x_1} &amp;amp; \dfrac{\partial g_1}{\partial x_2} \[7pt]
+\dfrac{\partial g_2}{\partial x_1} &amp;amp; \dfrac{\partial g_2}{\partial x_2}
+\end{pmatrix}\ne0.
+$$&lt;/p&gt;
+&lt;p&gt;记逆变换为 $x_1=h_1(y_1,y_2)$、$x_2=h_2(y_1,y_2)$，则&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[!important]
+&lt;strong&gt;联合密度的变量变换公式&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;$$
+f_{Y_1,Y_2}(y_1,y_2)
+=\frac{f_{X_1,X_2}(h_1(y_1,y_2),h_2(y_1,y_2))}
+{|J(h_1(y_1,y_2),h_2(y_1,y_2))|},\qquad(y_1,y_2)\in G.
+$$&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;原因是概率在对应区域内保持不变，而面积元满足&lt;/p&gt;
+&lt;p&gt;$$
+dx_1,dx_2
+=\left|\det\frac{\partial(x_1,x_2)}{\partial(y_1,y_2)}\right|dy_1,dy_2
+=\frac{dy_1,dy_2}{|J(x_1,x_2)|}.
+$$&lt;/p&gt;
+&lt;p&gt;**例：和与差。**令 $Y_1=X_1+X_2$、$Y_2=X_1-X_2$，则&lt;/p&gt;
+&lt;p&gt;$$
+J=\det\begin{pmatrix}1&amp;amp;1\1&amp;amp;-1\end{pmatrix}=-2,\qquad
+x_1=\frac{y_1+y_2}{2},\quad x_2=\frac{y_1-y_2}{2},
+$$&lt;/p&gt;
+&lt;p&gt;所以在变换后的支持区域内，&lt;/p&gt;
+&lt;p&gt;$$
+f_{Y_1,Y_2}(y_1,y_2)
+=\frac12 f_{X_1,X_2}\left(\frac{y_1+y_2}{2},\frac{y_1-y_2}{2}\right).
+$$&lt;/p&gt;
+&lt;p&gt;**多维情形。**若 $\boldsymbol Y=g(\boldsymbol X)$ 是 $n$ 维一一可微变换，逆变换为 $\boldsymbol X=h(\boldsymbol Y)$，且 $J_g=\det Dg\ne0$，则&lt;/p&gt;
+&lt;p&gt;$$
+f_{\boldsymbol Y}(\boldsymbol y)
+=f_{\boldsymbol X}(h(\boldsymbol y)),|\det Dh(\boldsymbol y)|
+=\frac{f_{\boldsymbol X}(h(\boldsymbol y))}{|J_g(h(\boldsymbol y))|}.
+$$&lt;/p&gt;
+</content:encoded></item><item><title>Regularization</title><link>https://miku.nikonikoni.blog/posts/regularization/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/regularization/</guid><description>本文围绕正则化，解释参数惩罚、优化偏好及常见泛化方法的原理与联系。</description><pubDate>Thu, 24 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;正则化&lt;/h1&gt;
 &lt;p&gt;模型训练通过降低训练损失来估计参数，但训练损失较低并不意味着模型在新样本上具有较小误差。正则化关注的是：在有限数据能够支持的多种模型之间，如何引入合理的约束或偏好，使模型更有可能学习到可推广的规律。&lt;/p&gt;
-&lt;p&gt;本文依次讨论显式正则化、概率解释、L2 正则化、隐式正则化，以及早停、集成、Dropout、噪声、贝叶斯推理、迁移学习、多任务学习、自监督学习和数据增强。重点在于这些方法如何影响模型选择、训练过程与预测结果。&lt;/p&gt;
+&lt;p&gt;本文将依次讨论显式正则化、L2 正则化、隐式正则化，以及早停、集成、Dropout、噪声、贝叶斯推理、迁移学习、多任务学习、自监督学习和数据增强。&lt;/p&gt;
 &lt;h2&gt;1. 泛化与正则化&lt;/h2&gt;
-&lt;h3&gt;训练风险与泛化风险&lt;/h3&gt;
-&lt;p&gt;设训练集为 $\mathcal D={(x_i,y_i)}_{i=1}^{N}$，模型为 $f(x;\theta)$，单个样本的损失为 $\ell(f(x;\theta),y)$。本文采用平均训练损失：&lt;/p&gt;
+&lt;h3&gt;1.1 训练风险与泛化风险&lt;/h3&gt;
+&lt;p&gt;设训练集为 $\mathcal D={(x_i,y_i)}_{i=1}^{N}$，模型为 $f(x;\theta)$，单个样本的损失为 $\ell(f(x;\theta),y)$。平均训练损失：&lt;/p&gt;
 &lt;p&gt;$$
 L(\theta)=\frac{1}{N}\sum_{i=1}^{N}\ell(f(x_i;\theta),y_i).
 $$&lt;/p&gt;
-&lt;p&gt;它描述模型在已经观测到的样本上的拟合程度。真正希望降低的是模型在目标数据分布 $P(x,y)$ 上的期望损失，即泛化风险：&lt;/p&gt;
+&lt;p&gt;它描述模型在已经观测到的样本上的拟合程度。而我们真正希望降低的，是模型在目标数据分布 $P(x,y)$ 上的期望损失，即泛化风险：&lt;/p&gt;
 &lt;p&gt;$$
 \mathcal R(\theta)
 =\mathbb E_{(x,y)\sim P}\bigl[\ell(f(x;\theta),y)\bigr].
 $$&lt;/p&gt;
 &lt;p&gt;实际训练中无法直接计算这个期望，只能用独立验证集、测试集进行估计。训练集用于估计参数，验证集用于选择正则化强度等超参数，测试集用于评价最终确定的模型。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;过拟合的关键不只是训练误差很小，而是模型对训练样本的适应没有转化为对新样本的有效预测。&lt;/strong&gt; 模型可能拟合观测噪声，也可能在训练点之间产生缺乏数据支持的变化。即使训练标签没有噪声，有限样本也通常不足以唯一确定整个输入空间上的预测函数。&lt;/p&gt;
-&lt;h3&gt;正则化的基本作用&lt;/h3&gt;
+&lt;h3&gt;1.2 正则化的基本作用&lt;/h3&gt;
 &lt;p&gt;假设多个函数都能经过全部训练点，它们在这些点上的训练损失可以相同，但在其他位置的预测可能差异很大。正则化为这种选择加入额外依据，例如倾向于较小的权重、对微小扰动更稳定的输出，或能同时解释多组数据的共享特征。&lt;/p&gt;
 &lt;p&gt;正则化可从两个层面理解：&lt;/p&gt;
 &lt;ul&gt;
@@ -22,10 +846,9 @@ $$&lt;/p&gt;
 &lt;li&gt;&lt;strong&gt;隐式正则化&lt;/strong&gt;：即使目标函数不变，初始化、优化算法、学习率和训练时长等因素也可能使训练偏向某类解。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;更广义的正则化还包括集成、数据增强和利用其他任务的数据等提高泛化能力的方法。它们不一定减少参数数量，也不一定能写成一个简单的参数惩罚项。&lt;/p&gt;
-&lt;p&gt;正则化通常是在拟合训练数据与限制不必要的变化之间取得平衡。约束过弱可能保留过拟合，约束过强则可能阻碍模型表达真实规律，产生欠拟合。因此，正则化强度应通过验证表现选择，而不能仅根据训练损失判断。&lt;/p&gt;
-&lt;p&gt;下文以 $\theta$ 表示全部参数，以 $w$ 表示受到惩罚的权重；偏置是否包含在正则项中将单独说明。配图中的 $\phi$ 与正文的 $\theta$ 均表示模型参数。&lt;/p&gt;
+&lt;p&gt;正则化通常是在拟合训练数据与限制不必要的变化之间取得平衡。约束过弱可能保留过拟合，约束过强则可能阻碍模型表达真实规律，产生欠拟合。因此，我们通过模型在验证集的表现来选择正则化强度。&lt;/p&gt;
+&lt;p&gt;下文以 $\theta$ 表示全部参数，以 $w$ 表示受到惩罚的权重。配图中的 $\phi$ 与正文的 $\theta$ 均表示模型参数。&lt;/p&gt;
 &lt;h2&gt;2. 显式正则化&lt;/h2&gt;
-&lt;h3&gt;正则化目标&lt;/h3&gt;
 &lt;p&gt;显式正则化将训练目标改写为&lt;/p&gt;
 &lt;p&gt;$$
 J(\theta)=L(\theta)+\lambda\Omega(\theta),
@@ -33,37 +856,26 @@ J(\theta)=L(\theta)+\lambda\Omega(\theta),
 \hat\theta\in\arg\min_\theta J(\theta),
 $$&lt;/p&gt;
 &lt;p&gt;其中，$\Omega(\theta)$ 为正则项，$\lambda\geq0$ 为正则化系数。$L$ 衡量模型对观测数据的拟合，$\Omega$ 衡量参数与预设偏好之间的偏离程度。&lt;/p&gt;
-&lt;p&gt;当 $\lambda=0$ 时，目标退化为原来的训练损失。随着 $\lambda$ 增大，参数选择更加重视正则项。最终解未必使 $L$ 或 $\Omega$ 单独达到最小，而是使两者之和达到较小值。&lt;/p&gt;
+&lt;p&gt;当 $\lambda=0$ 时，目标退化为原来的训练损失。随着 $\lambda$ 增大，参数选择更加重视正则项。&lt;/p&gt;
 &lt;p&gt;若目标可微，内点最优解满足&lt;/p&gt;
 &lt;p&gt;$$
 \nabla L(\hat\theta)+\lambda\nabla\Omega(\hat\theta)=0.
 $$&lt;/p&gt;
-&lt;p&gt;这个条件说明：在正则化后的解处，数据拟合产生的梯度可以与正则项产生的梯度相互抵消。因此，正则化后的参数通常并不是原训练损失的驻点。&lt;/p&gt;
+&lt;p&gt;所以，在正则化后的解处，数据拟合产生的梯度可以与正则项产生的梯度相互抵消。因此，正则化后的参数通常并不是原训练损失的驻点。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/udl-9-01-explicit-regularization.Bmvnwym0_Zd3G70.webp&quot; alt=&quot;显式正则化改变参数空间中的目标函数&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 9.1｜左图为数据损失，中图为偏好较小参数的正则项，右图为两者之和。加入正则项后，目标函数的低值区域和参数解的位置发生变化。&lt;/em&gt;&lt;/p&gt;
-&lt;h3&gt;惩罚形式与约束形式&lt;/h3&gt;
-&lt;p&gt;对模型施加偏好也可以写成约束问题：&lt;/p&gt;
-&lt;p&gt;$$
-\min_\theta L(\theta)
-\quad\text{subject to}\quad
-\Omega(\theta)\leq c.
-$$&lt;/p&gt;
-&lt;p&gt;惩罚形式通过 $\lambda$ 控制违反偏好的代价，约束形式通过 $c$ 控制允许的范围。在满足相应最优性与对偶条件时，两者可以建立对应；对于一般非凸神经网络，不能假设任意给定的 $c$ 都有唯一对应的 $\lambda$。&lt;/p&gt;
-&lt;p&gt;这一视角有助于理解正则化的几何意义：模型仍希望降低训练损失，但参数不能任意向正则项很大的区域移动。&lt;/p&gt;
-&lt;p&gt;本文采用平均损失。如果将 $L$ 改为样本损失之和，为保持相同的最优解，正则化系数也应乘以 $N$。&lt;strong&gt;正则化系数的数值必须结合损失的归一化方式理解。&lt;/strong&gt;&lt;/p&gt;
-&lt;h2&gt;3. 正则化的概率解释&lt;/h2&gt;
-&lt;h3&gt;从最大似然到最大后验&lt;/h3&gt;
+&lt;h3&gt;2.1 概率解释&lt;/h3&gt;
 &lt;p&gt;设模型给出条件概率 $p(y\mid x,\theta)$。在样本条件独立的假设下，训练数据的似然为&lt;/p&gt;
 &lt;p&gt;$$
 p(\mathcal D\mid\theta)
 =\prod_{i=1}^{N}p(y_i\mid x_i,\theta),
 $$&lt;/p&gt;
-&lt;p&gt;其中省略了对输入的条件记号。最大似然估计只根据这项似然选择参数：&lt;/p&gt;
+&lt;p&gt;最大似然估计只根据这项似然选择参数：&lt;/p&gt;
 &lt;p&gt;$$
 \hat\theta_{\mathrm{ML}}
 \in\arg\max_\theta p(\mathcal D\mid\theta).
 $$&lt;/p&gt;
-&lt;p&gt;如果额外指定参数先验 $p(\theta)$，贝叶斯公式给出&lt;/p&gt;
+&lt;p&gt;额外指定参数先验 $p(\theta)$，贝叶斯公式给出&lt;/p&gt;
 &lt;p&gt;$$
 p(\theta\mid\mathcal D)
 =\frac{p(\mathcal D\mid\theta)p(\theta)}{p(\mathcal D)}.
@@ -79,9 +891,7 @@ $$&lt;/p&gt;
 \right].
 \end{aligned}
 $$&lt;/p&gt;
-&lt;p&gt;因此，在平均负对数似然的约定下，正则项可以解释为先验的负对数除以 $N$。先验概率较高的参数受到的惩罚较小，先验概率较低的参数受到的惩罚较大。&lt;/p&gt;
-&lt;p&gt;这种解释要求明确概率模型与损失之间的对应。不能把任意尺度下的损失直接当作负对数似然而忽略比例系数。&lt;/p&gt;
-&lt;h3&gt;高斯先验与 L2 正则化&lt;/h3&gt;
+&lt;h3&gt;2.2 L2 正则化&lt;/h3&gt;
 &lt;p&gt;假设被正则化的 $d$ 个权重相互独立，且满足零均值高斯先验：&lt;/p&gt;
 &lt;p&gt;$$
 p(w)=\prod_{j=1}^{d}
@@ -101,24 +911,21 @@ J(\theta)=L(\theta)+\frac{\lambda}{2}|w|_2^2,
 \lambda=\frac{1}{N\tau^2},
 $$&lt;/p&gt;
 &lt;p&gt;这里 $L$ 是平均负对数似然。&lt;strong&gt;先验方差越小，权重越被限制在零附近，L2 正则化就越强。&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;若采用高斯回归模型 $y_i\sim\mathcal N(f(x_i;\theta),\sigma_y^2)$，并将数据项写成 $\frac{1}{2N}\sum_i(f(x_i;\theta)-y_i)^2$，则相同的推导给出 $\lambda=\sigma_y^2/(N\tau^2)$。比例系数的变化来自对整个负对数后验的等比例缩放。&lt;/p&gt;
-&lt;p&gt;最大后验估计最终仍选择一组参数；完整的贝叶斯预测则保留并综合参数的不确定性。两者的区别将在后文展开。&lt;/p&gt;
-&lt;h2&gt;4. L2 正则化&lt;/h2&gt;
-&lt;h3&gt;参数收缩与函数变化&lt;/h3&gt;
+&lt;h4&gt;2.2.1  参数收缩&lt;/h4&gt;
 &lt;p&gt;L2 正则化采用平方范数惩罚：&lt;/p&gt;
 &lt;p&gt;$$
 J(\theta)=L(\theta)+\frac{\lambda}{2}\sum_jw_j^2.
 $$&lt;/p&gt;
-&lt;p&gt;因子 $1/2$ 只是为了简化求导。如果将正则项写成 $\lambda\sum_jw_j^2$，对应的梯度会多出因子 $2$，两种定义使用的 $\lambda$ 不能直接比较。对于权重矩阵 $W$，所有元素的平方和就是 Frobenius 范数的平方 $|W|_F^2$，因此矩阵形式与上述向量形式是一致的。&lt;/p&gt;
+&lt;p&gt;因子 $1/2$ 只是为了简化求导。对于权重矩阵 $W$，所有元素的平方和就是 Frobenius 范数的平方 $|W|_F^2$，因此矩阵形式与上述向量形式是一致的。&lt;/p&gt;
 &lt;p&gt;较大的权重通常会使模型对输入变化更敏感。以线性模型 $f(x)=w^\top x+b$ 为例，输入扰动 $\Delta x$ 导致&lt;/p&gt;
 &lt;p&gt;$$
 |f(x+\Delta x)-f(x)|
 =|w^\top\Delta x|
 \leq|w|_2|\Delta x|_2.
 $$&lt;/p&gt;
-&lt;p&gt;因此，控制 $|w|_2$ 可以直接限制线性模型的输入敏感性。对于多层网络，输入敏感性取决于各层权重与激活函数的共同作用；“小权重使函数更平缓”是有用的解释，但不能据此断言任意网络的每一点都会更加平滑。&lt;/p&gt;
+&lt;p&gt;因此，控制 $|w|_2$ 可以直接限制线性模型的输入敏感性。对于多层网络，输入敏感性取决于各层权重与激活函数的共同作用；“小权重使函数更平缓”是有用的解释，但函数在某一点是否平缓还要考虑激活函数的状态。&lt;/p&gt;
 &lt;p&gt;权重正则化也不等同于直接约束函数的二阶导数。即使采用 L2，ReLU 网络仍可具有分段线性函数的折点。&lt;/p&gt;
-&lt;p&gt;实践中常将偏置排除在权重惩罚之外，因为偏置主要调节整体位置，而非线性模型的斜率。是否惩罚偏置属于模型设计选择，应与所使用的先验保持一致。&lt;/p&gt;
+&lt;p&gt;实践中常将偏置排除在权重惩罚之外，因为偏置主要调节整体位置，而非线性模型的斜率。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/udl-9-02-l2-strength.JfXU3Ptq_Z1Ptm5m.webp&quot; alt=&quot;不同 L2 正则化强度下的回归函数&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 9.2｜弱正则化时，拟合函数可能追随样本中的局部波动；适中的正则化抑制不必要的变化；正则化过强时，模型难以表达真实函数的变化。图中的系数只适用于该示例的损失定义与模型。&lt;/em&gt;&lt;/p&gt;
 &lt;h3&gt;线性回归中的解析形式&lt;/h3&gt;
@@ -1553,11 +2360,11 @@ density_block.columns = density_block.columns.set_names(df.columns.names)
 result = pd.concat([df, density_block], axis=1)
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;这保留了数据与坐标之间的关系：先在相同年份和城市上计算，再给结果附上新的指标名称。掌握标签对齐、聚合和级别移动之后，复杂的多重索引表也可以拆成一系列含义明确的操作。&lt;/p&gt;
-</content:encoded></item><item><title>Gradient Descent</title><link>https://miku.nikonikoni.blog/posts/gradient-descent/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/gradient-descent/</guid><description>从凸性、曲率与随机梯度出发，系统推导梯度下降、动量、自适应优化及学习率调度的原理、收敛条件与适用边界。</description><pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;梯度下降算法&lt;/h1&gt;
-&lt;p&gt;模型训练是以训练损失最小化为目标的参数估计过程。梯度下降及其改进方法利用损失函数的梯度构造参数更新，通过迭代降低模型在训练数据上的预测误差。&lt;/p&gt;
-&lt;p&gt;本文从经验风险与凸性出发，依次讨论梯度下降、二阶方法、随机梯度、动量与 Nesterov 加速，以及 AdaGrad、RMSProp、AdaDelta、Adam 和学习率调度。通过推导更新规则、分析曲率与采样噪声，说明算法的收敛条件、计算代价和适用边界。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE1&quot;&gt;[1]&lt;/a&gt;&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
+</content:encoded></item><item><title>Gradient Descent</title><link>https://miku.nikonikoni.blog/posts/gradient-descent/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/gradient-descent/</guid><description>本文从凸性、曲率与随机梯度出发，推导梯度下降、动量、自适应优化及学习率调度的原理、收敛条件与适用边界。</description><pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;梯度下降算法&lt;/h1&gt;
+&lt;p&gt;模型训练是以训练损失最小化为目标的参数估计过程。梯度下降及其改进方法利用损失函数的梯度更新参数，通过迭代降低模型在训练数据上的预测误差。&lt;/p&gt;
+&lt;p&gt;本文将从经验风险与凸性出发，依次讨论梯度下降、二阶方法、随机梯度、动量与 Nesterov 加速，以及 AdaGrad、RMSProp、AdaDelta、Adam 和学习率调度。通过推导更新规则、分析曲率与采样噪声，说明算法的收敛条件、计算代价和适用边界。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE1&quot;&gt;[1]&lt;/a&gt;&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
 &lt;h2&gt;1. 模型训练与优化目标&lt;/h2&gt;
-&lt;h3&gt;模型参数与损失函数&lt;/h3&gt;
+&lt;h3&gt;1.1 模型参数与损失函数&lt;/h3&gt;
 &lt;p&gt;给定训练数据 ${(x_i,y_i)}_{i=1}^{N}$，模型 $f(x_i;\theta)$ 根据输入 $x_i$ 给出预测。$\theta$ 表示模型参数。&lt;/p&gt;
 &lt;p&gt;损失函数将模型预测与观测值之间的差异量化为标量。以平方误差损失为例：&lt;/p&gt;
 &lt;p&gt;$$
@@ -1571,7 +2378,7 @@ $$&lt;/p&gt;
 $$&lt;/p&gt;
 &lt;p&gt;其中，$\arg\min$ 表示使目标函数取得最小值的参数集合。符号 $\in$ 表明最优参数可能不唯一。&lt;/p&gt;
 &lt;p&gt;损失函数也可定义为样本损失之和。&lt;strong&gt;求和损失与平均损失具有相同的最优解，但梯度相差 $N$ 倍。&lt;/strong&gt; 为使两种定义下的常规梯度下降产生相同更新，需要相应缩放学习率。本文将统一采用平均损失。&lt;/p&gt;
-&lt;h3&gt;经验风险与泛化风险&lt;/h3&gt;
+&lt;h3&gt;1.2 经验风险与泛化风险&lt;/h3&gt;
 &lt;p&gt;平均训练损失也称为经验风险。设样本来自分布 $P(x,y)$，对应的总体风险为&lt;/p&gt;
 &lt;p&gt;$$
 R(\theta)=\mathbb E_{(x,y)\sim P}\bigl[\ell(f(x;\theta),y)\bigr].
@@ -1579,8 +2386,8 @@ $$&lt;/p&gt;
 &lt;p&gt;优化算法直接降低的是可计算的 $L(\theta)$，而学习任务最终关心的是未知分布上的 $R(\theta)$。有限样本的经验风险只是总体风险的估计，二者的极小点不必重合。因此，&lt;strong&gt;优化误差降低与泛化误差降低是两个不同目标&lt;/strong&gt;；提高优化效率不能替代验证集选择、正则化和数据质量控制。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;images/gradient-descent/d2l/optimization-intro-05-00.svg&quot; alt=&quot;经验风险与总体风险的极小点&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 1｜经验风险与总体风险的示意曲线。有限数据对应的最优训练参数不一定是总体风险最小的参数，曲线的纵轴数值仅用于说明这一差别。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
-&lt;p&gt;优化中通常研究最小化问题；最大化 $F(\theta)$ 等价于最小化 $-F(\theta)$。少数简单目标可以得到解析解，而深层网络一般需要迭代数值方法。算法比较既应考虑达到给定训练精度的成本，也应单独报告最终的泛化表现。&lt;/p&gt;
-&lt;h3&gt;迭代训练过程&lt;/h3&gt;
+&lt;p&gt;优化中通常研究最小化问题；最大化 $F(\theta)$ 等价于最小化 $-F(\theta)$。少数简单目标可以得到解析解，而深层网络一般需要迭代数值方法。&lt;/p&gt;
+&lt;h3&gt;1.3 迭代训练过程&lt;/h3&gt;
 &lt;p&gt;梯度优化的基本训练流程包括：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;确定参数初始值。&lt;/li&gt;
@@ -1588,7 +2395,7 @@ $$&lt;/p&gt;
 &lt;li&gt;计算损失函数关于参数的梯度。&lt;/li&gt;
 &lt;li&gt;根据优化算法更新参数，并重复上述过程。&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;反向传播用于高效计算梯度，优化器根据梯度构造更新，参数初始化则确定迭代起点。三者共同影响训练效率与最终结果。&lt;/p&gt;
+&lt;p&gt;反向传播用于高效计算梯度，优化器根据梯度更新参数，参数初始化则确定迭代起点。三者共同影响训练效率与最终结果。&lt;/p&gt;
 &lt;p&gt;主要符号定义如下：&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;
@@ -1628,13 +2435,13 @@ $$&lt;/p&gt;
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
-&lt;h3&gt;训练超参数&lt;/h3&gt;
+&lt;h3&gt;1.4 训练超参数&lt;/h3&gt;
 &lt;p&gt;模型参数通过损失最小化进行估计，包括权重、偏置等。训练超参数规定优化过程的配置，包括优化器、学习率、批量大小、动量系数与训练周期数。&lt;/p&gt;
 &lt;p&gt;超参数选择通常通过比较不同配置的验证集表现完成，独立测试集用于评价最终选定模型的泛化性能。&lt;/p&gt;
 &lt;p&gt;梯度采样方式与参数更新机制是两个不同层面：SGD 采用样本子集估计梯度，动量与 Adam 则规定如何利用当前及历史梯度。因此，动量和 Nesterov 均可使用随机梯度，Adam 也可使用全梯度。&lt;/p&gt;
 &lt;p&gt;后文用 $F$ 表示一般分析目标，$L$ 保留为平均训练损失，$R$ 表示总体风险；$M$ 表示光滑常数或最大曲率，$\mu$ 表示最小正曲率，避免与损失符号混淆。所有向量平方、平方根和分式在自适应更新中均按坐标计算。&lt;/p&gt;
 &lt;h2&gt;2. 凸性与约束优化&lt;/h2&gt;
-&lt;h3&gt;凸集与凸函数&lt;/h3&gt;
+&lt;h3&gt;2.1 凸集与凸函数&lt;/h3&gt;
 &lt;p&gt;集合 $\mathcal C$ 为凸集，是指其中任意两点之间的整条线段仍属于该集合：&lt;/p&gt;
 &lt;p&gt;$$
 x,y\in\mathcal C,\quad \lambda\in[0,1]
@@ -1657,8 +2464,8 @@ $$&lt;/p&gt;
 &lt;p&gt;其几何意义是：函数图像位于连接两点的弦下方。若对不同的两点和 $0&amp;lt;\lambda&amp;lt;1$ 总取严格不等号，则称为严格凸。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;images/gradient-descent/d2l/convexity-03-00.svg&quot; alt=&quot;凸函数与非凸函数&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 5｜抛物线与指数函数满足凸性；余弦函数在所示定义域上不满足凸性。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
-&lt;p&gt;非负加权和、逐点最大值都保持凸性，例如 $\max(F_1,F_2)$ 在两函数均凸时仍然凸；逐点最小值则不一定凸。深层网络关于参数的损失一般非凸，但凸问题便于揭示算法机制、建立收敛界，不能把这些保证直接移植到任意网络。&lt;/p&gt;
-&lt;h3&gt;Jensen 不等式&lt;/h3&gt;
+&lt;p&gt;非负加权和、逐点最大值都保持凸性，例如 $\max(F_1,F_2)$ 在两函数均凸时仍然凸；逐点最小值则不一定凸。尽管凸问题便于揭示算法机制、建立收敛界，然而深层网络关于参数的损失一般非凸，&lt;/p&gt;
+&lt;h3&gt;2.2 Jensen 不等式&lt;/h3&gt;
 &lt;p&gt;将两点的凸组合推广到多个点，可得&lt;/p&gt;
 &lt;p&gt;$$
 F!\left(\sum_i a_ix_i\right)\leq\sum_i a_iF(x_i),
@@ -1668,21 +2475,21 @@ $$&lt;/p&gt;
 &lt;p&gt;$$
 F(\mathbb E[X])\leq\mathbb E[F(X)].
 $$&lt;/p&gt;
-&lt;p&gt;这个不等式说明，对于凸目标，平均参数的目标值不超过各参数目标值的平均。后文将用它把 SGD 迭代过程的平均误差界转化为平均参数的收敛界。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;这说明，对于凸目标，平均参数的目标值不超过各参数目标值的平均。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;另一个应用是隐变量概率模型。固定观测 $x$，令 $p(x)=\mathbb E_{Y\sim p(Y)}[p(x\mid Y)]$。由于 $-\log u$ 在 $u&amp;gt;0$ 上凸，&lt;/p&gt;
 &lt;p&gt;$$
 -\log p(x)
 \leq\mathbb E_Y[-\log p(x\mid Y)].
 $$&lt;/p&gt;
 &lt;p&gt;因此，边缘负对数似然可由较容易处理的条件负对数似然期望作上界。&lt;/p&gt;
-&lt;h3&gt;局部最优与全局最优&lt;/h3&gt;
+&lt;h3&gt;2.3 局部最优与全局最优&lt;/h3&gt;
 &lt;p&gt;凸函数的任何局部最小值都是全局最小值。设 $x^&lt;em&gt;$ 是局部最小点，但存在 $y$ 使 $F(y)&amp;lt;F(x^&lt;/em&gt;)$。对足够小的 $s&amp;gt;0$，点 $x_s=(1-s)x^&lt;em&gt;+sy$ 位于 $x^&lt;/em&gt;$ 的邻域，并满足&lt;/p&gt;
 &lt;p&gt;$$
 F(x_s)\leq(1-s)F(x^&lt;em&gt;)+sF(y)&amp;lt;F(x^&lt;/em&gt;),
 $$&lt;/p&gt;
 &lt;p&gt;这与局部最小性矛盾。&lt;/p&gt;
 &lt;p&gt;凸性不保证最小点存在或唯一。例如，$F(x)=\max(|x|-1,0)$ 在整个 $[-1,1]$ 上取得最小值；$F(x)=e^x$ 的下确界是 $0$，但在 $\mathbb R$ 上没有达到它的有限参数。严格凸性保证&lt;strong&gt;至多&lt;/strong&gt;有一个最小点，存在性仍需另外讨论。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
-&lt;h3&gt;下水平集与一阶条件&lt;/h3&gt;
+&lt;h3&gt;2.4 下水平集&lt;/h3&gt;
 &lt;p&gt;凸函数的下水平集 $\mathcal S_c={x\in\mathcal C:F(x)\leq c}$ 是凸集。因为对其中的 $x,y$，&lt;/p&gt;
 &lt;p&gt;$$
 F(\lambda x+(1-\lambda)y)
@@ -1694,7 +2501,7 @@ $$&lt;/p&gt;
 F(y)\geq F(x)+\nabla F(x)^\top(y-x).
 $$&lt;/p&gt;
 &lt;p&gt;即任一点的切平面都是函数的全局下界。若在无约束问题中 $\nabla F(x^&lt;em&gt;)=0$，便可直接推出 $F(y)\geq F(x^&lt;/em&gt;)$。一般非凸函数只具有局部 Taylor 近似，没有这样的全局下界。&lt;/p&gt;
-&lt;h3&gt;二阶判别与方向限制&lt;/h3&gt;
+&lt;h3&gt;2.5 二阶判别&lt;/h3&gt;
 &lt;p&gt;对于开凸域上的二次连续可微函数，凸性等价于处处 Hessian 半正定：&lt;/p&gt;
 &lt;p&gt;$$
 \nabla^2F(x)\succeq0
@@ -1720,7 +2527,7 @@ d^\top\nabla^2F(z)d
 =\sum_i p_id_i^2-\left(\sum_i p_id_i\right)^2\geq0.
 $$&lt;/p&gt;
 &lt;p&gt;右侧是按概率 $p$ 计算的方差。这说明 softmax 交叉熵关于 logits 的凸性，但 logits 若由深层网络产生，损失关于全部网络参数仍可能非凸。&lt;/p&gt;
-&lt;h3&gt;拉格朗日函数与惩罚项&lt;/h3&gt;
+&lt;h3&gt;2.6 拉格朗日函数&lt;/h3&gt;
 &lt;p&gt;约束优化问题可写为&lt;/p&gt;
 &lt;p&gt;$$
 \min_\theta F(\theta)
@@ -1740,9 +2547,9 @@ c_i(\theta^&lt;/em&gt;)&amp;amp;\leq0,\qquad\lambda_i^*\geq0,\
 \lambda_i^&lt;em&gt;c_i(\theta^&lt;/em&gt;)&amp;amp;=0.
 \end{aligned}
 $$&lt;/p&gt;
-&lt;p&gt;最后一式是互补松弛：未触及的约束对应零乘数，起作用的约束可能提供抵消目标梯度的作用。这里的“鞍点”指对两组变量一降一升的极小极大结构，不应与无约束损失中的普通鞍点混为一谈。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;最后一式是互补松弛：未触及的约束对应零乘数，起作用的约束可能提供抵消目标梯度的作用。这里的“鞍点”指对两组变量一降一升的极小极大结构。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;固定惩罚系数得到另一种做法。例如约束 $|w|_2^2\leq r^2$ 的拉格朗日形式，略去与 $w$ 无关的常数后，包含 $\lambda|w|_2^2/2$，即 L2 正则化。系数控制拟合与权重大小的平衡，但任意固定系数不保证精确满足预先指定的所有约束。一般违约惩罚也可用 $\mu\sum_i\max(0,c_i(\theta))^2$，避免把“惩罚违反约束”与任意线性项混同。&lt;/p&gt;
-&lt;h3&gt;投影与梯度裁剪&lt;/h3&gt;
+&lt;h3&gt;2.7 梯度裁剪&lt;/h3&gt;
 &lt;p&gt;对于非空闭凸集 $\mathcal C$，欧氏投影定义为&lt;/p&gt;
 &lt;p&gt;$$
 \Pi_{\mathcal C}(z)
@@ -1765,7 +2572,7 @@ $$&lt;/p&gt;
 &lt;p&gt;对梯度应用这一运算，就得到范数裁剪 $g\leftarrow g\min(1,r/|g|_2)$，零梯度保持不变。裁剪限制的是更新所使用的梯度，参数投影限制的是参数本身，二者不是同一个约束。&lt;/p&gt;
 &lt;p&gt;闭凸集投影具有非扩张性：$|\Pi_{\mathcal C}(x)-\Pi_{\mathcal C}(y)|_2\leq|x-y|_2$。特别地，可行最优点 $\theta^*$ 的投影仍是它本身，因此投影不会增大到它的距离；这一性质也允许把后文的 SGD 距离分析推广到投影更新。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
 &lt;h2&gt;3. 常规梯度下降&lt;/h2&gt;
-&lt;h3&gt;梯度的定义与几何意义&lt;/h3&gt;
+&lt;h3&gt;3.1 梯度的含义&lt;/h3&gt;
 &lt;p&gt;损失函数关于某一参数的偏导数，描述其他参数固定时，损失随该参数变化的局部变化率。&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;偏导数为正：参数的微小增大会导致损失局部增大，减小该参数构成下降方向。&lt;/li&gt;
@@ -1780,8 +2587,8 @@ $$&lt;/p&gt;
 \dfrac{\partial L}{\partial\theta_1}
 \end{bmatrix}.
 $$&lt;/p&gt;
-&lt;p&gt;在梯度非零的位置，以欧氏距离衡量等长的微小参数位移时，梯度方向使损失的一阶增量最大，负梯度方向使其最小。因此，负梯度是局部最陡下降方向，但该性质不意味着它直接指向全局最优解。&lt;/p&gt;
-&lt;h3&gt;参数更新规则&lt;/h3&gt;
+&lt;p&gt;在梯度非零的位置，以欧氏距离衡量等长的微小参数位移时，梯度方向使损失的一阶增量最大，负梯度方向使其最小。因此，负梯度是局部最陡下降方向，但这不意味着它直接指向全局最优解。&lt;/p&gt;
+&lt;h3&gt;3.2 参数更新规则&lt;/h3&gt;
 &lt;p&gt;常规梯度下降（Gradient Descent，GD）使用全部训练样本计算损失梯度，并按照以下规则更新参数：&lt;/p&gt;
 &lt;p&gt;$$
 g_t=\nabla L(\theta_t),
@@ -1793,8 +2600,7 @@ $$&lt;/p&gt;
 &lt;p&gt;$$
 \theta_{t+1}=(1,2)-0.1(4,-2)=(0.6,2.2).
 $$&lt;/p&gt;
-&lt;p&gt;本次更新使第一个参数减小、第二个参数增大，变化方向由相应偏导数的符号决定。各偏导数均应在同一组当前参数处计算，再同步更新全部参数。&lt;/p&gt;
-&lt;h3&gt;局部下降原理&lt;/h3&gt;
+&lt;p&gt;此更新使第一个参数减小、第二个参数增大。各偏导数均应在同一组当前参数处计算，再同步更新全部参数。&lt;/p&gt;
 &lt;p&gt;在一维情况下，损失函数在当前参数附近的一阶近似为：&lt;/p&gt;
 &lt;p&gt;$$
 L(\theta+\Delta\theta)\approx L(\theta)+L&apos;(\theta)\Delta\theta.
@@ -1804,9 +2610,9 @@ $$&lt;/p&gt;
 L(\theta-\alpha L&apos;(\theta))
 \approx L(\theta)-\alpha\bigl(L&apos;(\theta)\bigr)^2.
 $$&lt;/p&gt;
-&lt;p&gt;当 $\alpha&amp;gt;0$ 且导数非零时，该一阶近似给出负的损失增量，为负梯度更新提供了局部依据。&lt;/p&gt;
+&lt;p&gt;当 $\alpha&amp;gt;0$ 且导数非零时，该一阶近似给出负的损失增量。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;上述结论要求更新幅度足够小，使局部近似保持有效。&lt;/strong&gt; 学习率过大时，高阶项的影响可能不可忽略，实际损失因而可能增加。&lt;/p&gt;
-&lt;h3&gt;光滑性与下降保证&lt;/h3&gt;
+&lt;h3&gt;3.3 光滑性&lt;/h3&gt;
 &lt;p&gt;对多维参数，在适当光滑条件下，一阶 Taylor 展开为&lt;/p&gt;
 &lt;p&gt;$$
 L(\theta+\Delta)=L(\theta)+\nabla L(\theta)^\top\Delta
@@ -1822,8 +2628,8 @@ L(\theta-\alpha g)
 \leq L(\theta)-\alpha\left(1-\frac{M\alpha}{2}\right)|g|_2^2,
 \qquad g=\nabla L(\theta).
 $$&lt;/p&gt;
-&lt;p&gt;因此 $0&amp;lt;\alpha&amp;lt;2/M$ 是精确全梯度下降的充分步长条件。这里 $M$ 表示梯度变化的上界，以区别于目标函数 $L$；该结论要求更新路径位于所考虑的光滑区域，也不直接适用于含采样误差的随机梯度。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
-&lt;h3&gt;学习率与更新稳定性&lt;/h3&gt;
+&lt;p&gt;因此 $0&amp;lt;\alpha&amp;lt;2/M$ 时可保证全梯度下降。这里 $M$ 表示梯度变化的上界。该结论要求更新路径位于所考虑的光滑区域，也不直接适用于含采样误差的随机梯度。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
+&lt;h3&gt;3.4 学习率&lt;/h3&gt;
 &lt;p&gt;学习率决定参数增量的尺度，并影响迭代速度与稳定性：&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;
@@ -1864,9 +2670,8 @@ $$&lt;/p&gt;
 0&amp;lt;\alpha&amp;lt;1.
 $$&lt;/p&gt;
 &lt;p&gt;这给出了学习率稳定范围的一个直接推导。更一般地，若目标为 $L(\theta)=a\theta^2/2$、$a&amp;gt;0$，相同分析得到 $0&amp;lt;\alpha&amp;lt;2/a$；曲率 $a$ 越大，稳定学习率的上界越小。&lt;/p&gt;
-&lt;p&gt;这说明了学习率对该二次函数的影响，其稳定范围依赖于具体目标函数，不能直接推广至其他问题。&lt;/p&gt;
 &lt;p&gt;学习率与实际位移长度是不同概念：即使 $\alpha$ 固定，梯度幅值仍会随迭代变化，因此参数位移长度通常并不固定。&lt;/p&gt;
-&lt;h3&gt;线搜索方法&lt;/h3&gt;
+&lt;h3&gt;3.5 线搜索方法&lt;/h3&gt;
 &lt;p&gt;线搜索在确定负梯度方向后，通过评估该方向上不同步长对应的损失来选择更新幅度。精确线搜索可写为：&lt;/p&gt;
 &lt;p&gt;$$
 \alpha_t=\arg\min_{\alpha\geq0}L(\theta_t-\alpha g_t).
@@ -1875,9 +2680,9 @@ $$&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/textbook-6-10.CHUL4oax_2dJfMc.webp&quot; alt=&quot;线搜索&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 7｜通过比较区间内若干位置的损失，逐步缩小搜索区间。图示的区间排除规则需要搜索区间内函数单峰等条件。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE1&quot;&gt;[1]&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;线搜索利用目标函数值选择步长，但需要额外的损失评估。大规模训练通常采用预设学习率及其调度，以控制单次更新的计算成本。&lt;/p&gt;
-&lt;p&gt;若沿搜索方向的函数 $\varphi(a)=L(\theta-ag)$ 凸且可微，则 $\varphi&apos;(a)=-g^\top\nabla L(\theta-ag)$ 单调不减。在已知导数变号的区间内，可以对 $\varphi&apos;(a)=0$ 做二分，每次将区间长度减半。不使用导数时，则可在单峰假设下采用黄金分割等区间搜索；不能对任意多峰函数直接套用单峰区间排除规则。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;若沿搜索方向的函数 $\varphi(a)=L(\theta-ag)$ 凸且可微，则 $\varphi&apos;(a)=-g^\top\nabla L(\theta-ag)$ 单调不减。在已知导数变号的区间内，可以对 $\varphi&apos;(a)=0$ 做二分，每次将区间长度减半。不使用导数时，则可在单峰假设下采用黄金分割等区间搜索。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
 &lt;h2&gt;4. 典型模型与优化困难&lt;/h2&gt;
-&lt;h3&gt;线性回归模型&lt;/h3&gt;
+&lt;h3&gt;4.1 线性回归模型&lt;/h3&gt;
 &lt;p&gt;一维线性回归模型为&lt;/p&gt;
 &lt;p&gt;$$
 \hat y_i=\theta_0+\theta_1x_i,
@@ -1896,7 +2701,7 @@ $$&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 8｜数据空间中的拟合直线与参数空间中的优化轨迹对应同一训练过程。每次参数更新均对应一条新的预测直线。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE1&quot;&gt;[1]&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;该平方损失关于两个参数是凸函数，因此局部最小值也是全局最小值。对于这一带截距的线性模型，当输入 $x_i$ 不全相同时，最优参数唯一。&lt;/p&gt;
 &lt;p&gt;若所有输入均为常数 $c$，模型预测仅由组合 $\theta_0+c\theta_1$ 决定，多组参数可以产生相同预测。因此，凸性本身不保证最优参数唯一。&lt;/p&gt;
-&lt;h3&gt;曲率与 Hessian 矩阵&lt;/h3&gt;
+&lt;h3&gt;4.2 曲率与 Hessian 矩阵&lt;/h3&gt;
 &lt;p&gt;梯度描述损失的一阶变化，二阶导数描述梯度的局部变化。损失函数关于参数的二阶偏导数组成 Hessian 矩阵：&lt;/p&gt;
 &lt;p&gt;$$
 H_{jk}=\frac{\partial^2L}{\partial\theta_j\partial\theta_k}.
@@ -1913,7 +2718,7 @@ $$&lt;/p&gt;
 &lt;p&gt;该矩阵与参数取值无关，表明二次损失的曲率不随参数位置变化。输入不全相同时，参数在各方向上的曲率均为正；输入完全相同时，则存在不改变预测的平坦参数方向。&lt;/p&gt;
 &lt;p&gt;牛顿法利用 Hessian 的曲率信息构造更新，但其完整矩阵的存储与处理成本可能较高。一百万个参数对应一个 $10^6\times10^6$ 的矩阵，共有 $10^{12}$ 个元素。后文介绍的 Adam 则仅维护两组与参数等长的历史向量。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE1&quot;&gt;[1]&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;一阶梯度方法所需的状态规模通常较小，因而适合高维参数优化。一般非线性问题中的牛顿法仍可能需要步长控制，其更新也不必然收敛至极小点。&lt;/p&gt;
-&lt;h3&gt;Gabor 模型&lt;/h3&gt;
+&lt;h3&gt;4.3 Gabor 模型&lt;/h3&gt;
 &lt;p&gt;非线性模型的损失函数可能具有多个局部最小值。以两参数 Gabor 模型为例：&lt;/p&gt;
 &lt;p&gt;$$
 f(x;\theta)=\sin z\cdot e^{-z^2/32},
@@ -1935,7 +2740,7 @@ $$&lt;/p&gt;
 \frac{df}{dz}=e^{-z^2/32}\left(\cos z-\frac z{16}\sin z\right),
 $$&lt;/p&gt;
 &lt;p&gt;结合 $\partial z/\partial\theta_0=1$、$\partial z/\partial\theta_1=0.06x$，即可得到两个参数的损失梯度。其参数更新仍遵循梯度下降规则，但非线性参数依赖使损失曲面更加复杂。&lt;/p&gt;
-&lt;h3&gt;局部最小值与鞍点&lt;/h3&gt;
+&lt;h3&gt;4.4 局部最小值与鞍点&lt;/h3&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/textbook-6-04.DaH44yOl_Z1o5X3z.webp&quot; alt=&quot;非凸损失&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 11｜非凸损失具有多个局部极小点，各极小点对应不同的拟合波形；叉号标记鞍点。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE1&quot;&gt;[1]&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;相关概念定义如下：&lt;/p&gt;
@@ -1964,7 +2769,7 @@ $$&lt;/p&gt;
 &lt;p&gt;对于光滑损失，内部局部极小点必须满足梯度为零，但梯度为零并非局部极小的充分条件。例如 $L(a,b)=a^2-b^2$ 在原点梯度为零，沿 $a$ 方向上升、沿 $b$ 方向下降，因此原点是鞍点。&lt;/p&gt;
 &lt;p&gt;若纯 GD 恰好位于梯度为零的驻点，则参数增量为零，后续迭代保持不变。若参数位于局部极小点附近，较大步长可能使其离开该邻域，也可能导致发散。因此，增大学习率不能保证获得更优解。&lt;/p&gt;
 &lt;p&gt;低维问题可以采用多起点优化或搜索参数组合。随着参数维度增加，穷尽搜索的计算成本迅速增长，高维训练通常依赖迭代方法获得可接受的低损失解。&lt;/p&gt;
-&lt;h3&gt;退化驻点与梯度消失&lt;/h3&gt;
+&lt;h3&gt;4.5 退化驻点与梯度消失&lt;/h3&gt;
 &lt;p&gt;在二次连续可微函数的驻点处，Hessian 正定意味着严格局部极小，负定意味着严格局部极大，同时包含正负特征值则意味着鞍点。若存在零特征值且没有正负混合，二阶信息可能不足，需要考察高阶项。例如 $x^3$ 在原点的一、二阶导数均为零，但原点既不是局部极小也不是局部极大；$x^4$ 在原点却取得最小值。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;images/gradient-descent/d2l/optimization-intro-11-01.svg&quot; alt=&quot;具有正负曲率方向的鞍点&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 12｜$F(x,y)=x^2-y^2$ 在原点有一个上升方向和一个下降方向，梯度为零不代表最小值。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
@@ -1978,11 +2783,11 @@ $$&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;images/gradient-descent/d2l/optimization-intro-13-00.svg&quot; alt=&quot;饱和区域中的梯度消失&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 13｜双曲正切在正向饱和区变化缓慢，梯度很小；这与已经达到有限最优参数不是同一回事。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;网络还具有参数对称性。例如交换隐藏层单元的顺序，并同步交换相邻层的对应权重，预测函数不变。具有 $d$ 个可区分隐藏单元的网络一般存在 $d!$ 种置换表示；若部分单元完全相同，独立参数表示的数量可能更少。这说明不同参数解可以表示同一函数，不能仅按极小点数量衡量问题难度。&lt;/p&gt;
-&lt;h3&gt;停止准则与模型评价&lt;/h3&gt;
+&lt;h3&gt;4.6 停止准则与模型评价&lt;/h3&gt;
 &lt;p&gt;常用停止准则包括梯度范数低于阈值、损失变化低于阈值，以及达到预定计算预算。由于鞍点附近也可能具有较小梯度，这些准则不能单独构成全局最优性的证明。&lt;/p&gt;
 &lt;p&gt;训练损失与泛化性能是不同的评价对象。较低训练损失不必然对应更好的未见数据表现，模型选择还应依据验证集评价。&lt;/p&gt;
 &lt;h2&gt;5. 二阶方法与预条件&lt;/h2&gt;
-&lt;h3&gt;牛顿方向的推导&lt;/h3&gt;
+&lt;h3&gt;5.1 牛顿方向的推导&lt;/h3&gt;
 &lt;p&gt;在当前位置对目标作二阶近似：&lt;/p&gt;
 &lt;p&gt;$$
 L(\theta+\Delta)
@@ -1997,12 +2802,12 @@ $$&lt;/p&gt;
 &lt;p&gt;公式中的逆矩阵表示线性方程的解，实际计算并不要求显式构造逆。与 GD 的统一缩放不同，牛顿法按曲率调节方向和幅度。对于正定二次函数，二阶展开没有余项，因此完整牛顿步可从任意初值一步到达唯一最小点。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;images/gradient-descent/d2l/gd-18-01.svg&quot; alt=&quot;凸函数上的牛顿迭代&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 14｜在双曲余弦函数上，牛顿法根据当前位置的曲率调整步幅，并在接近最优点时快速收敛。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
-&lt;h3&gt;非凸情形与阻尼&lt;/h3&gt;
+&lt;h3&gt;5.2 非凸情形与阻尼&lt;/h3&gt;
 &lt;p&gt;如果 Hessian 不定，方程 $H\Delta=-g$ 只给出二阶近似的驻点，未必给出下降方向。一维中 $\Delta=-L&apos;/L&apos;&apos;$，当 $L&apos;&apos;&amp;lt;0$ 时可能沿着增加损失的方向更新；若 $L&apos;&apos;$ 接近零，位移还可能很大。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;images/gradient-descent/d2l/gd-20-01.svg&quot; alt=&quot;非凸函数上的牛顿失效&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;图 15｜未经修正的牛顿更新可能远离较好的低损失区域。使用二阶信息本身并不保证下降。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;可考虑阻尼牛顿步 $\Delta=-\alpha H^{-1}g$，并用线搜索选择 $\alpha$。不过，如果原方向已经是上升方向，仅缩小正学习率不能把它变成下降方向，还需要修正曲率矩阵，例如选择使 $H+\mu I$ 正定的 $\mu$，或对特征值取绝对值并设置正的下界。在一维中，这对应以 $|L&apos;&apos;|+\epsilon$ 等正数缩放梯度。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
-&lt;h3&gt;牛顿法的局部二次收敛&lt;/h3&gt;
+&lt;h3&gt;5.3 牛顿法的局部二次收敛&lt;/h3&gt;
 &lt;p&gt;考虑一维最小点 $x^&lt;em&gt;$，满足 $F&apos;(x^&lt;/em&gt;)=0$。记 $e_t=x_t-x^&lt;em&gt;$，假设其邻域内 $F$ 三次连续可微，且 $F&apos;&apos;\geq m&amp;gt;0$。在 $x_t$ 处展开 $F&apos;(x^&lt;/em&gt;)$：&lt;/p&gt;
 &lt;p&gt;$$
 0=F&apos;(x_t)-e_tF&apos;&apos;(x_t)+\frac12e_t^2F&apos;&apos;&apos;(\xi_t),
@@ -2013,7 +2818,7 @@ e_{t+1}=e_t-\frac{F&apos;(x_t)}{F&apos;&apos;(x_t)}
 =\frac{F&apos;&apos;&apos;(\xi_t)}{2F&apos;&apos;(x_t)}e_t^2.
 $$&lt;/p&gt;
 &lt;p&gt;若比值绝对值有界，则 $|e_{t+1}|\leq C|e_t|^2$。这是&lt;strong&gt;局部二次收敛&lt;/strong&gt;：在足够接近最优点且后续迭代留在该邻域时，误差以平方关系减小。相对地，$|e_{t+1}|\leq q|e_t|$、$0&amp;lt;q&amp;lt;1$ 称为线性收敛，虽然误差随迭代次数呈几何衰减。局部二次收敛不等于从任意初值都能全局收敛。&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE9&quot;&gt;[9]&lt;/a&gt;&lt;/p&gt;
-&lt;h3&gt;预条件与坐标尺度&lt;/h3&gt;
+&lt;h3&gt;5.4 预条件与坐标尺度&lt;/h3&gt;
 &lt;p&gt;一般的预条件更新为&lt;/p&gt;
 &lt;p&gt;$$
 \theta_{t+1}=\theta_t-\alpha_tP_tg_t.
@@ -5934,6 +6739,486 @@ void print(T value)
 &lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/class-templates/&quot;&gt;13.13 — Class templates&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;访问日期：2026-08-20。&lt;/p&gt;
+</content:encoded></item><item><title>LearnCpp 作用域、变量与命名空间</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</guid><description>LearnCpp 作用域、变量与命名空间笔记，介绍代码块、用户命名空间、局部与全局变量、变量遮蔽、静态局部变量以及 using 语句。</description><pubDate>Wed, 19 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 作用域、变量与命名空间&lt;/h1&gt;
+&lt;h2&gt;7.1 复合语句（代码块）&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;复合语句&lt;/strong&gt;（compound statement）也称为&lt;strong&gt;代码块&lt;/strong&gt;（block）或&lt;strong&gt;块语句&lt;/strong&gt;（block statement），由零条或多条语句组成，但编译器把整个代码块当作一条语句处理。&lt;/p&gt;
+&lt;p&gt;代码块以 &lt;code&gt;{&lt;/code&gt; 开始，以 &lt;code&gt;}&lt;/code&gt; 结束。凡是语法要求一条语句的地方，都可以放置一个代码块。代码块的右花括号后不需要分号。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int add(int x, int y)
+{ // 代码块开始
+    return x + y;
+} // 代码块结束，无分号
+
+int main()
+{
+    int value{}; // 这里的花括号用于初始化，不是代码块
+    add(3, 4);
+
+    return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;函数体本身就是代码块。用于列表初始化的花括号并不构成代码块。&lt;/p&gt;
+&lt;h3&gt;嵌套代码块&lt;/h3&gt;
+&lt;p&gt;函数不能定义在另一个函数内部，但代码块可以嵌套在其他代码块中。包含其他代码块的块称为&lt;strong&gt;外层代码块&lt;/strong&gt;，被包含的块称为&lt;strong&gt;内层代码块&lt;/strong&gt;或&lt;strong&gt;嵌套代码块&lt;/strong&gt;。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{ // 外层代码块
+    int value{};
+
+    { // 内层代码块
+        value = 7;
+    }
+
+    return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;代码块的常见用途是让 &lt;code&gt;if&lt;/code&gt; 或 &lt;code&gt;else&lt;/code&gt; 条件控制多条语句。&lt;code&gt;if&lt;/code&gt; 默认只控制紧随其后的一条语句；以代码块替代该语句后，块内所有语句会作为一个整体执行。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;if (value &amp;gt;= 0)
+{
+    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &quot; is non-negative\n&quot;;
+    std::cout &amp;lt;&amp;lt; &quot;Double: &quot; &amp;lt;&amp;lt; value * 2 &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+else
+{
+    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &quot; is negative\n&quot;;
+    std::cout &amp;lt;&amp;lt; &quot;Absolute value: &quot; &amp;lt;&amp;lt; -value &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;嵌套层级&lt;/h3&gt;
+&lt;p&gt;函数的&lt;strong&gt;嵌套层级&lt;/strong&gt;或&lt;strong&gt;嵌套深度&lt;/strong&gt;，是执行到函数中某一点时最多能同时位于多少层代码块之内，函数最外层代码块也计入。嵌套层级不是代码块总数：两个并列的三级代码块仍只产生三级深度。&lt;/p&gt;
+&lt;p&gt;C++ 标准建议编译器至少支持 256 层嵌套，但并非所有实现都达到这一数量。可编译不等于易读；过深嵌套会使控制关系难以追踪。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;函数的嵌套层级尽量不超过 3。需要更深嵌套时，通常应把最深处的代码提取为独立函数。&lt;/p&gt;
+&lt;h2&gt;7.2 用户定义命名空间与作用域解析运算符&lt;/h2&gt;
+&lt;p&gt;当两个相同标识符被引入同一作用域，而编译器无法判断应使用哪一个时，就会发生&lt;strong&gt;命名冲突&lt;/strong&gt;（naming collision）。冲突可能由编译器报告，也可能在多个翻译单元链接时由链接器报告。&lt;/p&gt;
+&lt;p&gt;同一作用域中的每个名称都可能与其他名称冲突。因此，标识符数量线性增加时，潜在冲突组合会大幅增加。这也是应把标识符定义在最小可用作用域内的重要原因。&lt;/p&gt;
+&lt;p&gt;例如，两个源文件都在全局作用域定义 &lt;code&gt;doSomething(int, int)&lt;/code&gt;，即使程序从未调用该函数，链接器仍会在处理重复定义时报告错误。直接改名能够消除冲突，却需要同步修改所有调用点。命名空间可以让名称保持不变，同时把它们放入不同作用域。&lt;/p&gt;
+&lt;h3&gt;定义命名空间&lt;/h3&gt;
+&lt;p&gt;程序定义的命名空间使用 &lt;code&gt;namespace&lt;/code&gt; 关键字：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Foo
+{
+    int doSomething(int x, int y)
+    {
+        return x + y;
+    }
+}
+
+namespace Goo
+{
+    int doSomething(int x, int y)
+    {
+        return x - y;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;命名空间只能定义在全局作用域或另一个命名空间内，不能定义在函数内部。命名空间内容通常缩进一级；右花括号后的分号是可选的。&lt;/p&gt;
+&lt;p&gt;历史上，命名空间名通常使用小写，许多风格指南仍采用这种约定。LearnCpp 推荐程序定义的命名空间以大写字母开头，理由包括：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;与程序定义类型的命名约定保持一致；&lt;/li&gt;
+&lt;li&gt;降低与系统或库提供的小写名称冲突的概率；&lt;/li&gt;
+&lt;li&gt;C++20 标准文本与 C++ Core Guidelines 采用这种风格。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;大写与小写两种风格都有效，项目内保持一致更重要。&lt;/p&gt;
+&lt;h3&gt;作用域解析运算符&lt;/h3&gt;
+&lt;p&gt;把函数移入 &lt;code&gt;Foo&lt;/code&gt; 和 &lt;code&gt;Goo&lt;/code&gt; 后，原先位于全局作用域的前置声明不再与它们匹配。编译器可能接受该全局声明，但链接器找不到对应的全局定义。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;作用域解析运算符&lt;/strong&gt; &lt;code&gt;::&lt;/code&gt; 用于明确指定标识符所在的作用域。左操作数是要查找的作用域，右操作数是该作用域内的标识符。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;std::cout &amp;lt;&amp;lt; Foo::doSomething(4, 3) &amp;lt;&amp;lt; &apos;\n&apos;; // 7
+std::cout &amp;lt;&amp;lt; Goo::doSomething(4, 3) &amp;lt;&amp;lt; &apos;\n&apos;; // 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;显式限定名称能够消除两个同名函数之间的歧义。&lt;code&gt;::name&lt;/code&gt; 没有左侧命名空间名时，表示从全局命名空间查找 &lt;code&gt;name&lt;/code&gt;：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void print()
+{
+    std::cout &amp;lt;&amp;lt; &quot;global\n&quot;;
+}
+
+namespace Foo
+{
+    void print()
+    {
+        std::cout &amp;lt;&amp;lt; &quot;Foo\n&quot;;
+    }
+
+    void callBoth()
+    {
+        print();   // Foo::print()
+        ::print(); // 全局命名空间中的 print()
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在命名空间内部使用未限定名称时，编译器先查找当前命名空间，再依次查找各层外部命名空间，最后查找全局命名空间。&lt;code&gt;::&lt;/code&gt; 可以跳过这套逐层查找，直接要求使用全局名称。&lt;/p&gt;
+&lt;h3&gt;声明、定义与多个命名空间块&lt;/h3&gt;
+&lt;p&gt;命名空间中标识符的前置声明和定义必须位于同一命名空间。头文件中的声明、源文件中的定义以及调用点应保持一致：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;// add.h
+namespace BasicMath
+{
+    int add(int x, int y);
+}
+
+// add.cpp
+#include &quot;add.h&quot;
+
+namespace BasicMath
+{
+    int add(int x, int y)
+    {
+        return x + y;
+    }
+}
+
+// main.cpp
+#include &quot;add.h&quot;
+
+int result{ BasicMath::add(4, 3) };
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;若声明留在全局命名空间，编译器看不到 &lt;code&gt;BasicMath::add&lt;/code&gt; 的声明；若定义留在全局命名空间，链接器找不到 &lt;code&gt;BasicMath::add&lt;/code&gt; 的定义。&lt;/p&gt;
+&lt;p&gt;同一命名空间可以在同一文件的多个位置或不同文件中反复打开。所有同名命名空间块的声明都属于同一命名空间。标准库头文件正是通过多个 &lt;code&gt;namespace std&lt;/code&gt; 块共同组成 &lt;code&gt;std&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;警告&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;不要向 &lt;code&gt;std&lt;/code&gt; 命名空间添加自定义功能。除标准明确允许的少数情况外，这通常会导致未定义行为。&lt;/p&gt;
+&lt;h3&gt;嵌套命名空间&lt;/h3&gt;
+&lt;p&gt;命名空间可以嵌套：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Foo
+{
+    namespace Goo
+    {
+        int add(int x, int y)
+        {
+            return x + y;
+        }
+    }
+}
+
+int sum{ Foo::Goo::add(1, 2) };
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;C++17 可以使用等价的紧凑语法：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Foo::Goo
+{
+    int add(int x, int y)
+    {
+        return x + y;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;之后仍可单独重新打开 &lt;code&gt;namespace Foo&lt;/code&gt;，向 &lt;code&gt;Foo&lt;/code&gt; 而不是 &lt;code&gt;Foo::Goo&lt;/code&gt; 添加声明。选择传统嵌套写法还是 C++17 紧凑写法属于风格问题。&lt;/p&gt;
+&lt;h3&gt;命名空间别名&lt;/h3&gt;
+&lt;p&gt;长命名空间链可以通过别名临时缩短：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Active = Foo::Goo;
+
+int result{ Active::add(1, 2) };
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;命名空间别名遵循其声明位置的作用域规则。例如，函数块内声明的 &lt;code&gt;Active&lt;/code&gt; 会在该块结束时失效。别名还提供一层间接性：实现迁移到 &lt;code&gt;V2&lt;/code&gt; 后，只需把别名改为 &lt;code&gt;namespace Active = V2;&lt;/code&gt;，调用点仍可保持 &lt;code&gt;Active::add()&lt;/code&gt;。&lt;/p&gt;
+&lt;h3&gt;命名空间的使用尺度&lt;/h3&gt;
+&lt;p&gt;命名空间的首要目的不是建立信息层次，而是防止命名冲突。标准库主体位于单一顶层命名空间 &lt;code&gt;std&lt;/code&gt;；名称较多的新组件也会采用嵌套命名空间，例如 &lt;code&gt;std::ranges&lt;/code&gt;。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;小型、仅供个人使用的程序通常不必放入自定义命名空间。&lt;/li&gt;
+&lt;li&gt;引入大量第三方库的较大项目可用命名空间降低冲突风险。&lt;/li&gt;
+&lt;li&gt;会分发给其他项目使用的代码应放入命名空间；一个独特的顶层命名空间通常已经足够，也便于编辑器自动补全展示库的公开名称。&lt;/li&gt;
+&lt;li&gt;多团队项目常采用“项目或库::模块”“组织::项目或库”，或“组织::项目或库::模块”的两至三级结构。&lt;/li&gt;
+&lt;li&gt;模块级命名空间可区分可复用代码与应用专用代码；目录结构也能承担一部分组织职责。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;命名空间一般不应嵌套超过 3 层。&lt;/p&gt;
+&lt;h2&gt;7.3 局部变量&lt;/h2&gt;
+&lt;p&gt;定义在函数内部的变量，包括函数形参，称为&lt;strong&gt;局部变量&lt;/strong&gt;。C++ 并不存在一个单独属性来判定“局部”；局部变量的行为由作用域、存储期和链接属性共同构成。&lt;/p&gt;
+&lt;h3&gt;块作用域&lt;/h3&gt;
+&lt;p&gt;标识符的&lt;strong&gt;作用域&lt;/strong&gt;决定源代码中哪些位置可以访问它。能够访问时称为“在作用域内”，不能访问时称为“超出作用域”。作用域是编译期属性；访问超出作用域的标识符会产生编译错误。&lt;/p&gt;
+&lt;p&gt;局部变量具有&lt;strong&gt;块作用域&lt;/strong&gt;：从定义点开始进入作用域，到所在代码块末尾离开作用域。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    int i{ 5 };      // i 从这里进入作用域
+    double d{ 4.0 }; // d 从这里进入作用域
+
+    return 0;
+} // d 和 i 在这里离开作用域
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;普通函数的形参虽然写在函数体之前，但通常可以把它们视为处于函数体代码块的作用域中。&lt;/p&gt;
+&lt;p&gt;同一作用域中的变量名必须唯一。形参与函数体顶层局部变量属于同一作用域，因此不能重名：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void someFunction(int x)
+{
+    int x{}; // 错误：与形参 x 冲突
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;自动存储期与生命周期&lt;/h3&gt;
+&lt;p&gt;变量的&lt;strong&gt;存储期&lt;/strong&gt;（storage duration）规定变量何时以及如何创建和销毁；多数情况下，存储期直接决定变量的&lt;strong&gt;生命周期&lt;/strong&gt;，即对象从实际创建到实际销毁的时间。&lt;/p&gt;
+&lt;p&gt;局部变量默认具有&lt;strong&gt;自动存储期&lt;/strong&gt;：执行到定义处时创建，在所在代码块结束时销毁。因此局部变量也称为&lt;strong&gt;自动变量&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;作用域与生命周期描述不同维度：作用域是名称能否在某段源代码中被使用的编译期属性；生命周期是对象在运行时是否存在。&lt;/p&gt;
+&lt;h3&gt;嵌套块中的局部变量&lt;/h3&gt;
+&lt;p&gt;内层变量只能从其定义点使用到内层块末尾；离开内层块后，它既超出作用域，也被销毁。外层块的作用域包含其嵌套块，因此外层变量在内层块中仍然可见。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    int x{ 5 };
+
+    {
+        int y{ 7 };
+        std::cout &amp;lt;&amp;lt; x + y &amp;lt;&amp;lt; &apos;\n&apos;; // x 与 y 都在作用域内
+    } // y 离开作用域并被销毁
+
+    // y 在这里不可访问
+    return 0;
+} // x 离开作用域并被销毁
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;无链接&lt;/h3&gt;
+&lt;p&gt;标识符的&lt;strong&gt;链接属性&lt;/strong&gt;决定不同作用域中的同名声明是否指向同一对象或函数。局部变量没有链接属性（no linkage）；每个声明都表示一个独立对象。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    int x{ 2 };
+
+    {
+        int x{ 3 }; // 与外层 x 是不同对象
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;作用域回答“单个声明在哪里可见”，链接属性回答“多个声明是否指向同一实体”，二者不能混为一谈。&lt;/p&gt;
+&lt;h3&gt;使用最小的现有作用域&lt;/h3&gt;
+&lt;p&gt;变量应定义在能够满足使用需求的最小现有作用域内。较小的作用域减少同时活跃的变量数量，也让变量可能被使用的位置更容易辨认。&lt;/p&gt;
+&lt;p&gt;如果变量只在嵌套块中使用，就在该块中定义。如果变量离开内层块后仍要使用，则必须在外层块中定义；这种需求可能导致变量早于首次使用声明。&lt;/p&gt;
+&lt;p&gt;不应仅为缩短变量作用域而额外创建代码块，因为这会让整个函数变长并增加结构复杂度。若一段代码确实值得形成独立作用域，通常更适合提取为函数。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;在最小的现有作用域内定义变量。不要创建唯一目的只是限制变量作用域的新代码块。&lt;/p&gt;
+&lt;h2&gt;7.4 全局变量简介&lt;/h2&gt;
+&lt;p&gt;定义在函数外部的变量称为&lt;strong&gt;全局变量&lt;/strong&gt;。按惯例，全局变量放在文件顶部、&lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;#include &amp;lt;iostream&amp;gt;
+
+int g_x{}; // 全局变量
+
+void setValue()
+{
+    g_x = 3;
+}
+
+int main()
+{
+    setValue();
+    std::cout &amp;lt;&amp;lt; g_x &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;全局命名空间作用域&lt;/h3&gt;
+&lt;p&gt;在全局命名空间中声明的标识符具有&lt;strong&gt;全局命名空间作用域&lt;/strong&gt;，常简称为全局作用域，也会被非正式地称为文件作用域。它从声明点持续到所在文件末尾。&lt;/p&gt;
+&lt;p&gt;全局变量也可以定义在用户命名空间中：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;namespace Foo
+{
+    int x{};
+}
+
+void setValue()
+{
+    Foo::x = 3;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;x&lt;/code&gt; 的名称受 &lt;code&gt;Foo&lt;/code&gt; 限定，但仍可通过 &lt;code&gt;Foo::x&lt;/code&gt; 在文件各处访问，所以它仍是全局变量。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;全局变量优先定义在用户命名空间中，而不是直接放在全局命名空间。&lt;/p&gt;
+&lt;h3&gt;静态存储期&lt;/h3&gt;
+&lt;p&gt;全局变量具有&lt;strong&gt;静态存储期&lt;/strong&gt;：在程序启动时、&lt;code&gt;main()&lt;/code&gt; 执行前创建，在程序结束时销毁。具有静态存储期的变量有时也称为静态变量；这里的“静态”描述存储期，不要求变量写出 &lt;code&gt;static&lt;/code&gt; 关键字。&lt;/p&gt;
+&lt;h3&gt;命名全局变量&lt;/h3&gt;
+&lt;p&gt;一些项目使用 &lt;code&gt;g&lt;/code&gt; 或 &lt;code&gt;g_&lt;/code&gt; 前缀标记全局变量。该前缀可以：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;降低与全局命名空间中其他标识符冲突的概率；&lt;/li&gt;
+&lt;li&gt;减少无意遮蔽全局变量的可能；&lt;/li&gt;
+&lt;li&gt;表明该变量会在当前函数结束后继续存在，对它的修改也会保留。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;命名空间中的全局变量常省略 &lt;code&gt;g_&lt;/code&gt;，因为命名空间限定已经能降低冲突并表明其非局部来源；保留前缀仍可强调其静态存储期。&lt;/p&gt;
+&lt;p&gt;用名称前缀编码类型的匈牙利命名法在现代 C++ 中通常价值有限；用 &lt;code&gt;g_&lt;/code&gt;、&lt;code&gt;s_&lt;/code&gt;、&lt;code&gt;m_&lt;/code&gt; 表达作用域或存储期则仍能提供有用信息。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;尤其对全局命名空间中的变量，可考虑使用 &lt;code&gt;g&lt;/code&gt; 或 &lt;code&gt;g_&lt;/code&gt; 前缀，将其与局部变量和函数形参区分。&lt;/p&gt;
+&lt;h3&gt;初始化&lt;/h3&gt;
+&lt;p&gt;具有静态存储期的变量在没有显式初始化器时会默认零初始化，这与默认未初始化的普通局部变量不同：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int g_x;       // 默认零初始化
+int g_y{};     // 值初始化，结果为零
+int g_z{ 1 };  // 初始化为 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;非常量全局变量可以省略初始化器。&lt;code&gt;const&lt;/code&gt; 和 &lt;code&gt;constexpr&lt;/code&gt; 全局变量必须初始化：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;const int g_a;          // 错误
+constexpr int g_b;      // 错误
+const int g_c{ 1 };     // 正确
+constexpr int g_d{ 2 }; // 正确
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;警告&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;通常应完全避免使用非常量全局变量。它们让任何可访问位置都能改变共享状态，使函数行为产生难以追踪的隐式依赖。&lt;/p&gt;
+&lt;h2&gt;7.5 变量遮蔽（名称隐藏）&lt;/h2&gt;
+&lt;p&gt;每个代码块都定义自己的作用域区域。内层块声明与外层变量同名的变量后，在两者作用域重叠的区域中，内层变量会&lt;strong&gt;隐藏&lt;/strong&gt;外层变量。这称为&lt;strong&gt;名称隐藏&lt;/strong&gt;（name hiding）或&lt;strong&gt;变量遮蔽&lt;/strong&gt;（shadowing）。&lt;/p&gt;
+&lt;h3&gt;局部变量之间的遮蔽&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    int apples{ 5 };
+
+    {
+        std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 外层 apples：5
+
+        int apples{ 0 }; // 从这里开始隐藏外层 apples
+        apples = 10;
+
+        std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 内层 apples：10
+    } // 内层 apples 被销毁
+
+    std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 外层 apples：5
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;输出为：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;5
+10
+5
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;遮蔽不会修改或销毁外层对象。内层声明出现前，未限定名称仍指向外层变量；从内层声明到代码块结束，名称指向内层变量。内层块结束后，外层名称重新可见，其值保持不变。&lt;/p&gt;
+&lt;p&gt;如果没有声明内层 &lt;code&gt;apples&lt;/code&gt;，内层块中的读取和赋值都会作用于外层变量，输出会是 &lt;code&gt;5&lt;/code&gt;、&lt;code&gt;10&lt;/code&gt;、&lt;code&gt;10&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;在内层块中，没有语法可以直接访问被同名局部变量遮蔽的外层局部变量。&lt;/p&gt;
+&lt;h3&gt;局部变量遮蔽全局变量&lt;/h3&gt;
+&lt;p&gt;局部变量也可以遮蔽同名全局变量。局部变量在作用域内时，未限定名称指向局部对象：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int value{ 5 };
+
+int main()
+{
+    int value{ 7 };
+
+    ++value;     // 局部 value 变为 8
+    --(::value); // 全局 value 变为 4
+
+    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &apos;\n&apos;;   // 8
+    std::cout &amp;lt;&amp;lt; ::value &amp;lt;&amp;lt; &apos;\n&apos;; // 4
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;全局变量属于全局命名空间，所以即使被局部变量遮蔽，仍可通过无前缀作用域解析 &lt;code&gt;::value&lt;/code&gt; 明确访问。这个办法不适用于被遮蔽的外层局部变量。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;避免变量遮蔽。遮蔽容易让代码读取或修改错误的对象。为全局变量统一使用 &lt;code&gt;g_&lt;/code&gt; 前缀可以简单地避免局部变量与全局变量同名。&lt;/p&gt;
+&lt;p&gt;GCC 和 Clang 可用 &lt;code&gt;-Wshadow&lt;/code&gt; 启用遮蔽警告，并提供 &lt;code&gt;-Wshadow=global&lt;/code&gt;、&lt;code&gt;-Wshadow=local&lt;/code&gt;、&lt;code&gt;-Wshadow=compatible-local&lt;/code&gt; 等变体。Visual Studio 默认启用相应警告。&lt;/p&gt;
+&lt;h2&gt;7.11 静态局部变量&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;static&lt;/code&gt; 在不同上下文中含义不同：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;全局变量本身具有静态存储期；&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;static&lt;/code&gt; 修饰全局标识符时赋予其内部链接；&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;static&lt;/code&gt; 修饰局部变量时，把它的存储期从自动存储期改为静态存储期。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;本节的 &lt;code&gt;static&lt;/code&gt; 指第三种用法。&lt;/p&gt;
+&lt;h3&gt;跨函数调用保留值&lt;/h3&gt;
+&lt;p&gt;普通局部变量每次执行到定义处都会创建，并在离开代码块时销毁：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void incrementAndPrint()
+{
+    int value{ 1 };
+    ++value;
+    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;调用三次会输出三次 &lt;code&gt;2&lt;/code&gt;。改为静态局部变量后：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void incrementAndPrint()
+{
+    static int s_value{ 1 };
+    ++s_value;
+    std::cout &amp;lt;&amp;lt; s_value &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;初始化只发生一次。函数结束时，&lt;code&gt;s_value&lt;/code&gt; 离开作用域而暂时不可访问，但对象不会被销毁。三次调用依次输出 &lt;code&gt;2&lt;/code&gt;、&lt;code&gt;3&lt;/code&gt;、&lt;code&gt;4&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;静态局部变量兼具两类属性：名称具有局部变量的块作用域，对象却具有延续到程序结束的生命周期。它适合需要局部状态在多次函数调用之间保留的场景。&lt;/p&gt;
+&lt;h3&gt;初始化规则&lt;/h3&gt;
+&lt;p&gt;可零初始化或具有常量表达式初始化器的静态局部变量可以在程序启动时初始化。&lt;/p&gt;
+&lt;p&gt;没有初始化器或具有非常量表达式初始化器的静态局部变量会在程序启动时先零初始化。具有非常量表达式初始化器的变量在程序第一次执行到定义处时完成初始化；后续调用跳过该定义，不会再次初始化。未显式初始化的静态局部变量最终保持默认的零值。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;显式初始化静态局部变量。常用 &lt;code&gt;s&lt;/code&gt; 或 &lt;code&gt;s_&lt;/code&gt; 前缀表明局部变量具有静态存储期。&lt;/p&gt;
+&lt;h3&gt;唯一 ID 生成器&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;int generateID()
+{
+    static int s_itemID{ 0 };
+    return s_itemID++;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;第一次调用返回 &lt;code&gt;0&lt;/code&gt;，第二次返回 &lt;code&gt;1&lt;/code&gt;，之后每次递增。状态只能通过该函数改变，其他函数无法直接篡改 &lt;code&gt;s_itemID&lt;/code&gt;。这种写法获得了全局变量“持续存在”的特征，同时把可见性限制在函数块内。&lt;/p&gt;
+&lt;p&gt;该方案只有在整个程序确实只需要一个永不重置的 ID 序列时才合适。&lt;/p&gt;
+&lt;h3&gt;静态局部常量&lt;/h3&gt;
+&lt;p&gt;静态局部变量可以声明为 &lt;code&gt;const&lt;/code&gt; 或 &lt;code&gt;constexpr&lt;/code&gt;。如果函数需要一个创建或初始化成本较高的常量对象，普通局部变量会在每次调用时重复构造；静态局部常量只初始化一次，之后所有调用都复用该对象。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;关键点&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;静态局部变量最适合用来避免每次函数调用都重复初始化昂贵的局部对象。静态局部常量通常可以安全使用。&lt;/p&gt;
+&lt;h3&gt;不要用静态局部状态改变函数流程&lt;/h3&gt;
+&lt;p&gt;非 &lt;code&gt;const&lt;/code&gt; 静态局部变量会让函数调用隐式依赖先前调用。例如，用 &lt;code&gt;static bool s_isFirstCall&lt;/code&gt; 让第一次调用显示一种提示、以后显示另一种提示，会造成相同参数的两次调用表现不同。调用者仅阅读调用点无法发现这种内部状态。&lt;/p&gt;
+&lt;p&gt;这种函数难以复用：内部状态不能由调用者重置；当另一段流程希望重新执行“第一次调用”时，旧状态仍然存在。更好的做法是把差异作为参数传入，让调用者显式控制行为。若需要传入提示文本，&lt;code&gt;std::string_view&lt;/code&gt; 参数通常比布尔标记更通用。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;const&lt;/code&gt; 静态局部变量通常可以使用。&lt;/li&gt;
+&lt;li&gt;非 &lt;code&gt;const&lt;/code&gt; 静态局部变量通常应避免。&lt;/li&gt;
+&lt;li&gt;确实使用非 &lt;code&gt;const&lt;/code&gt; 静态局部变量时，应确认该状态在整个程序中只有唯一实例、永远不需要重置，并且不用于改变控制流。&lt;/li&gt;
+&lt;li&gt;需要多个各自保留状态的实例时，应使用函数对象等可实例化方案，而不是单个静态局部变量。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;7.13 using 声明与 using 指令&lt;/h2&gt;
+&lt;p&gt;标准库的名称最初位于全局命名空间，容易与程序名称冲突。命名空间在 1995 年标准化后，标准库功能迁移到 &lt;code&gt;std&lt;/code&gt;。为兼容大量使用未限定标准库名称的旧代码，并减少反复书写限定符，C++ 提供了 using 语句。&lt;/p&gt;
+&lt;h3&gt;限定名称与未限定名称&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;限定名称&lt;/strong&gt;带有关联作用域：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;std::cout // 由命名空间 std 限定
+::foo     // 由全局命名空间限定
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;名称还可以由类名通过 &lt;code&gt;::&lt;/code&gt; 限定，或由类对象、对象指针通过 &lt;code&gt;.&lt;/code&gt;、&lt;code&gt;-&amp;gt;&lt;/code&gt; 限定：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;C::s_member;
+obj.x;
+ptr-&amp;gt;y;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;未限定名称&lt;/strong&gt;不带作用域限定符，例如 &lt;code&gt;cout&lt;/code&gt; 和 &lt;code&gt;x&lt;/code&gt;。&lt;/p&gt;
+&lt;h3&gt;using 声明&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;using 声明&lt;/strong&gt;让一个限定名称可以通过未限定名称使用：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    using std::cout;
+
+    cout &amp;lt;&amp;lt; &quot;Hello world!\n&quot;;
+} // using 声明在此失效
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;using std::cout;&lt;/code&gt; 表明当前作用域中的未限定 &lt;code&gt;cout&lt;/code&gt; 应解析为 &lt;code&gt;std::cout&lt;/code&gt;。若 &lt;code&gt;std::cout&lt;/code&gt; 与另一个可见的 &lt;code&gt;cout&lt;/code&gt; 发生名称冲突，该 using 声明指定的 &lt;code&gt;std::cout&lt;/code&gt; 优先。&lt;/p&gt;
+&lt;p&gt;每个名称需要单独的 using 声明，例如 &lt;code&gt;std::cout&lt;/code&gt; 与 &lt;code&gt;std::cin&lt;/code&gt; 各写一条。using 声明从声明点生效，持续到当前作用域末尾。它不如显式 &lt;code&gt;std::&lt;/code&gt; 清晰，但放在源文件中所有 &lt;code&gt;#include&lt;/code&gt; 指令之后时通常安全且可接受。&lt;/p&gt;
+&lt;h3&gt;using 指令&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;using 指令&lt;/strong&gt;使指定命名空间中的所有标识符都可以在作用域内以未限定名称参与查找：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int main()
+{
+    using namespace std;
+
+    cout &amp;lt;&amp;lt; &quot;Hello world!\n&quot;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;从技术上说，using 指令并非真正把新名称声明到当前作用域，而是让这些名称在某个外层作用域中参与查找。实际结果仍是该命名空间的大量名称都成为未限定名称查找的候选项。&lt;/p&gt;
+&lt;p&gt;using 指令曾用于让命名空间出现前的旧代码以很小改动继续使用标准库。现代 C++ 中，它节省的输入量通常不足以抵消风险：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;它让命名空间中的所有名称参与未限定查找，包括完全不会使用的名称。&lt;/li&gt;
+&lt;li&gt;它不会让该命名空间的名称优先于其他候选名称。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;同时引入 &lt;code&gt;A&lt;/code&gt; 与 &lt;code&gt;B&lt;/code&gt; 后，若两者都有 &lt;code&gt;x&lt;/code&gt;，未限定 &lt;code&gt;x&lt;/code&gt; 会产生歧义。可通过删除某条 using 指令、改用 using 声明，或显式写成 &lt;code&gt;A::x&lt;/code&gt;、&lt;code&gt;B::x&lt;/code&gt; 解决。&lt;/p&gt;
+&lt;h3&gt;对未来库版本的脆弱性&lt;/h3&gt;
+&lt;p&gt;using 指令即使当前没有冲突，也会让代码暴露给库将来新增的所有名称。&lt;/p&gt;
+&lt;p&gt;假设程序有全局 &lt;code&gt;print()&lt;/code&gt;，并使用 &lt;code&gt;using namespace Foo;&lt;/code&gt;。库升级后新增 &lt;code&gt;Foo::print()&lt;/code&gt;，原本正常的 &lt;code&gt;print()&lt;/code&gt; 调用可能突然变成歧义并停止编译。&lt;/p&gt;
+&lt;p&gt;更隐蔽的情况是库新增同名重载，而且它比原函数更匹配：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;int get(long)
+{
+    return 1;
+}
+
+int main()
+{
+    using namespace Foo;
+    std::cout &amp;lt;&amp;lt; get(0) &amp;lt;&amp;lt; &apos;\n&apos;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;若 &lt;code&gt;Foo&lt;/code&gt; 后来新增 &lt;code&gt;int get(int)&lt;/code&gt;，整型字面量 &lt;code&gt;0&lt;/code&gt; 与它精确匹配，优于需要 &lt;code&gt;int&lt;/code&gt; 到 &lt;code&gt;long&lt;/code&gt; 转换的全局函数。程序无需修改即可从输出 &lt;code&gt;1&lt;/code&gt; 变为输出 &lt;code&gt;2&lt;/code&gt;。显式限定名称或只引入目标名称的 using 声明不会产生这种扩大候选集的问题。&lt;/p&gt;
+&lt;p&gt;using 指令还隐藏名称来源。&lt;code&gt;NS::foo()&lt;/code&gt; 明确表明它来自库；未限定的 &lt;code&gt;foo()&lt;/code&gt; 无法直接显示它属于库还是程序。个别库头可能把名称放入全局命名空间，因此未限定名称来自程序只是倾向而非保证。&lt;/p&gt;
+&lt;h3&gt;using 语句的作用域与位置&lt;/h3&gt;
+&lt;p&gt;块内的 using 声明或 using 指令仅在该块内生效，遵循普通块作用域规则。命名空间作用域（包括全局命名空间）中的 using 语句从声明点影响文件剩余部分。&lt;/p&gt;
+&lt;p&gt;using 语句不应放在头文件中，也不应放在任何 &lt;code&gt;#include&lt;/code&gt; 指令之前。基本原则是：不要把 using 语句放到可能影响其他文件代码的位置，也不要放到其他文件代码可能反过来改变它的位置。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;头文件全局或命名空间作用域中的 using 语句会传播到每个包含该头文件的源文件。&lt;/li&gt;
+&lt;li&gt;即使 using 语句位于头文件中定义的函数内部也不安全，因为在它之前包含了哪些头文件由包含者决定。&lt;/li&gt;
+&lt;li&gt;using 声明能引入的重载集合取决于声明处此前已经可见的声明，因此具有顺序依赖。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;例如，&lt;code&gt;using Foo::print;&lt;/code&gt; 写在 &lt;code&gt;Foo::print(int)&lt;/code&gt; 的声明可见之后，会同时引入已知重载并为整数实参选择 &lt;code&gt;print(int)&lt;/code&gt;。若把 using 声明移到该头文件之前，当时只可见 &lt;code&gt;print(double)&lt;/code&gt;，随后出现的 &lt;code&gt;print(int)&lt;/code&gt; 不会自动加入这条 using 声明的候选集合，调用将改为 &lt;code&gt;print(double)&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;using 语句真正安全的位置是源文件中所有 &lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/p&gt;
+&lt;h3&gt;不能在同一作用域中取消或替换&lt;/h3&gt;
+&lt;p&gt;using 语句一旦在某个作用域中声明，就无法在该作用域内取消，也无法用另一条 using 语句替换。只能从一开始就利用嵌套块限制其作用域；显式使用 &lt;code&gt;::&lt;/code&gt; 通常能避免这类管理负担。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;优先使用显式命名空间限定符，而不是 using 语句。&lt;/li&gt;
+&lt;li&gt;避免 using 指令；&lt;code&gt;using namespace std::literals;&lt;/code&gt; 为访问 &lt;code&gt;s&lt;/code&gt; 与 &lt;code&gt;sv&lt;/code&gt; 字面量后缀的常见例外。&lt;/li&gt;
+&lt;li&gt;using 声明可放在 &lt;code&gt;.cpp&lt;/code&gt; 源文件中，但必须位于所有 &lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/li&gt;
+&lt;li&gt;不要在头文件中使用 using 语句，尤其不要在头文件的全局命名空间中使用。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;using&lt;/code&gt; 还可定义类型别名；类型别名与本节的 using 语句是不同功能。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;参考来源&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/compound-statements-blocks/&quot;&gt;7.1 — Compound statements (blocks)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/user-defined-namespaces-and-the-scope-resolution-operator/&quot;&gt;7.2 — User-defined namespaces and the scope resolution operator&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/local-variables/&quot;&gt;7.3 — Local variables&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/introduction-to-global-variables/&quot;&gt;7.4 — Introduction to global variables&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/variable-shadowing-name-hiding/&quot;&gt;7.5 — Variable shadowing (name hiding)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/static-local-variables/&quot;&gt;7.11 — Static local variables&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/using-declarations-and-using-directives/&quot;&gt;7.13 — Using declarations and using directives&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
 </content:encoded></item><item><title>LearnCpp 类型转换</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/</guid><description>LearnCpp 类型转换笔记，介绍隐式转换、数值提升、数值转换、窄化转换、通常算术转换及 static_cast。</description><pubDate>Wed, 19 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 类型转换&lt;/h1&gt;
 &lt;h2&gt;10.1 隐式类型转换&lt;/h2&gt;
 &lt;h3&gt;类型转换产生新值&lt;/h3&gt;
@@ -6471,486 +7756,6 @@ auto value = uint{ ch };
 &lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/narrowing-conversions-list-initialization-and-constexpr-initializers/&quot;&gt;10.4 — Narrowing conversions, list initialization, and constexpr initializers&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/arithmetic-conversions/&quot;&gt;10.5 — Arithmetic conversions&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/explicit-type-conversion-casting-and-static-cast/&quot;&gt;10.6 — Explicit type conversion (casting) and static_cast&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
-</content:encoded></item><item><title>LearnCpp 作用域、变量与命名空间</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%8F%98%E9%87%8F%E4%B8%8E%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/</guid><description>LearnCpp 作用域、变量与命名空间笔记，介绍代码块、用户命名空间、局部与全局变量、变量遮蔽、静态局部变量以及 using 语句。</description><pubDate>Wed, 19 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 作用域、变量与命名空间&lt;/h1&gt;
-&lt;h2&gt;7.1 复合语句（代码块）&lt;/h2&gt;
-&lt;p&gt;&lt;strong&gt;复合语句&lt;/strong&gt;（compound statement）也称为&lt;strong&gt;代码块&lt;/strong&gt;（block）或&lt;strong&gt;块语句&lt;/strong&gt;（block statement），由零条或多条语句组成，但编译器把整个代码块当作一条语句处理。&lt;/p&gt;
-&lt;p&gt;代码块以 &lt;code&gt;{&lt;/code&gt; 开始，以 &lt;code&gt;}&lt;/code&gt; 结束。凡是语法要求一条语句的地方，都可以放置一个代码块。代码块的右花括号后不需要分号。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int add(int x, int y)
-{ // 代码块开始
-    return x + y;
-} // 代码块结束，无分号
-
-int main()
-{
-    int value{}; // 这里的花括号用于初始化，不是代码块
-    add(3, 4);
-
-    return 0;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;函数体本身就是代码块。用于列表初始化的花括号并不构成代码块。&lt;/p&gt;
-&lt;h3&gt;嵌套代码块&lt;/h3&gt;
-&lt;p&gt;函数不能定义在另一个函数内部，但代码块可以嵌套在其他代码块中。包含其他代码块的块称为&lt;strong&gt;外层代码块&lt;/strong&gt;，被包含的块称为&lt;strong&gt;内层代码块&lt;/strong&gt;或&lt;strong&gt;嵌套代码块&lt;/strong&gt;。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{ // 外层代码块
-    int value{};
-
-    { // 内层代码块
-        value = 7;
-    }
-
-    return 0;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;代码块的常见用途是让 &lt;code&gt;if&lt;/code&gt; 或 &lt;code&gt;else&lt;/code&gt; 条件控制多条语句。&lt;code&gt;if&lt;/code&gt; 默认只控制紧随其后的一条语句；以代码块替代该语句后，块内所有语句会作为一个整体执行。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;if (value &amp;gt;= 0)
-{
-    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &quot; is non-negative\n&quot;;
-    std::cout &amp;lt;&amp;lt; &quot;Double: &quot; &amp;lt;&amp;lt; value * 2 &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-else
-{
-    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &quot; is negative\n&quot;;
-    std::cout &amp;lt;&amp;lt; &quot;Absolute value: &quot; &amp;lt;&amp;lt; -value &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;嵌套层级&lt;/h3&gt;
-&lt;p&gt;函数的&lt;strong&gt;嵌套层级&lt;/strong&gt;或&lt;strong&gt;嵌套深度&lt;/strong&gt;，是执行到函数中某一点时最多能同时位于多少层代码块之内，函数最外层代码块也计入。嵌套层级不是代码块总数：两个并列的三级代码块仍只产生三级深度。&lt;/p&gt;
-&lt;p&gt;C++ 标准建议编译器至少支持 256 层嵌套，但并非所有实现都达到这一数量。可编译不等于易读；过深嵌套会使控制关系难以追踪。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;函数的嵌套层级尽量不超过 3。需要更深嵌套时，通常应把最深处的代码提取为独立函数。&lt;/p&gt;
-&lt;h2&gt;7.2 用户定义命名空间与作用域解析运算符&lt;/h2&gt;
-&lt;p&gt;当两个相同标识符被引入同一作用域，而编译器无法判断应使用哪一个时，就会发生&lt;strong&gt;命名冲突&lt;/strong&gt;（naming collision）。冲突可能由编译器报告，也可能在多个翻译单元链接时由链接器报告。&lt;/p&gt;
-&lt;p&gt;同一作用域中的每个名称都可能与其他名称冲突。因此，标识符数量线性增加时，潜在冲突组合会大幅增加。这也是应把标识符定义在最小可用作用域内的重要原因。&lt;/p&gt;
-&lt;p&gt;例如，两个源文件都在全局作用域定义 &lt;code&gt;doSomething(int, int)&lt;/code&gt;，即使程序从未调用该函数，链接器仍会在处理重复定义时报告错误。直接改名能够消除冲突，却需要同步修改所有调用点。命名空间可以让名称保持不变，同时把它们放入不同作用域。&lt;/p&gt;
-&lt;h3&gt;定义命名空间&lt;/h3&gt;
-&lt;p&gt;程序定义的命名空间使用 &lt;code&gt;namespace&lt;/code&gt; 关键字：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Foo
-{
-    int doSomething(int x, int y)
-    {
-        return x + y;
-    }
-}
-
-namespace Goo
-{
-    int doSomething(int x, int y)
-    {
-        return x - y;
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;命名空间只能定义在全局作用域或另一个命名空间内，不能定义在函数内部。命名空间内容通常缩进一级；右花括号后的分号是可选的。&lt;/p&gt;
-&lt;p&gt;历史上，命名空间名通常使用小写，许多风格指南仍采用这种约定。LearnCpp 推荐程序定义的命名空间以大写字母开头，理由包括：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;与程序定义类型的命名约定保持一致；&lt;/li&gt;
-&lt;li&gt;降低与系统或库提供的小写名称冲突的概率；&lt;/li&gt;
-&lt;li&gt;C++20 标准文本与 C++ Core Guidelines 采用这种风格。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;大写与小写两种风格都有效，项目内保持一致更重要。&lt;/p&gt;
-&lt;h3&gt;作用域解析运算符&lt;/h3&gt;
-&lt;p&gt;把函数移入 &lt;code&gt;Foo&lt;/code&gt; 和 &lt;code&gt;Goo&lt;/code&gt; 后，原先位于全局作用域的前置声明不再与它们匹配。编译器可能接受该全局声明，但链接器找不到对应的全局定义。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;作用域解析运算符&lt;/strong&gt; &lt;code&gt;::&lt;/code&gt; 用于明确指定标识符所在的作用域。左操作数是要查找的作用域，右操作数是该作用域内的标识符。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;std::cout &amp;lt;&amp;lt; Foo::doSomething(4, 3) &amp;lt;&amp;lt; &apos;\n&apos;; // 7
-std::cout &amp;lt;&amp;lt; Goo::doSomething(4, 3) &amp;lt;&amp;lt; &apos;\n&apos;; // 1
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;显式限定名称能够消除两个同名函数之间的歧义。&lt;code&gt;::name&lt;/code&gt; 没有左侧命名空间名时，表示从全局命名空间查找 &lt;code&gt;name&lt;/code&gt;：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;void print()
-{
-    std::cout &amp;lt;&amp;lt; &quot;global\n&quot;;
-}
-
-namespace Foo
-{
-    void print()
-    {
-        std::cout &amp;lt;&amp;lt; &quot;Foo\n&quot;;
-    }
-
-    void callBoth()
-    {
-        print();   // Foo::print()
-        ::print(); // 全局命名空间中的 print()
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;在命名空间内部使用未限定名称时，编译器先查找当前命名空间，再依次查找各层外部命名空间，最后查找全局命名空间。&lt;code&gt;::&lt;/code&gt; 可以跳过这套逐层查找，直接要求使用全局名称。&lt;/p&gt;
-&lt;h3&gt;声明、定义与多个命名空间块&lt;/h3&gt;
-&lt;p&gt;命名空间中标识符的前置声明和定义必须位于同一命名空间。头文件中的声明、源文件中的定义以及调用点应保持一致：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;// add.h
-namespace BasicMath
-{
-    int add(int x, int y);
-}
-
-// add.cpp
-#include &quot;add.h&quot;
-
-namespace BasicMath
-{
-    int add(int x, int y)
-    {
-        return x + y;
-    }
-}
-
-// main.cpp
-#include &quot;add.h&quot;
-
-int result{ BasicMath::add(4, 3) };
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;若声明留在全局命名空间，编译器看不到 &lt;code&gt;BasicMath::add&lt;/code&gt; 的声明；若定义留在全局命名空间，链接器找不到 &lt;code&gt;BasicMath::add&lt;/code&gt; 的定义。&lt;/p&gt;
-&lt;p&gt;同一命名空间可以在同一文件的多个位置或不同文件中反复打开。所有同名命名空间块的声明都属于同一命名空间。标准库头文件正是通过多个 &lt;code&gt;namespace std&lt;/code&gt; 块共同组成 &lt;code&gt;std&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;警告&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;不要向 &lt;code&gt;std&lt;/code&gt; 命名空间添加自定义功能。除标准明确允许的少数情况外，这通常会导致未定义行为。&lt;/p&gt;
-&lt;h3&gt;嵌套命名空间&lt;/h3&gt;
-&lt;p&gt;命名空间可以嵌套：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Foo
-{
-    namespace Goo
-    {
-        int add(int x, int y)
-        {
-            return x + y;
-        }
-    }
-}
-
-int sum{ Foo::Goo::add(1, 2) };
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;C++17 可以使用等价的紧凑语法：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Foo::Goo
-{
-    int add(int x, int y)
-    {
-        return x + y;
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;之后仍可单独重新打开 &lt;code&gt;namespace Foo&lt;/code&gt;，向 &lt;code&gt;Foo&lt;/code&gt; 而不是 &lt;code&gt;Foo::Goo&lt;/code&gt; 添加声明。选择传统嵌套写法还是 C++17 紧凑写法属于风格问题。&lt;/p&gt;
-&lt;h3&gt;命名空间别名&lt;/h3&gt;
-&lt;p&gt;长命名空间链可以通过别名临时缩短：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Active = Foo::Goo;
-
-int result{ Active::add(1, 2) };
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;命名空间别名遵循其声明位置的作用域规则。例如，函数块内声明的 &lt;code&gt;Active&lt;/code&gt; 会在该块结束时失效。别名还提供一层间接性：实现迁移到 &lt;code&gt;V2&lt;/code&gt; 后，只需把别名改为 &lt;code&gt;namespace Active = V2;&lt;/code&gt;，调用点仍可保持 &lt;code&gt;Active::add()&lt;/code&gt;。&lt;/p&gt;
-&lt;h3&gt;命名空间的使用尺度&lt;/h3&gt;
-&lt;p&gt;命名空间的首要目的不是建立信息层次，而是防止命名冲突。标准库主体位于单一顶层命名空间 &lt;code&gt;std&lt;/code&gt;；名称较多的新组件也会采用嵌套命名空间，例如 &lt;code&gt;std::ranges&lt;/code&gt;。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;小型、仅供个人使用的程序通常不必放入自定义命名空间。&lt;/li&gt;
-&lt;li&gt;引入大量第三方库的较大项目可用命名空间降低冲突风险。&lt;/li&gt;
-&lt;li&gt;会分发给其他项目使用的代码应放入命名空间；一个独特的顶层命名空间通常已经足够，也便于编辑器自动补全展示库的公开名称。&lt;/li&gt;
-&lt;li&gt;多团队项目常采用“项目或库::模块”“组织::项目或库”，或“组织::项目或库::模块”的两至三级结构。&lt;/li&gt;
-&lt;li&gt;模块级命名空间可区分可复用代码与应用专用代码；目录结构也能承担一部分组织职责。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;命名空间一般不应嵌套超过 3 层。&lt;/p&gt;
-&lt;h2&gt;7.3 局部变量&lt;/h2&gt;
-&lt;p&gt;定义在函数内部的变量，包括函数形参，称为&lt;strong&gt;局部变量&lt;/strong&gt;。C++ 并不存在一个单独属性来判定“局部”；局部变量的行为由作用域、存储期和链接属性共同构成。&lt;/p&gt;
-&lt;h3&gt;块作用域&lt;/h3&gt;
-&lt;p&gt;标识符的&lt;strong&gt;作用域&lt;/strong&gt;决定源代码中哪些位置可以访问它。能够访问时称为“在作用域内”，不能访问时称为“超出作用域”。作用域是编译期属性；访问超出作用域的标识符会产生编译错误。&lt;/p&gt;
-&lt;p&gt;局部变量具有&lt;strong&gt;块作用域&lt;/strong&gt;：从定义点开始进入作用域，到所在代码块末尾离开作用域。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    int i{ 5 };      // i 从这里进入作用域
-    double d{ 4.0 }; // d 从这里进入作用域
-
-    return 0;
-} // d 和 i 在这里离开作用域
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;普通函数的形参虽然写在函数体之前，但通常可以把它们视为处于函数体代码块的作用域中。&lt;/p&gt;
-&lt;p&gt;同一作用域中的变量名必须唯一。形参与函数体顶层局部变量属于同一作用域，因此不能重名：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;void someFunction(int x)
-{
-    int x{}; // 错误：与形参 x 冲突
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;自动存储期与生命周期&lt;/h3&gt;
-&lt;p&gt;变量的&lt;strong&gt;存储期&lt;/strong&gt;（storage duration）规定变量何时以及如何创建和销毁；多数情况下，存储期直接决定变量的&lt;strong&gt;生命周期&lt;/strong&gt;，即对象从实际创建到实际销毁的时间。&lt;/p&gt;
-&lt;p&gt;局部变量默认具有&lt;strong&gt;自动存储期&lt;/strong&gt;：执行到定义处时创建，在所在代码块结束时销毁。因此局部变量也称为&lt;strong&gt;自动变量&lt;/strong&gt;。&lt;/p&gt;
-&lt;p&gt;作用域与生命周期描述不同维度：作用域是名称能否在某段源代码中被使用的编译期属性；生命周期是对象在运行时是否存在。&lt;/p&gt;
-&lt;h3&gt;嵌套块中的局部变量&lt;/h3&gt;
-&lt;p&gt;内层变量只能从其定义点使用到内层块末尾；离开内层块后，它既超出作用域，也被销毁。外层块的作用域包含其嵌套块，因此外层变量在内层块中仍然可见。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    int x{ 5 };
-
-    {
-        int y{ 7 };
-        std::cout &amp;lt;&amp;lt; x + y &amp;lt;&amp;lt; &apos;\n&apos;; // x 与 y 都在作用域内
-    } // y 离开作用域并被销毁
-
-    // y 在这里不可访问
-    return 0;
-} // x 离开作用域并被销毁
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;无链接&lt;/h3&gt;
-&lt;p&gt;标识符的&lt;strong&gt;链接属性&lt;/strong&gt;决定不同作用域中的同名声明是否指向同一对象或函数。局部变量没有链接属性（no linkage）；每个声明都表示一个独立对象。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    int x{ 2 };
-
-    {
-        int x{ 3 }; // 与外层 x 是不同对象
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;作用域回答“单个声明在哪里可见”，链接属性回答“多个声明是否指向同一实体”，二者不能混为一谈。&lt;/p&gt;
-&lt;h3&gt;使用最小的现有作用域&lt;/h3&gt;
-&lt;p&gt;变量应定义在能够满足使用需求的最小现有作用域内。较小的作用域减少同时活跃的变量数量，也让变量可能被使用的位置更容易辨认。&lt;/p&gt;
-&lt;p&gt;如果变量只在嵌套块中使用，就在该块中定义。如果变量离开内层块后仍要使用，则必须在外层块中定义；这种需求可能导致变量早于首次使用声明。&lt;/p&gt;
-&lt;p&gt;不应仅为缩短变量作用域而额外创建代码块，因为这会让整个函数变长并增加结构复杂度。若一段代码确实值得形成独立作用域，通常更适合提取为函数。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;在最小的现有作用域内定义变量。不要创建唯一目的只是限制变量作用域的新代码块。&lt;/p&gt;
-&lt;h2&gt;7.4 全局变量简介&lt;/h2&gt;
-&lt;p&gt;定义在函数外部的变量称为&lt;strong&gt;全局变量&lt;/strong&gt;。按惯例，全局变量放在文件顶部、&lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;#include &amp;lt;iostream&amp;gt;
-
-int g_x{}; // 全局变量
-
-void setValue()
-{
-    g_x = 3;
-}
-
-int main()
-{
-    setValue();
-    std::cout &amp;lt;&amp;lt; g_x &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;全局命名空间作用域&lt;/h3&gt;
-&lt;p&gt;在全局命名空间中声明的标识符具有&lt;strong&gt;全局命名空间作用域&lt;/strong&gt;，常简称为全局作用域，也会被非正式地称为文件作用域。它从声明点持续到所在文件末尾。&lt;/p&gt;
-&lt;p&gt;全局变量也可以定义在用户命名空间中：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;namespace Foo
-{
-    int x{};
-}
-
-void setValue()
-{
-    Foo::x = 3;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;code&gt;x&lt;/code&gt; 的名称受 &lt;code&gt;Foo&lt;/code&gt; 限定，但仍可通过 &lt;code&gt;Foo::x&lt;/code&gt; 在文件各处访问，所以它仍是全局变量。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;全局变量优先定义在用户命名空间中，而不是直接放在全局命名空间。&lt;/p&gt;
-&lt;h3&gt;静态存储期&lt;/h3&gt;
-&lt;p&gt;全局变量具有&lt;strong&gt;静态存储期&lt;/strong&gt;：在程序启动时、&lt;code&gt;main()&lt;/code&gt; 执行前创建，在程序结束时销毁。具有静态存储期的变量有时也称为静态变量；这里的“静态”描述存储期，不要求变量写出 &lt;code&gt;static&lt;/code&gt; 关键字。&lt;/p&gt;
-&lt;h3&gt;命名全局变量&lt;/h3&gt;
-&lt;p&gt;一些项目使用 &lt;code&gt;g&lt;/code&gt; 或 &lt;code&gt;g_&lt;/code&gt; 前缀标记全局变量。该前缀可以：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;降低与全局命名空间中其他标识符冲突的概率；&lt;/li&gt;
-&lt;li&gt;减少无意遮蔽全局变量的可能；&lt;/li&gt;
-&lt;li&gt;表明该变量会在当前函数结束后继续存在，对它的修改也会保留。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;命名空间中的全局变量常省略 &lt;code&gt;g_&lt;/code&gt;，因为命名空间限定已经能降低冲突并表明其非局部来源；保留前缀仍可强调其静态存储期。&lt;/p&gt;
-&lt;p&gt;用名称前缀编码类型的匈牙利命名法在现代 C++ 中通常价值有限；用 &lt;code&gt;g_&lt;/code&gt;、&lt;code&gt;s_&lt;/code&gt;、&lt;code&gt;m_&lt;/code&gt; 表达作用域或存储期则仍能提供有用信息。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;尤其对全局命名空间中的变量，可考虑使用 &lt;code&gt;g&lt;/code&gt; 或 &lt;code&gt;g_&lt;/code&gt; 前缀，将其与局部变量和函数形参区分。&lt;/p&gt;
-&lt;h3&gt;初始化&lt;/h3&gt;
-&lt;p&gt;具有静态存储期的变量在没有显式初始化器时会默认零初始化，这与默认未初始化的普通局部变量不同：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int g_x;       // 默认零初始化
-int g_y{};     // 值初始化，结果为零
-int g_z{ 1 };  // 初始化为 1
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;非常量全局变量可以省略初始化器。&lt;code&gt;const&lt;/code&gt; 和 &lt;code&gt;constexpr&lt;/code&gt; 全局变量必须初始化：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;const int g_a;          // 错误
-constexpr int g_b;      // 错误
-const int g_c{ 1 };     // 正确
-constexpr int g_d{ 2 }; // 正确
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;strong&gt;警告&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;通常应完全避免使用非常量全局变量。它们让任何可访问位置都能改变共享状态，使函数行为产生难以追踪的隐式依赖。&lt;/p&gt;
-&lt;h2&gt;7.5 变量遮蔽（名称隐藏）&lt;/h2&gt;
-&lt;p&gt;每个代码块都定义自己的作用域区域。内层块声明与外层变量同名的变量后，在两者作用域重叠的区域中，内层变量会&lt;strong&gt;隐藏&lt;/strong&gt;外层变量。这称为&lt;strong&gt;名称隐藏&lt;/strong&gt;（name hiding）或&lt;strong&gt;变量遮蔽&lt;/strong&gt;（shadowing）。&lt;/p&gt;
-&lt;h3&gt;局部变量之间的遮蔽&lt;/h3&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    int apples{ 5 };
-
-    {
-        std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 外层 apples：5
-
-        int apples{ 0 }; // 从这里开始隐藏外层 apples
-        apples = 10;
-
-        std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 内层 apples：10
-    } // 内层 apples 被销毁
-
-    std::cout &amp;lt;&amp;lt; apples &amp;lt;&amp;lt; &apos;\n&apos;; // 外层 apples：5
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;输出为：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;5
-10
-5
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;遮蔽不会修改或销毁外层对象。内层声明出现前，未限定名称仍指向外层变量；从内层声明到代码块结束，名称指向内层变量。内层块结束后，外层名称重新可见，其值保持不变。&lt;/p&gt;
-&lt;p&gt;如果没有声明内层 &lt;code&gt;apples&lt;/code&gt;，内层块中的读取和赋值都会作用于外层变量，输出会是 &lt;code&gt;5&lt;/code&gt;、&lt;code&gt;10&lt;/code&gt;、&lt;code&gt;10&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;在内层块中，没有语法可以直接访问被同名局部变量遮蔽的外层局部变量。&lt;/p&gt;
-&lt;h3&gt;局部变量遮蔽全局变量&lt;/h3&gt;
-&lt;p&gt;局部变量也可以遮蔽同名全局变量。局部变量在作用域内时，未限定名称指向局部对象：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int value{ 5 };
-
-int main()
-{
-    int value{ 7 };
-
-    ++value;     // 局部 value 变为 8
-    --(::value); // 全局 value 变为 4
-
-    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &apos;\n&apos;;   // 8
-    std::cout &amp;lt;&amp;lt; ::value &amp;lt;&amp;lt; &apos;\n&apos;; // 4
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;全局变量属于全局命名空间，所以即使被局部变量遮蔽，仍可通过无前缀作用域解析 &lt;code&gt;::value&lt;/code&gt; 明确访问。这个办法不适用于被遮蔽的外层局部变量。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;避免变量遮蔽。遮蔽容易让代码读取或修改错误的对象。为全局变量统一使用 &lt;code&gt;g_&lt;/code&gt; 前缀可以简单地避免局部变量与全局变量同名。&lt;/p&gt;
-&lt;p&gt;GCC 和 Clang 可用 &lt;code&gt;-Wshadow&lt;/code&gt; 启用遮蔽警告，并提供 &lt;code&gt;-Wshadow=global&lt;/code&gt;、&lt;code&gt;-Wshadow=local&lt;/code&gt;、&lt;code&gt;-Wshadow=compatible-local&lt;/code&gt; 等变体。Visual Studio 默认启用相应警告。&lt;/p&gt;
-&lt;h2&gt;7.11 静态局部变量&lt;/h2&gt;
-&lt;p&gt;&lt;code&gt;static&lt;/code&gt; 在不同上下文中含义不同：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;全局变量本身具有静态存储期；&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;static&lt;/code&gt; 修饰全局标识符时赋予其内部链接；&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;static&lt;/code&gt; 修饰局部变量时，把它的存储期从自动存储期改为静态存储期。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;本节的 &lt;code&gt;static&lt;/code&gt; 指第三种用法。&lt;/p&gt;
-&lt;h3&gt;跨函数调用保留值&lt;/h3&gt;
-&lt;p&gt;普通局部变量每次执行到定义处都会创建，并在离开代码块时销毁：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;void incrementAndPrint()
-{
-    int value{ 1 };
-    ++value;
-    std::cout &amp;lt;&amp;lt; value &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;调用三次会输出三次 &lt;code&gt;2&lt;/code&gt;。改为静态局部变量后：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;void incrementAndPrint()
-{
-    static int s_value{ 1 };
-    ++s_value;
-    std::cout &amp;lt;&amp;lt; s_value &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;初始化只发生一次。函数结束时，&lt;code&gt;s_value&lt;/code&gt; 离开作用域而暂时不可访问，但对象不会被销毁。三次调用依次输出 &lt;code&gt;2&lt;/code&gt;、&lt;code&gt;3&lt;/code&gt;、&lt;code&gt;4&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;静态局部变量兼具两类属性：名称具有局部变量的块作用域，对象却具有延续到程序结束的生命周期。它适合需要局部状态在多次函数调用之间保留的场景。&lt;/p&gt;
-&lt;h3&gt;初始化规则&lt;/h3&gt;
-&lt;p&gt;可零初始化或具有常量表达式初始化器的静态局部变量可以在程序启动时初始化。&lt;/p&gt;
-&lt;p&gt;没有初始化器或具有非常量表达式初始化器的静态局部变量会在程序启动时先零初始化。具有非常量表达式初始化器的变量在程序第一次执行到定义处时完成初始化；后续调用跳过该定义，不会再次初始化。未显式初始化的静态局部变量最终保持默认的零值。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;显式初始化静态局部变量。常用 &lt;code&gt;s&lt;/code&gt; 或 &lt;code&gt;s_&lt;/code&gt; 前缀表明局部变量具有静态存储期。&lt;/p&gt;
-&lt;h3&gt;唯一 ID 生成器&lt;/h3&gt;
-&lt;pre&gt;&lt;code&gt;int generateID()
-{
-    static int s_itemID{ 0 };
-    return s_itemID++;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;第一次调用返回 &lt;code&gt;0&lt;/code&gt;，第二次返回 &lt;code&gt;1&lt;/code&gt;，之后每次递增。状态只能通过该函数改变，其他函数无法直接篡改 &lt;code&gt;s_itemID&lt;/code&gt;。这种写法获得了全局变量“持续存在”的特征，同时把可见性限制在函数块内。&lt;/p&gt;
-&lt;p&gt;该方案只有在整个程序确实只需要一个永不重置的 ID 序列时才合适。&lt;/p&gt;
-&lt;h3&gt;静态局部常量&lt;/h3&gt;
-&lt;p&gt;静态局部变量可以声明为 &lt;code&gt;const&lt;/code&gt; 或 &lt;code&gt;constexpr&lt;/code&gt;。如果函数需要一个创建或初始化成本较高的常量对象，普通局部变量会在每次调用时重复构造；静态局部常量只初始化一次，之后所有调用都复用该对象。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;关键点&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;静态局部变量最适合用来避免每次函数调用都重复初始化昂贵的局部对象。静态局部常量通常可以安全使用。&lt;/p&gt;
-&lt;h3&gt;不要用静态局部状态改变函数流程&lt;/h3&gt;
-&lt;p&gt;非 &lt;code&gt;const&lt;/code&gt; 静态局部变量会让函数调用隐式依赖先前调用。例如，用 &lt;code&gt;static bool s_isFirstCall&lt;/code&gt; 让第一次调用显示一种提示、以后显示另一种提示，会造成相同参数的两次调用表现不同。调用者仅阅读调用点无法发现这种内部状态。&lt;/p&gt;
-&lt;p&gt;这种函数难以复用：内部状态不能由调用者重置；当另一段流程希望重新执行“第一次调用”时，旧状态仍然存在。更好的做法是把差异作为参数传入，让调用者显式控制行为。若需要传入提示文本，&lt;code&gt;std::string_view&lt;/code&gt; 参数通常比布尔标记更通用。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;const&lt;/code&gt; 静态局部变量通常可以使用。&lt;/li&gt;
-&lt;li&gt;非 &lt;code&gt;const&lt;/code&gt; 静态局部变量通常应避免。&lt;/li&gt;
-&lt;li&gt;确实使用非 &lt;code&gt;const&lt;/code&gt; 静态局部变量时，应确认该状态在整个程序中只有唯一实例、永远不需要重置，并且不用于改变控制流。&lt;/li&gt;
-&lt;li&gt;需要多个各自保留状态的实例时，应使用函数对象等可实例化方案，而不是单个静态局部变量。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;7.13 using 声明与 using 指令&lt;/h2&gt;
-&lt;p&gt;标准库的名称最初位于全局命名空间，容易与程序名称冲突。命名空间在 1995 年标准化后，标准库功能迁移到 &lt;code&gt;std&lt;/code&gt;。为兼容大量使用未限定标准库名称的旧代码，并减少反复书写限定符，C++ 提供了 using 语句。&lt;/p&gt;
-&lt;h3&gt;限定名称与未限定名称&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;限定名称&lt;/strong&gt;带有关联作用域：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;std::cout // 由命名空间 std 限定
-::foo     // 由全局命名空间限定
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;名称还可以由类名通过 &lt;code&gt;::&lt;/code&gt; 限定，或由类对象、对象指针通过 &lt;code&gt;.&lt;/code&gt;、&lt;code&gt;-&amp;gt;&lt;/code&gt; 限定：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;C::s_member;
-obj.x;
-ptr-&amp;gt;y;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;strong&gt;未限定名称&lt;/strong&gt;不带作用域限定符，例如 &lt;code&gt;cout&lt;/code&gt; 和 &lt;code&gt;x&lt;/code&gt;。&lt;/p&gt;
-&lt;h3&gt;using 声明&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;using 声明&lt;/strong&gt;让一个限定名称可以通过未限定名称使用：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    using std::cout;
-
-    cout &amp;lt;&amp;lt; &quot;Hello world!\n&quot;;
-} // using 声明在此失效
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;code&gt;using std::cout;&lt;/code&gt; 表明当前作用域中的未限定 &lt;code&gt;cout&lt;/code&gt; 应解析为 &lt;code&gt;std::cout&lt;/code&gt;。若 &lt;code&gt;std::cout&lt;/code&gt; 与另一个可见的 &lt;code&gt;cout&lt;/code&gt; 发生名称冲突，该 using 声明指定的 &lt;code&gt;std::cout&lt;/code&gt; 优先。&lt;/p&gt;
-&lt;p&gt;每个名称需要单独的 using 声明，例如 &lt;code&gt;std::cout&lt;/code&gt; 与 &lt;code&gt;std::cin&lt;/code&gt; 各写一条。using 声明从声明点生效，持续到当前作用域末尾。它不如显式 &lt;code&gt;std::&lt;/code&gt; 清晰，但放在源文件中所有 &lt;code&gt;#include&lt;/code&gt; 指令之后时通常安全且可接受。&lt;/p&gt;
-&lt;h3&gt;using 指令&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;using 指令&lt;/strong&gt;使指定命名空间中的所有标识符都可以在作用域内以未限定名称参与查找：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int main()
-{
-    using namespace std;
-
-    cout &amp;lt;&amp;lt; &quot;Hello world!\n&quot;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;从技术上说，using 指令并非真正把新名称声明到当前作用域，而是让这些名称在某个外层作用域中参与查找。实际结果仍是该命名空间的大量名称都成为未限定名称查找的候选项。&lt;/p&gt;
-&lt;p&gt;using 指令曾用于让命名空间出现前的旧代码以很小改动继续使用标准库。现代 C++ 中，它节省的输入量通常不足以抵消风险：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;它让命名空间中的所有名称参与未限定查找，包括完全不会使用的名称。&lt;/li&gt;
-&lt;li&gt;它不会让该命名空间的名称优先于其他候选名称。&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;同时引入 &lt;code&gt;A&lt;/code&gt; 与 &lt;code&gt;B&lt;/code&gt; 后，若两者都有 &lt;code&gt;x&lt;/code&gt;，未限定 &lt;code&gt;x&lt;/code&gt; 会产生歧义。可通过删除某条 using 指令、改用 using 声明，或显式写成 &lt;code&gt;A::x&lt;/code&gt;、&lt;code&gt;B::x&lt;/code&gt; 解决。&lt;/p&gt;
-&lt;h3&gt;对未来库版本的脆弱性&lt;/h3&gt;
-&lt;p&gt;using 指令即使当前没有冲突，也会让代码暴露给库将来新增的所有名称。&lt;/p&gt;
-&lt;p&gt;假设程序有全局 &lt;code&gt;print()&lt;/code&gt;，并使用 &lt;code&gt;using namespace Foo;&lt;/code&gt;。库升级后新增 &lt;code&gt;Foo::print()&lt;/code&gt;，原本正常的 &lt;code&gt;print()&lt;/code&gt; 调用可能突然变成歧义并停止编译。&lt;/p&gt;
-&lt;p&gt;更隐蔽的情况是库新增同名重载，而且它比原函数更匹配：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;int get(long)
-{
-    return 1;
-}
-
-int main()
-{
-    using namespace Foo;
-    std::cout &amp;lt;&amp;lt; get(0) &amp;lt;&amp;lt; &apos;\n&apos;;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;若 &lt;code&gt;Foo&lt;/code&gt; 后来新增 &lt;code&gt;int get(int)&lt;/code&gt;，整型字面量 &lt;code&gt;0&lt;/code&gt; 与它精确匹配，优于需要 &lt;code&gt;int&lt;/code&gt; 到 &lt;code&gt;long&lt;/code&gt; 转换的全局函数。程序无需修改即可从输出 &lt;code&gt;1&lt;/code&gt; 变为输出 &lt;code&gt;2&lt;/code&gt;。显式限定名称或只引入目标名称的 using 声明不会产生这种扩大候选集的问题。&lt;/p&gt;
-&lt;p&gt;using 指令还隐藏名称来源。&lt;code&gt;NS::foo()&lt;/code&gt; 明确表明它来自库；未限定的 &lt;code&gt;foo()&lt;/code&gt; 无法直接显示它属于库还是程序。个别库头可能把名称放入全局命名空间，因此未限定名称来自程序只是倾向而非保证。&lt;/p&gt;
-&lt;h3&gt;using 语句的作用域与位置&lt;/h3&gt;
-&lt;p&gt;块内的 using 声明或 using 指令仅在该块内生效，遵循普通块作用域规则。命名空间作用域（包括全局命名空间）中的 using 语句从声明点影响文件剩余部分。&lt;/p&gt;
-&lt;p&gt;using 语句不应放在头文件中，也不应放在任何 &lt;code&gt;#include&lt;/code&gt; 指令之前。基本原则是：不要把 using 语句放到可能影响其他文件代码的位置，也不要放到其他文件代码可能反过来改变它的位置。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;头文件全局或命名空间作用域中的 using 语句会传播到每个包含该头文件的源文件。&lt;/li&gt;
-&lt;li&gt;即使 using 语句位于头文件中定义的函数内部也不安全，因为在它之前包含了哪些头文件由包含者决定。&lt;/li&gt;
-&lt;li&gt;using 声明能引入的重载集合取决于声明处此前已经可见的声明，因此具有顺序依赖。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;例如，&lt;code&gt;using Foo::print;&lt;/code&gt; 写在 &lt;code&gt;Foo::print(int)&lt;/code&gt; 的声明可见之后，会同时引入已知重载并为整数实参选择 &lt;code&gt;print(int)&lt;/code&gt;。若把 using 声明移到该头文件之前，当时只可见 &lt;code&gt;print(double)&lt;/code&gt;，随后出现的 &lt;code&gt;print(int)&lt;/code&gt; 不会自动加入这条 using 声明的候选集合，调用将改为 &lt;code&gt;print(double)&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;using 语句真正安全的位置是源文件中所有 &lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/p&gt;
-&lt;h3&gt;不能在同一作用域中取消或替换&lt;/h3&gt;
-&lt;p&gt;using 语句一旦在某个作用域中声明，就无法在该作用域内取消，也无法用另一条 using 语句替换。只能从一开始就利用嵌套块限制其作用域；显式使用 &lt;code&gt;::&lt;/code&gt; 通常能避免这类管理负担。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;最佳实践&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;优先使用显式命名空间限定符，而不是 using 语句。&lt;/li&gt;
-&lt;li&gt;避免 using 指令；&lt;code&gt;using namespace std::literals;&lt;/code&gt; 为访问 &lt;code&gt;s&lt;/code&gt; 与 &lt;code&gt;sv&lt;/code&gt; 字面量后缀的常见例外。&lt;/li&gt;
-&lt;li&gt;using 声明可放在 &lt;code&gt;.cpp&lt;/code&gt; 源文件中，但必须位于所有 &lt;code&gt;#include&lt;/code&gt; 指令之后。&lt;/li&gt;
-&lt;li&gt;不要在头文件中使用 using 语句，尤其不要在头文件的全局命名空间中使用。&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;using&lt;/code&gt; 还可定义类型别名；类型别名与本节的 using 语句是不同功能。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;参考来源&lt;/h2&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/compound-statements-blocks/&quot;&gt;7.1 — Compound statements (blocks)&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/user-defined-namespaces-and-the-scope-resolution-operator/&quot;&gt;7.2 — User-defined namespaces and the scope resolution operator&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/local-variables/&quot;&gt;7.3 — Local variables&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/introduction-to-global-variables/&quot;&gt;7.4 — Introduction to global variables&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/variable-shadowing-name-hiding/&quot;&gt;7.5 — Variable shadowing (name hiding)&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/static-local-variables/&quot;&gt;7.11 — Static local variables&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.learncpp.com/cpp-tutorial/using-declarations-and-using-directives/&quot;&gt;7.13 — Using declarations and using directives&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;
 </content:encoded></item><item><title>LearnCpp 函数重载与函数模板</title><link>https://miku.nikonikoni.blog/posts/learncpp-%E5%87%BD%E6%95%B0%E9%87%8D%E8%BD%BD%E4%B8%8E%E5%87%BD%E6%95%B0%E6%A8%A1%E6%9D%BF/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/learncpp-%E5%87%BD%E6%95%B0%E9%87%8D%E8%BD%BD%E4%B8%8E%E5%87%BD%E6%95%B0%E6%A8%A1%E6%9D%BF/</guid><description>LearnCpp 函数重载与函数模板笔记，介绍重载区分与决议、删除函数、默认实参、函数模板、实例化、实参推导、多类型模板及模板偏序。</description><pubDate>Wed, 19 Aug 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LearnCpp 函数重载与函数模板&lt;/h1&gt;
 &lt;h2&gt;11.1 函数重载简介&lt;/h2&gt;

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 320" role="img" aria-labelledby="title desc">
+  <title id="title">离散随机变量的累积分布函数</title>
+  <desc id="desc">X 在 1、2、3 处的概率为二分之一、三分之一、六分之一。分布函数在这三点分别跳跃至二分之一、六分之五、一，空心点不取，实心点取。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#596873"/>
+    </marker>
+  </defs>
+  <rect width="720" height="320" rx="12" fill="#fff"/>
+  <g fill="none" stroke="#596873" stroke-width="1.5" marker-end="url(#arrow)">
+    <path d="M 40 250 H 640"/>
+    <path d="M 90 265 V 42"/>
+  </g>
+  <g stroke="#c6d0d5" stroke-dasharray="5 5">
+    <path d="M 90 167.5 H 560"/>
+    <path d="M 90 112.5 H 560"/>
+    <path d="M 90 85 H 560"/>
+  </g>
+  <g stroke="#596873" stroke-width="1.5">
+    <path d="M 215 250 V 256 M 340 250 V 256 M 465 250 V 256"/>
+  </g>
+  <g font-family="Georgia, 'Times New Roman', serif" font-size="21" fill="#17354a">
+    <text x="67" y="282">0</text>
+    <text x="215" y="282" text-anchor="middle">1</text>
+    <text x="340" y="282" text-anchor="middle">2</text>
+    <text x="465" y="282" text-anchor="middle">3</text>
+    <text x="74" y="175" text-anchor="end">1/2</text>
+    <text x="74" y="120" text-anchor="end">5/6</text>
+    <text x="74" y="92" text-anchor="end">1</text>
+    <text x="652" y="257" font-style="italic">b</text>
+    <text x="90" y="30" text-anchor="middle" font-style="italic">F<tspan baseline-shift="sub" font-size="14">X</tspan>(b)</text>
+  </g>
+  <path d="M 46.25 250 H 215 M 215 167.5 H 340 M 340 112.5 H 465 M 465 85 H 558.75" fill="none" stroke="#167d9a" stroke-width="4"/>
+  <g stroke="#167d9a" stroke-width="2.5" fill="#fff">
+    <circle cx="215" cy="250" r="5"/>
+    <circle cx="340" cy="167.5" r="5"/>
+    <circle cx="465" cy="112.5" r="5"/>
+  </g>
+  <g fill="#167d9a">
+    <circle cx="215" cy="167.5" r="5"/>
+    <circle cx="340" cy="112.5" r="5"/>
+    <circle cx="465" cy="85" r="5"/>
+  </g>
+</svg>
