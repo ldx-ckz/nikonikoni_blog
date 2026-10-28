@@ -1103,3 +1103,456 @@ f_{\boldsymbol Y}(\boldsymbol y)
   =\frac{f_{\boldsymbol X}(h(\boldsymbol y))}{|J_g(h(\boldsymbol y))|}.
 $$
 
+## 2.6 矩母函数
+
+随机变量 $X$ 的矩母函数记为 $\phi_X$，在期望有限的 $t$ 处定义为
+
+> [!important]
+> **矩母函数 MGF**
+>
+> $$
+> \phi_X(t)=\mathbb E[e^{tX}]
+>     =\begin{cases}
+>       \displaystyle\sum_x e^{tx}p_X(x),                     & X\text{ 为离散型}, \\[8pt]
+>       \displaystyle\int_{-\infty}^{\infty}e^{tx}f_X(x)\,dx, & X\text{ 为连续型}.
+>     \end{cases}
+> $$
+>
+> 总有 $\phi_X(0)=1$。使用矩母函数的求矩与唯一性结论时，通常要求它在包含 0 的某个开区间内有限。
+
+在上述条件下，可以在 0 附近交换求导与期望：
+
+$$
+\phi_X'(t)=\mathbb E[Xe^{tX}],\qquad
+  \phi_X''(t)=\mathbb E[X^2e^{tX}],\qquad
+  \phi_X^{(k)}(0)=\mathbb E[X^k].
+$$
+
+因此
+
+$$
+\mathbb E[X]=\phi_X'(0),\qquad
+  \operatorname{Var}(X)=\phi_X''(0)-(\phi_X'(0))^2.
+$$
+
+**二项分布。**若 $X\sim\operatorname{Bin}(n,p)$，由二项式定理，
+
+$$
+\begin{aligned}
+\phi_X(t)
+   & =\sum_{k=0}^n e^{tk}\binom nk p^k(1-p)^{n-k} \\
+   & =\sum_{k=0}^n\binom nk(pe^t)^k(1-p)^{n-k}
+  =(pe^t+1-p)^n,\qquad t\in\mathbb{R}.
+\end{aligned}
+$$
+
+求和从 $k=0$ 开始，因为二项变量允许零次成功。令 $A(t)=pe^t+1-p$，则
+
+$$
+\begin{aligned}
+\phi_X'(t)  & =nA(t)^{n-1}pe^t,                          \\
+  \phi_X''(t) & =n(n-1)A(t)^{n-2}(pe^t)^2+nA(t)^{n-1}pe^t.
+\end{aligned}
+$$
+
+在 $t=0$ 处，$A(0)=1$，所以
+
+$$
+\mathbb E[X]=np,\qquad
+  \mathbb E[X^2]=n(n-1)p^2+np,
+$$
+
+$$
+\operatorname{Var}(X)=n(n-1)p^2+np-n^2p^2=np(1-p).
+$$
+
+**泊松分布。**若 $X\sim\operatorname{Pois}(\lambda)$，利用指数函数的级数展开，
+
+$$
+\begin{aligned}
+\phi_X(t)
+   & =\sum_{k=0}^{\infty}e^{tk}e^{-\lambda}\frac{\lambda^k}{k!}
+  =e^{-\lambda}\sum_{k=0}^{\infty}\frac{(\lambda e^t)^k}{k!}    \\
+   & =e^{-\lambda}e^{\lambda e^t}
+  =\exp\{\lambda(e^t-1)\},\qquad t\in\mathbb{R}.
+\end{aligned}
+$$
+
+因此
+
+$$
+\begin{aligned}
+\phi_X'(t)  & =\lambda e^t\exp\{\lambda(e^t-1)\},      \\
+  \phi_X''(t) & =\bigl((\lambda e^t)^2+\lambda e^t\bigr)
+  \exp\{\lambda(e^t-1)\}.
+\end{aligned}
+$$
+
+代入 $t=0$，得到
+
+$$
+\mathbb E[X]=\lambda,\qquad
+  \mathbb E[X^2]=\lambda^2+\lambda,\qquad
+  \operatorname{Var}(X)=\lambda.
+$$
+
+泊松分布的均值与方差相等。
+
+**指数分布。**若 $X\sim\operatorname{Exp}(\lambda)$，则
+
+$$
+\begin{aligned}
+\phi_X(t)
+   & =\int_0^{\infty}e^{tx}\lambda e^{-\lambda x}\,dx
+  =\lambda\int_0^{\infty}e^{-(\lambda-t)x}\,dx        \\
+   & =\frac{\lambda}{\lambda-t},\qquad t<\lambda.
+\end{aligned}
+$$
+
+当 $t\ge\lambda$ 时积分发散，故不能把这个分式当作该范围内的矩母函数值。对于 $t<\lambda$，
+
+$$
+\phi_X'(t)=\frac{\lambda}{(\lambda-t)^2},\qquad
+  \phi_X''(t)=\frac{2\lambda}{(\lambda-t)^3}.
+$$
+
+所以
+
+$$
+\mathbb E[X]=\frac1\lambda,\qquad
+  \mathbb E[X^2]=\frac2{\lambda^2},\qquad
+  \operatorname{Var}(X)=\frac1{\lambda^2}.
+$$
+
+**正态分布。**先令 $Z\sim\mathcal N(0,1)$。对指数中的二次式配方，
+
+$$
+\begin{aligned}
+\phi_Z(t)
+   & =\frac1{\sqrt{2\pi}}\int_{-\infty}^{\infty}e^{tz-z^2/2}\,dz \\
+   & =e^{t^2/2}\frac1{\sqrt{2\pi}}
+  \int_{-\infty}^{\infty}e^{-(z-t)^2/2}\,dz
+  =e^{t^2/2}.
+\end{aligned}
+$$
+
+最后的积分除以 $\sqrt{2\pi}$ 后等于 1，因为它是 $\mathcal N(t,1)$ 的密度积分。若 $X\sim\mathcal N(\mu,\sigma^2)$，可写成 $X=\mu+\sigma Z$，于是
+
+> [!important]
+> **正态分布的矩母函数**
+>
+> $$
+> \phi_X(t)=e^{\mu t}\phi_Z(\sigma t)
+>     =\exp\left(\mu t+\frac{\sigma^2t^2}{2}\right),\qquad t\in\mathbb{R}.
+> $$
+
+因此
+
+$$
+\begin{aligned}
+\phi_X'(t)  & =(\mu+\sigma^2t)
+  \exp\left(\mu t+\frac{\sigma^2t^2}{2}\right),         \\
+  \phi_X''(t) & =\bigl((\mu+\sigma^2t)^2+\sigma^2\bigr)
+  \exp\left(\mu t+\frac{\sigma^2t^2}{2}\right).
+\end{aligned}
+$$
+
+由此得到
+
+$$
+\mathbb E[X]=\mu,\qquad
+  \mathbb E[X^2]=\mu^2+\sigma^2,\qquad
+  \operatorname{Var}(X)=\sigma^2.
+$$
+
+**仿射变换。**对一般随机变量 $X$，若 $Y=aX+b$，则在右侧有限时，
+
+$$
+\phi_Y(t)=\mathbb E[e^{t(aX+b)}]
+  =e^{bt}\mathbb E[e^{(at)X}]=e^{bt}\phi_X(at).
+$$
+
+这把变量的平移与缩放，分别转换为矩母函数前的指数因子和自变量缩放。
+
+**唯一性。**若两个随机变量的矩母函数在 0 的某个共同开邻域内有限且相同，那么它们的分布相同。因而可以先求出一个变量的矩母函数，再与已知分布的矩母函数比较，以识别其分布。
+
+**独立随机变量之和。**若 $X,Y$ 独立，且相关矩母函数有限，则
+
+$$
+\phi_{X+Y}(t)=\mathbb E[e^{tX}e^{tY}]
+  =\mathbb E[e^{tX}]\mathbb E[e^{tY}]=\phi_X(t)\phi_Y(t).
+$$
+
+更一般地，若 $X_1,\ldots,X_n$ 相互独立，则
+
+$$
+\phi_{\sum_i a_iX_i}(t)=\prod_{i=1}^n\phi_{X_i}(a_it).
+$$
+
+结合唯一性，可得到常见分布的可加性。例如，对独立变量，
+
+$$
+\begin{aligned}
+X\sim\operatorname{Bin}(n,p),\ Y\sim\operatorname{Bin}(m,p)
+   & \ \Longrightarrow\ X+Y\sim\operatorname{Bin}(n+m,p),                     \\
+  X\sim\operatorname{Pois}(\lambda_1),\ Y\sim\operatorname{Pois}(\lambda_2)
+   & \ \Longrightarrow\ X+Y\sim\operatorname{Pois}(\lambda_1+\lambda_2),      \\
+  X\sim\mathcal N(\mu_1,\sigma_1^2),\ Y\sim\mathcal N(\mu_2,\sigma_2^2)
+   & \ \Longrightarrow\ X+Y\sim\mathcal N(\mu_1+\mu_2,\sigma_1^2+\sigma_2^2).
+\end{aligned}
+$$
+
+这些结论分别来自相应矩母函数相乘后，仍具有同类分布的形式。
+
+**泊松范例。**设 $I_1,\ldots,I_n$ 是相互独立的伯努利变量，成功概率分别为 $p_1,\ldots,p_n$，令 $X=\sum_i I_i$。则
+
+$$
+\phi_X(t)=\prod_{i=1}^n\bigl(1+p_i(e^t-1)\bigr).
+$$
+
+当各 $p_i$ 很小时，对固定 $t$，利用 $1+u\approx e^u$，得到
+
+$$
+\phi_X(t)\approx\prod_{i=1}^n\exp\{p_i(e^t-1)\}
+  =\exp\left\{\left(\sum_{i=1}^n p_i\right)(e^t-1)\right\}.
+$$
+
+右侧是参数 $\lambda=\sum_i p_i$ 的泊松分布的矩母函数，因此 $X$ 可近似为 $\operatorname{Pois}(\lambda)$；成功概率不必完全相同。更严格地，若随 $n\to\infty$ 有 $\max_i p_i\to0$、$\sum_i p_i\to\lambda$，则可得到相应的泊松极限。
+
+**拉普拉斯变换。**对非负随机变量 $X$，定义
+
+$$
+g_X(t)=\mathbb E[e^{-tX}]=\phi_X(-t),\qquad t\ge0.
+$$
+
+因为 $0\le e^{-tX}\le1$，该变换对所有 $t\ge0$ 都有限，取值在 $[0,1]$ 内，即使 $\phi_X(t)$ 在正的 $t$ 处可能发散。非负随机变量的拉普拉斯变换同样唯一确定其分布。
+
+**联合矩母函数。**对随机向量 $\boldsymbol X=(X_1,\ldots,X_m)^{\mathsf T}$，定义
+
+$$
+\phi_{\boldsymbol X}(t_1,\ldots,t_m)
+  =\mathbb E\left[\exp\left(\sum_{i=1}^m t_iX_i\right)\right].
+$$
+
+若它在原点的某个开邻域内有限，就唯一确定联合分布。若各分量相互独立，则联合矩母函数分解为 $\prod_i\phi_{X_i}(t_i)$；反之，在上述存在条件下，若有这种分解，也能由唯一性推出独立。
+
+**多元正态分布。**令 $Z_1,\ldots,Z_r$ 为独立标准正态变量，若
+
+$$
+X_i=\mu_i+\sum_{j=1}^r a_{ij}Z_j,\qquad i=1,\ldots,m,
+$$
+
+则称 $\boldsymbol X$ 为联合正态向量。其均值与协方差为
+
+$$
+\mathbb E[X_i]=\mu_i,\qquad
+  \Sigma_{ik}=\operatorname{Cov}(X_i,X_k)=\sum_{j=1}^r a_{ij}a_{kj}.
+$$
+
+对任意常数向量 $\boldsymbol t$，线性组合 $W=\sum_i t_iX_i$ 为正态变量，其均值、方差分别是
+
+$$
+\mathbb E[W]=\sum_i t_i\mu_i,\qquad
+  \operatorname{Var}(W)=\sum_i\sum_k t_it_k\Sigma_{ik}.
+$$
+
+利用正态变量的矩母函数在 1 处的值，得到
+
+> [!important]
+> **联合正态的矩母函数**
+>
+> $$
+> \phi_{\boldsymbol X}(\boldsymbol t)
+>     =\exp\left(\boldsymbol t^{\mathsf T}\boldsymbol\mu
+>     +\frac12\boldsymbol t^{\mathsf T}\Sigma\boldsymbol t\right).
+> $$
+>
+> 因此，联合正态分布完全由均值向量与协方差矩阵确定。该结论也适用于协方差矩阵奇异的退化情形。
+
+**联合正态下的独立性。**若 $U,V$ 联合正态，则
+
+$$
+\phi_{U,V}(s,t)=\exp\left(s\mu_U+t\mu_V
+  +\frac12\bigl(s^2\sigma_U^2+2st\operatorname{Cov}(U,V)+t^2\sigma_V^2\bigr)\right).
+$$
+
+若 $\operatorname{Cov}(U,V)=0$，指数中的交叉项消失，故
+
+$$
+\phi_{U,V}(s,t)
+  =e^{s\mu_U+s^2\sigma_U^2/2}\,e^{t\mu_V+t^2\sigma_V^2/2}
+  =\phi_U(s)\phi_V(t).
+$$
+
+由联合矩母函数的唯一性，$U,V$ 独立。同样，若一个联合正态向量被分为两组，且两组之间所有分量的协方差均为 0，则联合矩母函数也分解，两组随机向量独立。
+
+### 2.6.1 正态总体的样本均值与样本方差的联合分布
+
+先设 $X_1,\ldots,X_n$ 独立同分布，具有有限均值 $\mu$、方差 $\sigma^2$，且 $n\ge2$。定义样本均值与样本方差
+
+$$
+\overline X=\frac1n\sum_{i=1}^n X_i,\qquad
+  S^2=\frac1{n-1}\sum_{i=1}^n(X_i-\overline X)^2.
+$$
+
+**样本方差的无偏性。**由 $X_i-\mu=(X_i-\overline X)+(\overline X-\mu)$，以及 $\sum_i(X_i-\overline X)=0$，得到
+
+$$
+\begin{aligned}
+\sum_{i=1}^n(X_i-\mu)^2
+   & =\sum_{i=1}^n(X_i-\overline X)^2
+  +2(\overline X-\mu)\sum_{i=1}^n(X_i-\overline X)
+  +n(\overline X-\mu)^2                                     \\
+   & =\sum_{i=1}^n(X_i-\overline X)^2+n(\overline X-\mu)^2.
+\end{aligned}
+$$
+
+故有平方和分解
+
+$$
+\boxed{(n-1)S^2=\sum_{i=1}^n(X_i-\mu)^2-n(\overline X-\mu)^2}.
+$$
+
+两边取期望，并利用 $\operatorname{Var}(\overline X)=\sigma^2/n$，
+
+$$
+(n-1)\mathbb E[S^2]
+  =n\sigma^2-n\frac{\sigma^2}{n}=(n-1)\sigma^2,
+  \qquad \boxed{\mathbb E[S^2]=\sigma^2}.
+$$
+
+因此 $S^2$ 是总体方差的无偏估计。
+
+**卡方分布。**若 $Z_1,\ldots,Z_\nu$ 是独立标准正态变量，则
+
+$$
+Q=\sum_{j=1}^{\nu}Z_j^2\sim\chi^2_\nu,
+$$
+
+称为自由度为 $\nu$ 的卡方随机变量。先计算一个标准正态变量平方的矩母函数：
+
+$$
+\begin{aligned}
+\mathbb E[e^{tZ^2}]
+   & =\frac1{\sqrt{2\pi}}\int_{-\infty}^{\infty}
+  e^{-(1-2t)z^2/2}\,dz
+  =(1-2t)^{-1/2},\qquad t<\frac12.
+\end{aligned}
+$$
+
+这里可令 $u=\sqrt{1-2t}\,z$，再使用标准正态密度的归一化。由独立性，
+
+$$
+\boxed{\phi_Q(t)=(1-2t)^{-\nu/2},\qquad t<\frac12}.
+$$
+
+**正态样本中的均值与残差。**现在进一步设
+
+$$
+X_1,\ldots,X_n\ \text{独立同分布于 }\mathcal N(\mu,\sigma^2),\qquad\sigma>0.
+$$
+
+令 $Z_i=(X_i-\mu)/\sigma$、$\overline Z=\sum_i Z_i/n$。则 $Z_1,\ldots,Z_n$ 为独立标准正态变量，而且
+
+$$
+\overline X=\mu+\frac{\sigma}{n}\sum_{i=1}^n Z_i
+  \sim\mathcal N\left(\mu,\frac{\sigma^2}{n}\right).
+$$
+
+对每个 $i$ 定义残差 $R_i=X_i-\overline X$，则
+
+$$
+R_i=\sigma(Z_i-\overline Z).
+$$
+
+因此 $\overline X,R_1,\ldots,R_n$ 都是同一组独立标准正态变量的仿射组合，构成一个**联合正态向量**。
+
+由第 2.5 节的协方差计算，对所有 $i$，
+
+$$
+\begin{aligned}
+\operatorname{Cov}(\overline X,R_i)
+   & =\operatorname{Cov}(\overline X,X_i)
+  -\operatorname{Var}(\overline X)             \\
+   & =\frac{\sigma^2}{n}-\frac{\sigma^2}{n}=0.
+\end{aligned}
+$$
+
+将联合正态向量分为两组 $\overline X$ 和 $\boldsymbol R=(R_1,\ldots,R_n)^{\mathsf T}$，两组之间的全部协方差为 0，故两组独立。具体地，其联合矩母函数分解为
+
+$$
+\phi_{\overline X,\boldsymbol R}(s,\boldsymbol t)
+  =\exp\left(s\mu+\frac{s^2\sigma^2}{2n}
+  +\frac12\boldsymbol t^{\mathsf T}\Sigma_R\boldsymbol t\right)
+  =\phi_{\overline X}(s)\phi_{\boldsymbol R}(\boldsymbol t),
+$$
+
+其中 $\Sigma_R$ 为残差向量的协方差矩阵。样本方差是残差向量的函数，
+
+$$
+S^2=\frac1{n-1}\sum_{i=1}^n R_i^2,
+$$
+
+因此，$\overline X$ 与 $S^2$ 也独立。
+
+残差之间仍然可能相关；事实上，$\sum_iR_i=0$，并且
+
+$$
+\operatorname{Cov}(R_i,R_j)
+  =\begin{cases}
+    \sigma^2(1-1/n), & i=j,    \\
+    -\sigma^2/n,     & i\ne j.
+  \end{cases}
+$$
+
+这里得到的是样本均值与**整个残差向量**的独立性。残差向量虽然存在线性约束，其联合矩母函数及上述独立性论证仍然有效。
+
+**样本方差的分布。**将平方和分解除以 $\sigma^2$，得到
+
+$$
+\underbrace{\frac{(n-1)S^2}{\sigma^2}}_{A}
+  +\underbrace{\left(\frac{\overline X-\mu}{\sigma/\sqrt n}\right)^2}_{B}
+  =\underbrace{\sum_{i=1}^n\left(\frac{X_i-\mu}{\sigma}\right)^2}_{C}.
+$$
+
+右侧是 $n$ 个独立标准正态变量的平方和，所以 $C\sim\chi^2_n$。又因为 $\overline X\sim\mathcal N(\mu,\sigma^2/n)$，
+
+$$
+\frac{\overline X-\mu}{\sigma/\sqrt n}\sim\mathcal N(0,1),
+  \qquad B\sim\chi^2_1.
+$$
+
+由 $\overline X$ 与 $S^2$ 独立，$A$ 与 $B$ 也独立。所以
+
+$$
+\phi_C(t)=\phi_A(t)\phi_B(t).
+$$
+
+对 $t<1/2$，有 $\phi_C(t)=(1-2t)^{-n/2}$、$\phi_B(t)=(1-2t)^{-1/2}$，从而
+
+$$
+\phi_A(t)=\frac{\phi_C(t)}{\phi_B(t)}
+  =\frac{(1-2t)^{-n/2}}{(1-2t)^{-1/2}}
+  =(1-2t)^{-(n-1)/2}.
+$$
+
+这是自由度为 $n-1$ 的卡方分布的矩母函数。由唯一性，
+
+$$
+\frac{(n-1)S^2}{\sigma^2}\sim\chi^2_{n-1}.
+$$
+
+> [!important]
+> **正态样本的均值与方差**
+>
+> 若 $X_1,\ldots,X_n$ 独立同分布于 $\mathcal N(\mu,\sigma^2)$，$n\ge2$、$\sigma>0$，则
+>
+> $$
+> \overline X\sim\mathcal N\left(\mu,\frac{\sigma^2}{n}\right),\qquad
+>     \frac{(n-1)S^2}{\sigma^2}\sim\chi^2_{n-1},
+> $$
+>
+> 并且 $\overline X$ 与 $S^2$ 独立，且 $\mathbb E[S^2]=\sigma^2$。
+
+自由度从 $n$ 减为 $n-1$，对应于用样本均值中心化后残差满足一个线性约束 $\sum_iR_i=0$。
+
