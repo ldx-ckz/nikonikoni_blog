@@ -277,7 +277,7 @@ $$
   \mathbb{P}(X=a)=\int_a^a f_X(x)\,dx=0.
 $$
 
-因此，连续型随机变量取某个指定值的概率为 0，区间端点是否包含不影响概率。**密度值 $f_X(a)$ 不是单点概率 $\mathbb{P}(X=a)$**；密度可以大于 1，但在整个实数轴上的积分必须等于 1。
+因此，连续型随机变量取某个指定值的概率为 0，区间端点是否包含不影响概率。**密度值 $f_X(a)$ 不是单点概率 $\mathbb{P}(X=a)$**。
 
 分布函数与密度的关系为
 
@@ -392,7 +392,7 @@ $$
 \Gamma(n)=(n-1)!.
 $$
 
-当 $\alpha=1$ 时，伽马密度退化为指数密度，即 $\operatorname{Gamma}(1,\lambda)=\operatorname{Exp}(\lambda)$。密度在单个点 $x=0$ 的取值不影响分布；不同资料也可能使用尺度参数 $\theta=1/\lambda$，使用公式时应确认参数约定。
+当 $\alpha=1$ 时，伽马密度退化为指数密度，即 $\operatorname{Gamma}(1,\lambda)=\operatorname{Exp}(\lambda)$。
 
 ### 2.3.4 正态随机变量
 
@@ -643,8 +643,6 @@ $$
   \end{cases}
 $$
 
-一阶矩反映平均位置；要描述随机变量在均值附近的离散程度，需要考察偏离均值的平方。
-
 **方差。**当 $\mathbb E[X^2]<\infty$ 时，记 $\mu=\mathbb E[X]$，定义
 
 > [!important]
@@ -673,8 +671,6 @@ $$
 $$
 \boxed{\operatorname{Var}(X)=\mathbb E[X^2]-(\mathbb E[X])^2}.
 $$
-
-计算时既可以直接使用定义，也可以先求一阶、二阶矩，再相减。
 
 **正态分布的方差。**设 $X\sim\mathcal N(\mu,\sigma^2)$，由 $\mathbb E[X]=\mu$，有
 
@@ -709,8 +705,6 @@ $$
 \boxed{X\sim\mathcal N(\mu,\sigma^2)
     \quad\Longrightarrow\quad\mathbb E[X]=\mu,\quad\operatorname{Var}(X)=\sigma^2}.
 $$
-
-这也说明正态分布的两个参数分别表示均值与方差。
 
 ## 2.5 联合分布的随机变量
 
@@ -767,7 +761,7 @@ $$
 \mathbb{P}\bigl((X,Y)\in D\bigr)=\sum_{(x,y)\in D}p_{X,Y}(x,y).
 $$
 
-**从联合分布可以得到边缘分布，但仅凭两个边缘分布一般不能恢复联合分布。**
+例如，计算 $\mathbb{P}(X<Y)$ 时，只需把所有满足 $x<y$ 的点的联合概率相加。**从联合分布可以得到边缘分布，但仅凭两个边缘分布一般不能恢复联合分布。**
 
 **联合连续情形。**若存在非负函数 $f_{X,Y}$，使得
 
@@ -859,7 +853,7 @@ $$
 f_{X,Y}(x,y)=f_X(x)f_Y(y).
 $$
 
-这里“几乎处处”表示忽略平面上面积为 0 的集合。
+这里“几乎处处”表示忽略平面上面积为 0 的集合；改变密度在这种集合上的取值不影响分布。
 
 **独立变量的函数的乘积期望。**若 $X,Y$ 独立，且 $g(X),h(Y)$ 均可积，则
 
@@ -928,7 +922,7 @@ $$
 \end{aligned}
 $$
 
-独立时 $\mathbb E[XY]=\mathbb E[X]\mathbb E[Y]$，所以协方差为 0。但若 $X\sim\operatorname{Unif}(-1,1)$，并令 $Y=X^2$，则
+**独立与不相关**独立时 $\mathbb E[XY]=\mathbb E[X]\mathbb E[Y]$，所以协方差为 0。但若 $X\sim\operatorname{Unif}(-1,1)$，并令 $Y=X^2$，则
 
 $$
 \mathbb E[X]=0,\qquad\mathbb E[XY]=\mathbb E[X^3]=0,
@@ -1041,7 +1035,7 @@ $$
 >     =\int_{-\infty}^{\infty}f_X(x)f_Y(s-x)\,dx.
 > $$
 
-对独立的整数值离散随机变量，同样有
+因此，使用两个边缘密度相乘的卷积公式需要独立性；存在依赖时，应使用联合密度。对独立的整数值离散随机变量，同样有
 
 $$
 p_{X+Y}(k)=\sum_j p_X(j)p_Y(k-j).
@@ -1072,6 +1066,8 @@ $$
 >     =\frac{f_{X_1,X_2}(h_1(y_1,y_2),h_2(y_1,y_2))}
 >     {|J(h_1(y_1,y_2),h_2(y_1,y_2))|},\qquad(y_1,y_2)\in G.
 > $$
+>
+> 像区域 $G$ 之外密度为 0。分母使用正向变换的雅可比绝对值，也等于乘以逆变换的雅可比绝对值。
 
 原因是概率在对应区域内保持不变，而面积元满足
 
@@ -1236,7 +1232,7 @@ $$
 \end{aligned}
 $$
 
-最后的积分除以 $\sqrt{2\pi}$ 后等于 1，因为它是 $\mathcal N(t,1)$ 的密度积分。若 $X\sim\mathcal N(\mu,\sigma^2)$，可写成 $X=\mu+\sigma Z$，于是
+若 $X\sim\mathcal N(\mu,\sigma^2)$，可写成 $X=\mu+\sigma Z$，于是
 
 > [!important]
 > **正态分布的矩母函数**
@@ -1274,8 +1270,6 @@ $$
 
 这把变量的平移与缩放，分别转换为矩母函数前的指数因子和自变量缩放。
 
-**唯一性。**若两个随机变量的矩母函数在 0 的某个共同开邻域内有限且相同，那么它们的分布相同。因而可以先求出一个变量的矩母函数，再与已知分布的矩母函数比较，以识别其分布。
-
 **独立随机变量之和。**若 $X,Y$ 独立，且相关矩母函数有限，则
 
 $$
@@ -1302,8 +1296,6 @@ X\sim\operatorname{Bin}(n,p),\ Y\sim\operatorname{Bin}(m,p)
 \end{aligned}
 $$
 
-这些结论分别来自相应矩母函数相乘后，仍具有同类分布的形式。
-
 **泊松范例。**设 $I_1,\ldots,I_n$ 是相互独立的伯努利变量，成功概率分别为 $p_1,\ldots,p_n$，令 $X=\sum_i I_i$。则
 
 $$
@@ -1317,7 +1309,7 @@ $$
   =\exp\left\{\left(\sum_{i=1}^n p_i\right)(e^t-1)\right\}.
 $$
 
-右侧是参数 $\lambda=\sum_i p_i$ 的泊松分布的矩母函数，因此 $X$ 可近似为 $\operatorname{Pois}(\lambda)$；成功概率不必完全相同。更严格地，若随 $n\to\infty$ 有 $\max_i p_i\to0$、$\sum_i p_i\to\lambda$，则可得到相应的泊松极限。
+右侧是参数 $\lambda=\sum_i p_i$ 的泊松分布的矩母函数，因此 $X$ 可近似为 $\operatorname{Pois}(\lambda)$；成功概率不必完全相同。更严格地，若随 $n\to\infty$ 有 $\max_i p_i\to0$、$\sum_i p_i\to\lambda$，则可得到相应的泊松极限。某些弱依赖模型也存在泊松近似。
 
 **拉普拉斯变换。**对非负随机变量 $X$，定义
 
@@ -1367,9 +1359,9 @@ $$
 >     +\frac12\boldsymbol t^{\mathsf T}\Sigma\boldsymbol t\right).
 > $$
 >
-> 因此，联合正态分布完全由均值向量与协方差矩阵确定。该结论也适用于协方差矩阵奇异的退化情形。
+> 因此，联合正态分布完全由均值向量与协方差矩阵确定。
 
-**联合正态下的独立性。**若 $U,V$ 联合正态，则
+**联合正态下，不相关推出独立。**若 $U,V$ 联合正态，则
 
 $$
 \phi_{U,V}(s,t)=\exp\left(s\mu_U+t\mu_V
@@ -1505,7 +1497,7 @@ $$
   \end{cases}
 $$
 
-这里得到的是样本均值与**整个残差向量**的独立性。残差向量虽然存在线性约束，其联合矩母函数及上述独立性论证仍然有效。
+这里得到的是样本均值与**整个残差向量**的独立性。
 
 **样本方差的分布。**将平方和分解除以 $\sigma^2$，得到
 
@@ -1555,4 +1547,311 @@ $$
 > 并且 $\overline X$ 与 $S^2$ 独立，且 $\mathbb E[S^2]=\sigma^2$。
 
 自由度从 $n$ 减为 $n-1$，对应于用样本均值中心化后残差满足一个线性约束 $\sum_iR_i=0$。
+
+## 2.7 发生事件数的分布
+
+设 $A_1,\ldots,A_n$ 为任意事件，令
+
+$$
+X=\sum_{i=1}^n I_{A_i}
+$$
+
+表示其中发生的事件数。这里不要求事件相互独立。对 $1\le m\le n$，定义
+
+> [!important]
+> **交事件概率的对称和**
+>
+> $$
+> S_m=\sum_{1\le i_1<\cdots<i_m\le n}
+>     \mathbb{P}(A_{i_1}\cap\cdots\cap A_{i_m}),\qquad S_0=1.
+> $$
+>
+> $S_m$ 是所有 $m$ 个不同事件的交的概率之和。
+
+由容斥原理，至少发生一个事件的概率为
+
+$$
+\mathbb{P}(X>0)=\mathbb{P}\left(\bigcup_{i=1}^n A_i\right)
+  =S_1-S_2+S_3-\cdots+(-1)^{n+1}S_n.
+$$
+
+**固定发生的那一组事件。**取指标集 $I\subseteq\{1,\ldots,n\}$，$|I|=k$。令
+
+$$
+A_I=\bigcap_{i\in I}A_i,\qquad
+  B_I=\bigcap_{j\notin I}A_j^c.
+$$
+
+则 $A_I\cap B_I$ 表示恰好 $I$ 中的事件发生。由于
+
+$$
+A_I=(A_I\cap B_I)\mathbin{\dot\cup}(A_I\cap B_I^c),
+  \qquad B_I^c=\bigcup_{j\notin I}A_j,
+$$
+
+有
+
+$$
+\mathbb{P}(A_I\cap B_I)
+  =\mathbb{P}(A_I)-\mathbb{P}\left(\bigcup_{j\notin I}(A_I\cap A_j)\right).
+$$
+
+对右侧的并事件使用容斥原理，得到
+
+$$
+\begin{aligned}
+\mathbb{P}(A_I\cap B_I)
+   & =\mathbb{P}(A_I)-\sum_{j\notin I}\mathbb{P}(A_I\cap A_j) \\
+   & \quad+\sum_{\substack{j_1<j_2              \\j_1,j_2\notin I}}
+  \mathbb{P}(A_I\cap A_{j_1}\cap A_{j_2})-\cdots.
+\end{aligned}
+$$
+
+对所有大小为 $k$ 的指标集 $I$ 求和，各个“恰好该组发生”的事件互不相交，因而
+
+$$
+\mathbb{P}(X=k)=\sum_{|I|=k}\mathbb{P}(A_I\cap B_I).
+$$
+
+接下来只需确定：在这次求和中，每个更高阶交事件概率被重复计算了多少次。
+
+固定一个大小为 $m$ 的指标集 $M$，其中 $m\ge k$。要使交事件 $\bigcap_{i\in M}A_i$ 出现在上述展开中，先从 $M$ 中选出 $k$ 个指标作为 $I$，其余 $m-k$ 个作为容斥展开中新增的指标。这样的选法共有 $\binom mk$ 种，每次的符号都是 $(-1)^{m-k}$。
+
+因此，将同一阶的交事件概率合并，得到
+
+$$
+\begin{aligned}
+\mathbb{P}(X=k)
+   & =S_k-\binom{k+1}{k}S_{k+1}
+  +\binom{k+2}{k}S_{k+2}-\cdots
+  +(-1)^{n-k}\binom nk S_n.
+\end{aligned}
+$$
+
+即
+
+> [!important]
+> **恰好发生 $k$ 个事件**
+>
+> $$
+> \boxed{\mathbb{P}(X=k)=\sum_{m=k}^n(-1)^{m-k}\binom mk S_m},
+>     \qquad k=0,1,\ldots,n.
+> $$
+>
+> 其中 $k=0$ 时为 $\mathbb{P}(X=0)=1-S_1+S_2-\cdots+(-1)^nS_n$。
+
+**至少发生 $k$ 个事件。**对 $1\le k\le n$，有
+
+$$
+\boxed{\mathbb{P}(X\ge k)=\sum_{m=k}^n(-1)^{m-k}\binom{m-1}{k-1}S_m}.
+$$
+
+用从 $k=n$ 开始的倒推归纳证明。首先，$\mathbb{P}(X\ge n)=\mathbb{P}(X=n)=S_n$。假设公式对 $k+1$ 成立，则
+
+$$
+\begin{aligned}
+\mathbb{P}(X\ge k)
+   & =\mathbb{P}(X=k)+\mathbb{P}(X\ge k+1)                          \\
+   & =S_k+\sum_{m=k+1}^n(-1)^{m-k}
+  \left[\binom mk-\binom{m-1}{k}\right]S_m            \\
+   & =S_k+\sum_{m=k+1}^n(-1)^{m-k}\binom{m-1}{k-1}S_m \\
+   & =\sum_{m=k}^n(-1)^{m-k}\binom{m-1}{k-1}S_m.
+\end{aligned}
+$$
+
+这里使用了帕斯卡恒等式 $\binom mk=\binom{m-1}{k}+\binom{m-1}{k-1}$。取 $k=1$，就回到至少一个事件发生的容斥公式。
+
+## 2.8 极限定理
+
+**马尔可夫不等式。**若 $X\ge0$，且 $\mathbb E[X]<\infty$，则对任意 $a>0$，
+
+> [!important]
+> **由均值控制非负变量的尾概率**
+>
+> $$
+> \boxed{\mathbb{P}(X\ge a)\le\frac{\mathbb E[X]}{a}}.
+> $$
+
+一般证明只需注意 $X\ge aI_{\{X\ge a\}}$，两边取期望即可。若 $X$ 具有密度 $f_X$，也可以沿积分直接得到
+
+$$
+\begin{aligned}
+\mathbb E[X]
+   & =\int_0^a x f_X(x)\,dx+\int_a^\infty x f_X(x)\,dx \\
+   & \ge\int_a^\infty x f_X(x)\,dx
+  \ge a\int_a^\infty f_X(x)\,dx
+  =a\mathbb{P}(X\ge a).
+\end{aligned}
+$$
+
+**切比雪夫不等式。**若 $\mathbb E[X]=\mu$、$\operatorname{Var}(X)=\sigma^2<\infty$，则对任意 $k>0$，
+
+> [!important]
+> **由方差控制偏离均值的概率**
+>
+> $$
+> \boxed{\mathbb{P}(|X-\mu|\ge k)\le\frac{\sigma^2}{k^2}}.
+> $$
+
+对非负随机变量 $(X-\mu)^2$ 使用马尔可夫不等式，并取阈值 $a=k^2$，得到
+
+$$
+\mathbb{P}(|X-\mu|\ge k)
+  =\mathbb{P}\bigl((X-\mu)^2\ge k^2\bigr)
+  \le\frac{\mathbb E[(X-\mu)^2]}{k^2}
+  =\frac{\sigma^2}{k^2}.
+$$
+
+这两个不等式只需要均值，或均值与方差，就能给出概率的上界，不需要知道具体分布。
+
+例如，若非负变量 $X$ 的均值为 500，则 $\mathbb{P}(X\ge1000)\le1/2$；若还知道方差为 100，则
+
+$$
+\mathbb{P}(|X-500|\ge100)\le\frac{100}{100^2}=0.01,
+  \qquad \mathbb{P}(400<X<600)\ge0.99.
+$$
+
+**强大数定律。**设 $X_1,X_2,\ldots$ 独立同分布，$\mathbb E[|X_1|]<\infty$，且 $\mathbb E[X_1]=\mu$。记 $\overline X_n=\frac1n\sum_{i=1}^nX_i$，则
+
+> [!important]
+> **样本均值几乎处处收敛于总体均值**
+>
+> $$
+> \boxed{\overline X_n\xrightarrow{\mathrm{a.s.}}\mu},\qquad
+>     \mathbb{P}\left(\lim_{n\to\infty}\overline X_n=\mu\right)=1.
+> $$
+
+“几乎处处”表示：除一个概率为 0 的样本结果集合外，样本均值序列都收敛到 $\mu$。例如，每次独立试验中事件 $E$ 的发生概率为 $p$，令 $X_i=I_{\{\text{第 }i\text{ 次 }E\text{ 发生}\}}$，则
+
+$$
+\frac{X_1+\cdots+X_n}{n}\xrightarrow{\mathrm{a.s.}}p.
+$$
+
+左侧正是事件发生的频率，说明频率以概率 1 趋于其发生概率。
+
+若还有有限方差 $\sigma^2$，切比雪夫不等式直接给出
+
+$$
+\mathbb{P}(|\overline X_n-\mu|\ge\varepsilon)
+  \le\frac{\sigma^2}{n\varepsilon^2}\longrightarrow0,\qquad\varepsilon>0.
+$$
+
+这是依概率收敛的结论，属于弱大数定律的有限方差情形；强大数定律则给出上述几乎处处收敛。
+
+**中心极限定理。**设 $X_1,X_2,\ldots$ 独立同分布，且 $\mathbb E[X_i]=\mu$、$0<\operatorname{Var}(X_i)=\sigma^2<\infty$，则
+
+> [!important]
+> **标准化的和依分布收敛于标准正态分布**
+>
+> $$
+> T_n=\frac{\sum_{i=1}^nX_i-n\mu}{\sigma\sqrt n}
+>     =\frac{\sqrt n(\overline X_n-\mu)}{\sigma}
+>     \xrightarrow{\mathrm d}\mathcal N(0,1).
+> $$
+>
+> 即对每个实数 $a$，有
+>
+> $$
+> \mathbb{P}(T_n\le a)\longrightarrow\Phi(a)
+>     =\frac1{\sqrt{2\pi}}\int_{-\infty}^a e^{-x^2/2}\,dx.
+> $$
+
+**二项分布的正态近似。**固定 $0<p<1$，令 $B_1,B_2,\ldots$ 独立同分布于 $\operatorname{Bernoulli}(p)$。对每个 $n$ 定义
+
+$$
+Y_n=\sum_{i=1}^nB_i\sim\operatorname{Bin}(n,p).
+$$
+
+因为 $\mathbb E[B_i]=p$、$\operatorname{Var}(B_i)=p(1-p)$，中心极限定理给出
+
+$$
+\boxed{\frac{Y_n-np}{\sqrt{np(1-p)}}\xrightarrow{\mathrm d}\mathcal N(0,1)}.
+$$
+
+这里定理中的 $n$ 是求和项数；在二项分布的表示中，它同时是试验次数参数。基础伯努利变量的分布保持不变，而和 $Y_n$ 的分布随 $n$ 改变。
+
+这与第 2.2 节的泊松极限采用不同的参数变化方式：正态近似中 $p$ 固定；泊松极限中 $p_n\to0$、$np_n\to\lambda$，其未标准化计数趋于泊松分布。
+
+**中心极限定理的矩母函数推导。**令
+
+$$
+W_i=\frac{X_i-\mu}{\sigma},\qquad
+  \mathbb E[W_i]=0,\quad\mathbb E[W_i^2]=1,\qquad
+  T_n=\frac{W_1+\cdots+W_n}{\sqrt n}.
+$$
+
+沿矩母函数的思路，先假设 $W_i$ 的矩母函数 $\phi_W$ 在 0 附近有限。由独立同分布，
+
+$$
+\begin{aligned}
+\phi_{T_n}(t)
+   & =\mathbb E\left[\prod_{i=1}^n e^{tW_i/\sqrt n}\right] \\
+   & =\prod_{i=1}^n\mathbb E[e^{tW_i/\sqrt n}]
+  =\left[\phi_W\left(\frac{t}{\sqrt n}\right)\right]^n.
+\end{aligned}
+$$
+
+在 $u=0$ 处对 $\phi_W$ 作二阶泰勒展开，利用 $\phi_W(0)=1$、$\phi_W'(0)=0$、$\phi_W''(0)=1$，得到
+
+$$
+\phi_W(u)=1+\frac{u^2}{2}+o(u^2).
+$$
+
+对固定 $t$，代入 $u=t/\sqrt n$，有
+
+$$
+\phi_{T_n}(t)=\left(1+\frac{t^2}{2n}+o\left(\frac1n\right)\right)^n.
+$$
+
+再取对数，使用 $\log(1+v)=v+o(v)$，得到
+
+$$
+\log\phi_{T_n}(t)
+  =n\log\left(1+\frac{t^2}{2n}+o\left(\frac1n\right)\right)
+  \longrightarrow\frac{t^2}{2}.
+$$
+
+故
+
+$$
+\phi_{T_n}(t)\longrightarrow e^{t^2/2},
+$$
+
+而 $e^{t^2/2}$ 是标准正态分布的矩母函数。由矩母函数的收敛定理，$T_n$ 依分布收敛于 $\mathcal N(0,1)$。对一般的均值 $\mu$、方差 $\sigma^2$，把 $W_i$ 的定义代回即可。
+
+## 2.9 随机过程
+
+> [!important]
+> **随机过程是一族带指标的随机变量**
+>
+> $$
+> \{X(t):t\in T\}.
+> $$
+>
+> 对每个 $t\in T$，$X(t)$ 都是随机变量。$T$ 称为指标集，指标 $t$ 常解释为时间，$X(t)$ 表示该时刻的状态。
+
+随机过程具有两个观察角度：
+
+- 固定时刻 $t$，$\omega\mapsto X(t,\omega)$ 是随机变量，描述该时刻状态的不确定性。
+
+- 固定样本结果 $\omega$，$t\mapsto X(t,\omega)$ 是一条样本路径，描述一次具体实现随时间的变化。
+
+**时间指标的分类。**
+
+- 离散时间过程：$T$ 为可数指标集，常见形式为 $T=\{0,1,2,\ldots\}$，写作 $\{X_n:n\ge0\}$。
+
+- 连续时间过程：$T$ 为实数区间，常见形式为 $T=[0,\infty)$，写作 $\{X(t):t\ge0\}$。
+
+**状态空间。**过程各时刻可能取到的状态的全体称为状态空间，记为 $E$。它可以是有限集、可数集，也可以是实数区间等连续集合。时间指标的离散或连续，与状态空间的离散或连续是两个分别考察的方面。
+
+| 时间指标 $T$ | 状态空间 $E$ | 例子 |
+| --- | --- | --- |
+| $\{0,1,2,\ldots\}$ | $\mathbb Z$ | 粒子每步向左或向右移动后的所在位置 |
+| $\{0,1,2,\ldots\}$ | $\mathbb{R}$ | 每天固定时刻记录的温度 |
+| $[0,\infty)$ | $\{0,1,2,\ldots\}$ | 截至时刻 $t$ 到达商店的顾客总数 |
+| $[0,\infty)$ | $[0,\infty)$ | 截至时刻 $t$ 的累计销售金额（连续金额模型） |
+
+连续时间表示可以考察连续的时间指标，并不保证样本路径连续。例如，顾客到达计数在顾客到达时会发生跳跃。
+
+研究一个过程时，除了每个 $X(t)$ 各自的分布，还需要考察不同时刻之间的联合分布与依赖关系。例如，$X(t_1)$ 和 $X(t_2)$ 可能因描述同一系统的先后状态而相关；仅给出各时刻的边缘分布，一般不足以确定整个过程的分布。
 
