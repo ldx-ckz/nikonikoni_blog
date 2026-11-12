@@ -1,13 +1,10 @@
 ---
-import { getCollection } from "astro:content";
 import UiText from "@components/UiText.astro";
 import { siteConfig } from "../config";
-import { UNCATEGORIZED } from "../constants/constants";
 import {
 	getAllTechStack,
 	getFeaturedProjects,
 	getProjectStats,
-	getProjectsByCategory,
 	projectsData,
 } from "../data/projects";
 import I18nKey from "../i18n/i18nKey";
@@ -19,47 +16,13 @@ if (!siteConfig.featurePages.projects) {
 	return Astro.redirect("/404/");
 }
 
-const { lang } = Astro.props;
-
 // 获取项目统计信息
 const stats = getProjectStats();
 const featuredProjects = getFeaturedProjects();
 const allTechStack = getAllTechStack();
 
-// 获取所有分类
-const categories = [
-	...new Set(projectsData.map((project) => project.category)),
-];
-
-// 按分类获取项目
-const projectsByCategory = categories.reduce(
-	(acc, category) => {
-		acc[category] = getProjectsByCategory(category);
-		return acc;
-	},
-	{} as Record<string, typeof projectsData>,
-);
-
 const title = uiI18n(I18nKey.projects);
 const subtitle = uiI18n(I18nKey.projectsSubtitle);
-
-// 获取分类文本的国际化翻译
-const getCategoryText = (category: string) => {
-	switch (category) {
-		case "web":
-			return uiI18n(I18nKey.projectsWeb);
-		case "mobile":
-			return uiI18n(I18nKey.projectsMobile);
-		case "desktop":
-			return uiI18n(I18nKey.projectsDesktop);
-		case "other":
-			return uiI18n(I18nKey.projectsOther);
-		case UNCATEGORIZED:
-			return uiI18n(I18nKey.uncategorized);
-		default:
-			return { zh: category, en: category };
-	}
-};
 ---
 
 <MainGridLayout title={title.zh} titleEn={title.en} description={subtitle.zh} hideSidebar={true}>
@@ -180,98 +143,89 @@ const getCategoryText = (category: string) => {
         </div>
       )}
 
-      <!-- 按分类展示项目 -->
-      <div class="space-y-8">
-        {categories.map((category) => {
-          const categoryProjects = projectsByCategory[category];
-          if (categoryProjects.length === 0) return null;
-          
-          return (
-            <div>
-              <h2 class="text-2xl font-bold text-black/90 dark:text-white/90 mb-4 relative
-                        before:w-1 before:h-6 before:rounded-md before:bg-[var(--primary)]
-                        before:absolute before:top-1/2 before:-translate-y-1/2 before:-left-4">
-                <UiText {...getCategoryText(category)} />
-                <span class="text-lg font-normal text-black/60 dark:text-white/60 ml-2">
-                  ({categoryProjects.length})
-                </span>
-              </h2>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {categoryProjects.map((project) => (
-                  <div class="bg-transparent rounded-lg border border-black/10 dark:border-white/10 overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                    {project.image && (
-                      <div class="aspect-video overflow-hidden">
-                        <img 
-                          src={project.image} 
-                          alt={project.title}
-                          class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                    )}
-                    <div class="p-4">
-                      <div class="flex items-start justify-between mb-2">
-                        <h3 class="text-lg font-semibold text-black/90 dark:text-white/90 line-clamp-1">
-                          {project.title}
-                        </h3>
-                        <span class={`px-2 py-1 text-xs rounded-full shrink-0 ml-2 ${
-                          project.status === 'completed' 
-                            ? 'bg-green-600/20 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : project.status === 'in-progress'
-                            ? 'bg-yellow-600/20 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                            : 'bg-gray-600/20 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
-                        }`}>
-                          <UiText {...uiI18n(project.status === 'completed' ? I18nKey.projectsCompleted :
-                                project.status === 'in-progress' ? I18nKey.projectsInProgress :
-                                I18nKey.projectsPlanned)} />
-                        </span>
-                      </div>
-                      <p class="text-black/60 dark:text-white/60 mb-3 text-sm line-clamp-2">
-                        {project.description}
-                      </p>
-                      <div class="flex flex-wrap gap-1 mb-3">
-                        {project.techStack.slice(0, 3).map((tech) => (
-                          <span class="px-2 py-1 text-xs bg-blue-600/20 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded">
-                            {tech}
-                          </span>
-                        ))}
-                        {project.techStack.length > 3 && (
-                          <span class="px-2 py-1 text-xs bg-gray-600/20 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400 rounded">
-                            +{project.techStack.length - 3}
-                          </span>
-                        )}
-                      </div>
-                      <div class="flex flex-wrap gap-2 text-sm">
-                        {project.visitUrl && (
-                          <a 
-                            href={project.visitUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            class="btn-gradient btn-gradient-primary btn-gradient-md"
-                          >
-                            <iconify-icon icon="material-symbols:open-in-new" width="18" height="18"></iconify-icon>
-                            <UiText {...uiI18n(I18nKey.projectsVisit)} />
-                          </a>
-                        )}
-                        {project.sourceCode && (
-                          <a 
-                            href={project.sourceCode} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            class="btn-gradient btn-github btn-gradient-md"
-                          >
-                            <iconify-icon icon="mdi:github" width="18" height="18"></iconify-icon>
-                            <UiText {...uiI18n(I18nKey.projectsGitHub)} />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+      <!-- 全部项目 -->
+      <section>
+        <h2 class="text-2xl font-bold text-black/90 dark:text-white/90 mb-4 relative
+                  before:w-1 before:h-6 before:rounded-md before:bg-[var(--primary)]
+                  before:absolute before:top-1/2 before:-translate-y-1/2 before:-left-4">
+          <UiText {...uiI18n(I18nKey.projectsAll)} />
+          <span class="text-lg font-normal text-black/60 dark:text-white/60 ml-2">
+            ({projectsData.length})
+          </span>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projectsData.map((project) => (
+            <div class="bg-transparent rounded-lg border border-black/10 dark:border-white/10 overflow-hidden hover:shadow-lg transition-shadow duration-300">
+              {project.image && (
+                <div class="aspect-video overflow-hidden">
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              )}
+              <div class="p-4">
+                <div class="flex items-start justify-between mb-2">
+                  <h3 class="text-lg font-semibold text-black/90 dark:text-white/90 line-clamp-1">
+                    {project.title}
+                  </h3>
+                  <span class={`px-2 py-1 text-xs rounded-full shrink-0 ml-2 ${
+                    project.status === 'completed'
+                      ? 'bg-green-600/20 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : project.status === 'in-progress'
+                      ? 'bg-yellow-600/20 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      : 'bg-gray-600/20 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                  }`}>
+                    <UiText {...uiI18n(project.status === 'completed' ? I18nKey.projectsCompleted :
+                          project.status === 'in-progress' ? I18nKey.projectsInProgress :
+                          I18nKey.projectsPlanned)} />
+                  </span>
+                </div>
+                <p class="text-black/60 dark:text-white/60 mb-3 text-sm line-clamp-2">
+                  {project.description}
+                </p>
+                <div class="flex flex-wrap gap-1 mb-3">
+                  {project.techStack.slice(0, 3).map((tech) => (
+                    <span class="px-2 py-1 text-xs bg-blue-600/20 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded">
+                      {tech}
+                    </span>
+                  ))}
+                  {project.techStack.length > 3 && (
+                    <span class="px-2 py-1 text-xs bg-gray-600/20 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400 rounded">
+                      +{project.techStack.length - 3}
+                    </span>
+                  )}
+                </div>
+                <div class="flex flex-wrap gap-2 text-sm">
+                  {project.visitUrl && (
+                    <a
+                      href={project.visitUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="btn-gradient btn-gradient-primary btn-gradient-md"
+                    >
+                      <iconify-icon icon="material-symbols:open-in-new" width="18" height="18"></iconify-icon>
+                      <UiText {...uiI18n(I18nKey.projectsVisit)} />
+                    </a>
+                  )}
+                  {project.sourceCode && (
+                    <a
+                      href={project.sourceCode}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="btn-gradient btn-github btn-gradient-md"
+                    >
+                      <iconify-icon icon="mdi:github" width="18" height="18"></iconify-icon>
+                      <UiText {...uiI18n(I18nKey.projectsGitHub)} />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      </section>
 
       <!-- 技术栈统计 -->
       <div class="mt-12 pt-8 border-t border-black/10 dark:border-white/10">

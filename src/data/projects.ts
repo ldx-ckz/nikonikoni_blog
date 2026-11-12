@@ -46,6 +46,19 @@ export const projectsData: Project[] = [
 		visitUrl: "https://miku.nikonikoni.blog",
 		featured: true,
 	},
+	{
+		id: "nanogpt",
+		title: "nanoGPT",
+		description:
+			"基于 PyTorch 实现的 GPT 语言模型学习项目，包含模型训练与文本生成。",
+		image: "",
+		category: "other",
+		techStack: ["Python", "PyTorch"],
+		status: "in-progress",
+		sourceCode: "https://github.com/ldx-ckz/nanoGPT",
+		startDate: "2026-11-01",
+		featured: true,
+	},
 ];
 
 // Get project statistics
@@ -65,14 +78,6 @@ export const getProjectStats = () => {
 			planned,
 		},
 	};
-};
-
-// Get projects by category
-export const getProjectsByCategory = (category?: string) => {
-	if (!category || category === "all") {
-		return projectsData;
-	}
-	return projectsData.filter((p) => p.category === category);
 };
 
 // Get featured projects

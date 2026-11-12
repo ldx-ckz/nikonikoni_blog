@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" role="img" aria-labelledby="title desc">
+  <title id="title">随机映射图的超顶点合并</title>
+  <desc id="desc">左图的弧为 1 到 2、2 到 3、3 到 2、4 到 1、5 到 4。将 1、2、3 合并为无出弧的超顶点 B 后，右图保留 4 到 B 和 5 到 4。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="context-stroke"/></marker>
+  </defs>
+  <rect width="800" height="300" rx="12" fill="#fff"/>
+  <g fill="none" stroke-width="2.5" marker-end="url(#arrow)">
+    <path d="M 88 110 H 166" stroke="#167d9a"/>
+    <path d="M 207 95 Q 245 51 283 95" stroke="#167d9a"/>
+    <path d="M 283 125 Q 245 169 207 125" stroke="#167d9a"/>
+    <path d="M 65 207 V 135" stroke="#596873"/>
+    <path d="M 167 230 H 90" stroke="#596873"/>
+    <path d="M 555 207 V 142" stroke="#596873"/>
+    <path d="M 657 230 H 580" stroke="#596873"/>
+  </g>
+  <g fill="#fff" stroke-width="2">
+    <g stroke="#167d9a"><circle cx="65" cy="110" r="23"/><circle cx="190" cy="110" r="23"/><circle cx="300" cy="110" r="23"/></g>
+    <g stroke="#596873"><circle cx="65" cy="230" r="23"/><circle cx="190" cy="230" r="23"/><circle cx="555" cy="230" r="23"/><circle cx="680" cy="230" r="23"/></g>
+    <circle cx="555" cy="110" r="31" fill="#edf5f7" stroke="#167d9a"/>
+  </g>
+  <g font-family="Georgia, 'Times New Roman', serif" font-size="24" fill="#17354a" text-anchor="middle" dominant-baseline="central">
+    <text x="65" y="110">1</text><text x="190" y="110">2</text><text x="300" y="110">3</text>
+    <text x="65" y="230">4</text><text x="190" y="230">5</text>
+    <text x="555" y="110" font-style="italic">B</text><text x="555" y="230">4</text><text x="680" y="230">5</text>
+    <text x="425" y="165" font-size="42">⇒</text>
+    <text x="605" y="44" fill="#596873" font-size="22">B = {1, 2, 3}</text>
+  </g>
+</svg>

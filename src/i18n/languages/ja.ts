@@ -113,7 +113,7 @@ export const ja: Translation = {
 	// プロジェクトページ
 	[Key.projects]: "プロジェクト",
 	[Key.projectsSubtitle]: "私の開発プロジェクトポートフォリオ",
-	[Key.projectsAll]: "すべて",
+	[Key.projectsAll]: "すべてのプロジェクト",
 	[Key.projectsWeb]: "ウェブアプリケーション",
 	[Key.projectsMobile]: "モバイルアプリケーション",
 	[Key.projectsDesktop]: "デスクトップアプリケーション",

@@ -109,7 +109,7 @@ export const zh_TW: Translation = {
 	// 項目展示頁面
 	[Key.projects]: "項目展示",
 	[Key.projectsSubtitle]: "我的開發項目作品集",
-	[Key.projectsAll]: "全部",
+	[Key.projectsAll]: "全部專案",
 	[Key.projectsWeb]: "網頁應用",
 	[Key.projectsMobile]: "移動應用",
 	[Key.projectsDesktop]: "桌面應用",

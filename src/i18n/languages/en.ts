@@ -113,7 +113,7 @@ export const en: Translation = {
 	// Projects Page
 	[Key.projects]: "Projects",
 	[Key.projectsSubtitle]: "My development project portfolio",
-	[Key.projectsAll]: "All",
+	[Key.projectsAll]: "All Projects",
 	[Key.projectsWeb]: "Web Applications",
 	[Key.projectsMobile]: "Mobile Applications",
 	[Key.projectsDesktop]: "Desktop Applications",
