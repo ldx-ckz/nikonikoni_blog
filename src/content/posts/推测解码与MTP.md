@@ -6,8 +6,8 @@ published: 2026-11-26
 updated: 2026-11-26
 description: 介绍推测级联的路由规则，以及 DeepSeek-V3 多 token 预测的训练与推理。
 tags:
--LLM
--Deep Learning
+  - LLM
+  - Deep Learning
 category: LLM
 section: technical
 author: nikonikoni
