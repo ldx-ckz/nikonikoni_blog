@@ -1,363 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>nikonikoni&apos;s blog</title><description>a blog website</description><link>https://miku.nikonikoni.blog/</link><language>zh_CN</language><item><title>LLM中的提示词压缩工程</title><link>https://miku.nikonikoni.blog/posts/llm%E4%B8%AD%E7%9A%84%E6%8F%90%E7%A4%BA%E8%AF%8D%E5%8E%8B%E7%BC%A9%E5%B7%A5%E7%A8%8B/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/llm%E4%B8%AD%E7%9A%84%E6%8F%90%E7%A4%BA%E8%AF%8D%E5%8E%8B%E7%BC%A9%E5%B7%A5%E7%A8%8B/</guid><description>一篇关于提示词压缩工程的综述</description><pubDate>Thu, 26 Nov 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LLM中的提示词压缩工程&lt;/h1&gt;
-&lt;p&gt;在自回归LLM中，模型接收提示词并将其映射为词嵌入向量，然后在每一层计算key和value，并存入缓存。然而，当上下文窗口变长时，过长的提示词可能增加计算量，导致模型推理效率下降；也可能“稀释”模型的注意力分配，导致模型输出质量下降。本文将介绍多种常见的提示词压缩方法。&lt;/p&gt;
-&lt;p&gt;[TOC]&lt;/p&gt;
-&lt;h2&gt;一、压缩对象和预算&lt;/h2&gt;
-&lt;p&gt;先建立一个整体的认知：记任务指令为 $I$，上下文或示例为 $X$，当前问题为 $q$，回答为 $y$，$\oplus$ 表示沿序列维拼接。若只压缩上下文，原始和压缩后的两条计算路径可写为&lt;/p&gt;
-&lt;p&gt;$$
-P_{\rm full}(y)=P_G(y\mid I,X,q),\qquad
-Z=C(X;q),\qquad P_{\rm comp}(y)=P_G(y\mid I,Z,q).
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;$C(X;q)$ 可以针对这次问题保留证据；$C(X)$ 可以提前为同一文档建立一份表示，随后服务多个问题&lt;/li&gt;
-&lt;li&gt;设 $B$ 为预算、$\ell$ 为任务损失。目标函数记为 $\min_C\mathbb E[\ell(G(I,C(X;q),q),y)]$，约束为 $|C(X;q)|\le B$。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;输出给生成模型的表示&lt;/th&gt;
-&lt;th&gt;本文中的方法&lt;/th&gt;
-&lt;th&gt;长度缩短的位置&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;原文中保留下来的词、短语或文档&lt;/td&gt;
-&lt;td&gt;Selective Context、LLMLingua、LongLLMLingua、LLMLingua-2、AdaComp&lt;/td&gt;
-&lt;td&gt;选择子序列或文档前缀&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;重新生成的自然语言&lt;/td&gt;
-&lt;td&gt;Nano-Capsulator、CompAct、FAVICOMP&lt;/td&gt;
-&lt;td&gt;生成短提示或证据摘要&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;固定前缀参数，或从指令、上下文读出的状态&lt;/td&gt;
-&lt;td&gt;CC、GIST、AutoCompressor&lt;/td&gt;
-&lt;td&gt;用少量可训练位置或缓存代替原前缀&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;编码器产生的向量或逐层 KV&lt;/td&gt;
-&lt;td&gt;ICAE、500xCompressor、xRAG、UniICL&lt;/td&gt;
-&lt;td&gt;向生成端传递有限个位置&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;h2&gt;二、硬提示：Filtering&lt;/h2&gt;
-&lt;h3&gt;1. Selective Context&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/selective.DhO0QpYA_ZRR2UM.webp&quot; alt=&quot;Compressing Context to Enhance Inference Efficiency of Large Language Models，原图 2&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 2。上半部按自信息着色，下半部显示筛选后留下的原文单元。&lt;/em&gt; &amp;lt;a id=&quot;use-4&quot; name=&quot;use-4&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-4&quot;&gt;〔4〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;自信息。&lt;/strong&gt; 小型因果语言模型在位置 $t$ 给词表打分 $z_t$。先归一化 $p_t(v)=\operatorname{softmax}(z_t)_v$，再取原文实际出现的 $x_t$。它的自信息为 $s_t=-\log_2 p_t(x_t)$。越容易根据前文预测的词，分数越低。&lt;/li&gt;
-&lt;li&gt;固定一个位置，对词表求期望，得到预测分布的熵；固定一段已经发生的文本，沿位置平均，得到模型在该文本上的平均负对数概率。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-H(p_t)=\sum_{v\in V}p_t(v)[-\log_2p_t(v)],\qquad
-h(X)=\frac1n\sum_{t=1}^n s_t,\qquad
-\mathrm{PPL}(X)=2^{h(X)}.
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;可以按 token、短语或句子筛选。对连续单元 $u=x_{a:b}$， $s(u)=-\log_2P(x_{a:b}\mid x_{&amp;lt;a})=\sum_{t=a}^bs_t$。短语方案借助句法分析合并名词短语。按单元分数的分位数设阈值，保留高分单元，再按原序拼回。&lt;/li&gt;
-&lt;li&gt;图中颜色编码自信息，上下两行分别展示原文和筛选结果。每个单元的分数都在原始前文上计算。其中，罕见词可能很意外，得到保留，却与问题无关，这也是Selective Context的缺陷。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;2. LLMLingua&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/lingua.ChzuBjJw_Z1Lxmpv.webp&quot; alt=&quot;LLMLingua: Compressing Prompts for Accelerated Inference of Large Language Models，原图 1&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 1。中间绿色模块依次分配预算、迭代删词；分布对齐作用于小模型。右侧黑盒读取短文本。&lt;/em&gt; &amp;lt;a id=&quot;use-5&quot; name=&quot;use-5&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-5&quot;&gt;〔5〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;粗筛示例。&lt;/strong&gt; 将提示拆成指令、示例集和问题。小模型计算每条示例的困惑度，按从高到低的顺序在粗筛预算内选入示例。指令和问题通常保留较高比例。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;分块细筛。&lt;/strong&gt; 记第 $j$ 块为 $S_j$，前面各块已经保留的部分为 $\widetilde S_{&amp;lt;j}$。该块中第 $t$ 个 token 的工作分数可写为&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-s_{j,t}=-\log p_s(x_{j,t}\mid\widetilde S_{&amp;lt;j},x_{j,&amp;lt;t}),
-\qquad
-\widetilde S_j=(x_{j,t}:s_{j,t}\ge\gamma_j).
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;图中小模型负责打分，黑盒大模型只接收最终文本。论文还用目标模型产生的指令响应数据调整小模型，使打分模型更接近目标模型的分布。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;与 Selective Context 的区别。&lt;/strong&gt; 两者都用原文 token 的预测难度。Selective Context 在完整前文上一次确定单元分数；LLMLingua 增加了分区预算和跨块重打分。它能识别、保护末尾的问题；在通常的前向打分顺序中，较早的文档词仍看不到末尾问题。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;3. LongLLMLingua&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/long.CqCRhy6G_1k2raN.webp&quot; alt=&quot;LongLLMLingua: Accelerating and Enhancing LLMs in Long Context Scenarios via Prompt Compression，原图 2&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 2。文档重排在粗筛阶段完成，动态预算进入词级细筛；最右侧的子序列恢复位于生成之后。&lt;/em&gt; &amp;lt;a id=&quot;use-6&quot; name=&quot;use-6&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-6&quot;&gt;〔6〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;文档级。&lt;/strong&gt; 对每篇文档 $D_k$，都让小模型预测同一问题序列 $q&apos;$（论文在问题后追加约束语句）。下式越小，读过该文档后，问题越容易预测。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-r_k=-\frac1{|q&apos;|}\sum_t\log p_s(q&apos;&lt;em&gt;t\mid D_k,q&apos;&lt;/em&gt;{&amp;lt;t}).
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;词级。&lt;/strong&gt; 令 $h_t$ 表示该处的可用前文。按原论文对数损失的写法，问题为一个已观察词提供的额外信息为&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-\Delta_t=[-\log p_s(x_t\mid h_t)]-[-\log p_s(x_t\mid q,h_t)]
-=\log\frac{p_s(x_t\mid q,h_t)}{p_s(x_t\mid h_t)}.
-$$&lt;/p&gt;
-&lt;p&gt;$\Delta_t$ 大，表示给出问题后这个词变得更容易预测，因而得到较高保留优先级。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;粗筛后按相关性调整文档位置，减轻关键信息落在长输入中部的影响，并让高相关文档获得较宽松的词级预算。回答生成后，还可以把回答中匹配压缩文本的片段映回原文，以恢复被裁掉的细节。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;与 LLMLingua 的区别。&lt;/strong&gt; 初代给“问题本身”留预算，LongLLMLingua 用“当前问的是什么”决定前面哪篇文档、哪些词值得保留。换一个问题，文档排序和词级保留结果都可能改变。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;4. LLMLingua-2&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/lingua2.DmFs4jva_uAnpp.webp&quot; alt=&quot;LLMLingua-2: Data Distillation for Efficient and Faithful Task-Agnostic Prompt Compression，原图 1&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 1。左侧教师生成抽取式短文，中间将其对齐成保留标签，右侧学生用一次编码预测各位置的标签。&lt;/em&gt; &amp;lt;a id=&quot;use-7&quot; name=&quot;use-7&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-7&quot;&gt;〔7〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;标签。&lt;/strong&gt; 让教师模型 GPT-4 对原文执行抽取式压缩，要求尽量使用原词。将短文与原文对齐，给原位置赋保留或删除标签，再做质量过滤。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;双向分类。&lt;/strong&gt; 学生编码器同时读左右上下文。$h_t$ 为该位置的上下文化表示，$y_t\in{0,1}$ 为对齐标签。二分类头输出保留概率 $a_t$，以交叉熵训练：&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-a_t=\operatorname{softmax}(Wh_t+b)_1,\qquad
-\mathcal L=-\sum_t{y_t\log a_t+(1-y_t)\log(1-a_t)}.
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;对一个词的多个子词取保留概率均值，按预算选得分最高的词，再恢复原有顺序。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;与前两代的区别。&lt;/strong&gt; 初代估计“这个词有多难预测”，LongLLMLingua 估计“给出问题后预测这个词改变多少”，LLMLingua-2 估计“教师会不会保留这个词”。最后一种可以在问题出现之前压缩文档，以后反复使用。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;5. AdaComp&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/ada.Tiv2iCvY_Z1tXMTA.webp&quot; alt=&quot;AdaComp: Extractive Context Compression with Adaptive Predictor for Retrieval-Augmented Large Language Models，原图 2&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 2。中间横条的切点 K 是预测结果；底部只有前 K 篇文档与问题一起送入生成器。&lt;/em&gt; &amp;lt;a id=&quot;use-8&quot; name=&quot;use-8&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-8&quot;&gt;〔8〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;监督信号。&lt;/strong&gt; 检索结果已排序为 $D_{1:N}$。在训练集上，以已知答案 $y$ 检查各个前缀。标签是足以使系统答对的最小前缀长度；没有前缀答对时，原算法返回空集。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-k^*=\min{k\in{1,\dots,N}:G(q,D_{1:k})\text{ 命中 }y}.
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;预测器以问题和检索集为输入，预测 $\hat k=f_\theta(q,D_{1:N})$；生成模型读取 $q\oplus D_{1:\hat k}$。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;与 LongLLMLingua 的区别。&lt;/strong&gt; 两者都关心当前问题。AdaComp 学的是排序切点，整篇保留入选文档；LongLLMLingua 还可以重排并在文档内部删词。因此相同的 $\hat k$ 能产生完全不同的 token 成本，排序靠后的关键证据也可能被前缀选择漏掉。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;三、硬提示：Paraphrasing&lt;/h2&gt;
-&lt;h3&gt;6. Nano-Capsulator&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/nano.BszaMFAD_Z4s5Fg.webp&quot; alt=&quot;Learning to Compress Prompt in Natural Language Formats，原图 2&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 2。左侧比较复述和概括的语义，右侧冻结模型对两份提示作答，中间反馈两条答题路径的差异。&lt;/em&gt; &amp;lt;a id=&quot;use-9&quot; name=&quot;use-9&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-9&quot;&gt;〔9〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;压缩器的比较。&lt;/strong&gt; 可训练模型 $F_\theta$ 在复述指令下读取长提示 $K$，得到表示 $e_K$；在概括指令下生成短提示 $C$，得到表示 $e_C$。用均方误差约束两种表示的距离。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;冻结模型的比较。&lt;/strong&gt; 抽取训练问题 $q$，让已有的下游模型 $G$ 分别在 $K\oplus q$ 与 $\Phi(C)\oplus q$ 下作答。$\Phi$ 将短提示截到目标预算；比较两条答题路径的隐藏表示，得到论文称为 reward 的效用差异信号。复述和概括分支在 $F_\theta$ 上，答题分支在冻结的 $G$ 上。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-\mathcal L_{\rm sem}=\mathbb E_C,\mathrm{MSE}(e_K,e_C),\qquad
-R_{\rm cap}=\mathbb E_q,\mathrm{MSE}\big(h_G(K,q),h_G(\Phi(C),q)\big),
-\qquad \mathcal L_{\rm Nano}=\mathcal L_{\rm sem},R_{\rm cap}.
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;与 LLMLingua-2 的区别。&lt;/strong&gt; 抽取器只能从原文词序列中选择；生成式压缩器可以合并、换词和重组句子。后者有机会保留跨句含义，也增加逐步生成短文的开销及改写事实的可能。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;7. CompAct&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/compact.DLaw2umB_1bckN6.webp&quot; alt=&quot;CompAct: Compressing Retrieved Documents Actively for Question Answering，原图 2&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 2。每列是一轮读取。前一列的短文本进入后一列；下方的判断由证据不足转为充分时终止。&lt;/em&gt; &amp;lt;a id=&quot;use-10&quot; name=&quot;use-10&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-10&quot;&gt;〔10〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;状态。&lt;/strong&gt; 将检索文档分批为 $B_1,\dots,B_J$。初始摘要 $C_0$ 为空；每次把问题、上一版摘要和新一批文档交给压缩器。图中从第二轮起才出现“Previous Output”。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-(C_j,E_j)=F_\theta(q,C_{j-1},B_j),\qquad
-j^&lt;em&gt;=\min{j:E_j\text{ 判断证据充分}};
-\qquad \hat y=G(q,C_{j^&lt;/em&gt;}).
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;停止条件。&lt;/strong&gt; $E_j$ 给出判断理由和结论。证据不足则读下一批，证据充分则提前停止；若始终不充分，读完末批后使用最终摘要。早先文档中的中间事实只能通过 $C_{j-1}$ 传给下一轮。&lt;/li&gt;
-&lt;li&gt;用含逐轮摘要和充分性判断的监督数据微调压缩器。多跳问题受益于跨批合并；若过早判定充分，尚在后续批次的证据没有补入机会。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;与 Nano-Capsulator、AdaComp 的区别。&lt;/strong&gt; Nano-Capsulator 为长提示学习可复用的短表述；CompAct 围绕当前问题反复更新摘要。AdaComp 通过预测篇数决定读多少，CompAct 通过已经积累的证据决定是否继续读。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;8. FAVICOMP&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/favi.CSouELAW_ZhT6pg.webp&quot; alt=&quot;Familiarity-Aware Evidence Compression for Retrieval Augmented Generation，原图 1&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 1。下路使目标模型参与证据压缩。图中的日期差异展示了只有压缩器参与和两模型共同参与时可能产生的不同表述。&lt;/em&gt; &amp;lt;a id=&quot;use-11&quot; name=&quot;use-11&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-11&quot;&gt;〔11〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;压缩模型 $P_c$ 读取问题、检索证据 $D$ 和摘要前缀 $c_{&amp;lt;t}$。目标模型 $P_g$ 只读问题和同一个前缀，根据自身知识预测对答题有用的下一个词。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;逐词合并。&lt;/strong&gt; 每一步在两者共享的词表中选择&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-c_t=\arg\max_{v\in V}
-\left[(1-\alpha)\log P_c(v\mid D,q,c_{&amp;lt;t})
-+\alpha\log P_g(v\mid q,c_{&amp;lt;t})\right].
-$$&lt;/p&gt;
-&lt;p&gt;这相当于最大化两项概率的加权几何平均。$\alpha=0$ 时完全依赖证据压缩器；增大 $\alpha$ 会让目标模型较熟悉的表达更容易入选，也可能加大其已有知识与新证据冲突时的偏移。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;与 CompAct 的区别。&lt;/strong&gt; CompAct 的决策发生在批次之间，决定要不要继续读；FAVICOMP 的决策发生在摘要的每个生成位置，决定怎样写。原方案是免训练的解码策略，但需要能对齐两个模型的候选 token 并取得相应分数。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;四、软提示&lt;/h2&gt;
-&lt;h3&gt;9. Contrastive Conditioning（CC）&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/cc.D5YUu3Hv_F7rxd.webp&quot; alt=&quot;Prompt Compression and Contrastive Conditioning for Controllability and Toxicity Reduction in Language Models，原图 1&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 1。左右使用同一语言模型；中间的 KL 比较硬前缀和短软前缀所诱导的后续分布。&lt;/em&gt; &amp;lt;a id=&quot;use-12&quot; name=&quot;use-12&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-12&quot;&gt;〔12〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;记当前用户输入及已生成历史为 $h$。实践者另外准备体现目标属性的前缀 $x^+$ 和对照前缀 $x^-$。“正、负”由希望控制的属性定义。普通对话只有 $h$ 时，模型没有这两段材料，也没有自动决定控制方向的步骤。&lt;/li&gt;
-&lt;li&gt;对给定硬提示 $x$，冻结语言模型，初始化 $S_x\in\mathbb R^{k\times d}$。让同一模型分别读取硬前缀和软前缀，在相同的训练文本位置比较下一词分布。用统一记号展开图中的 KL 目标：&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-S_x^*=\arg\min_S\ \mathbb E_{u}
-\sum_t D_{\rm KL}!\left(P_G(\cdot\mid x,u_{&amp;lt;t}),\Vert,P_G(\cdot\mid S,u_{&amp;lt;t})\right).
-$$&lt;/p&gt;
-&lt;p&gt;训练文本提供各种后续语境，优化变量是 $S$。每个新的固定前缀都要单独拟合；反复使用同一前缀时可以摊薄训练成本。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;分别为 $x^+,x^-$ 学得 $S^+,S^-$。对候选 token $v$，令 $p_0=P_G(v\mid h)$、$p_+=P_G(v\mid S^+,h)$、$p_-=P_G(v\mid S^-,h)$。原论文将属性分数乘回基础分布，并在词表上归一化：&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-P_{\rm ctrl}(v\mid h)=
-\frac{1}{Z(h)}p_0\left(\frac{p_+}{p_++p_-}\right)^{\omega}.
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;压缩。&lt;/strong&gt; 用户历史 $h$ 在三个分支中都保留；缩短的是两段反复使用的控制示例。$\omega=0$ 恢复基础分布。与 LongLLMLingua 对照，后者的对比分数决定删哪个&lt;strong&gt;输入词&lt;/strong&gt;；这里的对比分数调整哪个&lt;strong&gt;输出词&lt;/strong&gt;更可能被生成。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;10. GIST&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/gist.BvXior9T_1Rda2h.webp&quot; alt=&quot;Learning to Compress Prompts with Gist Tokens，原图 2&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 2。逐行读掩码：绿色表示采用 gist 掩码后仍可关注的位置，灰色表示普通模型原本可见、采用 gist 掩码后被阻断的位置。左边是因果解码器，右边分别画出编码器和交叉注意力。&lt;/em&gt; &amp;lt;a id=&quot;use-13&quot; name=&quot;use-13&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-13&quot;&gt;〔13〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;构造序列。&lt;/strong&gt; 令 $T$ 为指令、$g_{1:k}$ 为追加的 gist 位置、$X$ 为本次输入。模型处理 $[T;g_{1:k};X;y]$。相同的特殊 token 在不同指令后会产生不同状态，因为它们在计算注意力时读到了不同的 $T$。&lt;/li&gt;
-&lt;li&gt;在 decoder-only 实现中，对查询位置 $i$ 与键位置 $j$，可将加性掩码写成&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-A_{ij}=\begin{cases}
--\infty,&amp;amp;j&amp;gt;i,\
--\infty,&amp;amp;i\in X\cup y,\ j\in T,\
-0,&amp;amp;\text{其余情况}.
-\end{cases}
-$$&lt;/p&gt;
-&lt;p&gt;gist 位置可以读指令，输入与回答位置可以读 gist 和各自可见的历史。若放开 $X\to T$，模型就能绕过 gist，保留原指令也会成为推理时的依赖。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;训练和复用。&lt;/strong&gt; 在多种指令、输入与目标回答上训练带掩码的模型。遇到新指令时一次前向即可形成 gist；相同指令换输入时可直接复用 gist 状态。在因果模型里缓存相应位置的逐层 KV，随后无需保留全部指令位置。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;与 CC 的区别。&lt;/strong&gt; CC 为每条固定前缀重新优化矩阵；GIST 将“怎样读出指令摘要”学进模型参数，因此能够对训练时未见的指令执行压缩。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;11. AutoCompressor&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/auto.DtcapEwp_1aM9Fw.webp&quot; alt=&quot;Adapting Language Models to Compress Contexts，原图 1&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 1。自下而上是相继读入的文本段。段末摘要沿箭头传给后续段；顶部紫色框为累积的摘要向量。&lt;/em&gt; &amp;lt;a id=&quot;use-14&quot; name=&quot;use-14&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-14&quot;&gt;〔14〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;分块读。&lt;/strong&gt; 将长文分成 $S_1,\ldots,S_J$，每段末尾追加 $k$ 个摘要位置。记 $U_j$ 为本段摘要，$U_{&amp;lt;j}$ 为以前各段摘要的拼接。论文的摘要累积版本可写为&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-U_j=\operatorname{tail}&lt;em&gt;k F&lt;/em&gt;\theta!\left(U_{&amp;lt;j}\oplus E(S_j)\oplus E(\sigma_{1:k})\right),\qquad
-U_{\le j}=U_{&amp;lt;j}\oplus U_j.
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;下一段只能通过 $U_{\le j}$ 获取早先文本。用语言建模损失 $\mathcal L=-\sum_{j,t}\log P_\theta(s_{j,t}\mid U_{&amp;lt;j},s_{j,&amp;lt;t})$ 训练；后文若依赖前文，被保留的摘要应提高对后文的预测概率。&lt;/li&gt;
-&lt;li&gt;段末输出取顶层向量，作为下一段输入端的软提示。累积版本的摘要长度随段数增长为 $Jk$；早先的正文位置不再进入下一段。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;与 GIST 的区别。&lt;/strong&gt; “逐段做 gist 再拼接”能描述段末读出的直觉。实现上，AutoCompressor 把向量送回输入层、递归处理后续段，并用后文的预测损失训练。GIST 的典型任务是用受限可见性的少数位置承载一条指令，再对新输入执行它。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;12. ICAE&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/icae.Cno5vJzg_Z15mDLO.webp&quot; alt=&quot;In-context Autoencoder for Context Compression in a Large Language Model，原图 3&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 3。下方启用 LoRA 的编码端输出记忆槽，上方冻结解码端以这些槽和已知目标前缀逐词重建。&lt;/em&gt; &amp;lt;a id=&quot;use-15&quot; name=&quot;use-15&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-15&quot;&gt;〔15〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;编码。&lt;/strong&gt; 长度为 $n$ 的正文后追加 $k$ 个记忆 token，用带 LoRA 的语言模型处理。只取末尾位置的顶层隐藏状态：&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-M=\operatorname{tail}&lt;em&gt;k F&lt;/em&gt;{\theta+\Delta_{\rm LoRA}}
-(E(X)\oplus E_m)\in\mathbb R^{k\times d}.
-$$&lt;/p&gt;
-&lt;p&gt;$E_m$ 是可学习的初始记忆嵌入，$M$ 是读完这条正文后的结果。同一组 $E_m$ 可以处理不同文档，每篇得到自己的 $M$。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;训练目标。&lt;/strong&gt; 设 $\mathrm{NLL}&lt;em&gt;G(b\mid a)=-\sum_t\log P_G(b_t\mid a,b&lt;/em&gt;{&amp;lt;t})$。下表给出编码端收到的三类监督：&lt;/li&gt;
-&lt;/ul&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;阶段&lt;/th&gt;
-&lt;th&gt;解码器的条件&lt;/th&gt;
-&lt;th&gt;损失&lt;/th&gt;
-&lt;th&gt;记忆需要保留什么&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;自编码预训练&lt;/td&gt;
-&lt;td&gt;$M$ 和特殊标记 $[\mathrm{AE}]$&lt;/td&gt;
-&lt;td&gt;$\mathrm{NLL}_G(X\mid M,[\mathrm{AE}])$&lt;/td&gt;
-&lt;td&gt;足够还原原文的细节&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;续写预训练&lt;/td&gt;
-&lt;td&gt;$M$&lt;/td&gt;
-&lt;td&gt;$\mathrm{NLL}&lt;em&gt;G(X&lt;/em&gt;{\rm next}\mid M)$&lt;/td&gt;
-&lt;td&gt;对后文有预测价值的信息&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;指令微调&lt;/td&gt;
-&lt;td&gt;$M$ 和完整问题 $q$&lt;/td&gt;
-&lt;td&gt;$\mathrm{NLL}_G(y\mid M,q)$&lt;/td&gt;
-&lt;td&gt;回答所需的内容&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;ul&gt;
-&lt;li&gt;训练时，在预测 $x_t$ 的位置只提供真实前缀 $x_{&amp;lt;t}$。标签是原文 token，不需要人为指定“正确的记忆向量”。解码器权重冻结，但损失对输入 $M$ 可微，梯度沿 $\partial\mathcal L/\partial M$ 更新编码端 LoRA 和记忆嵌入。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;与 AutoCompressor 的区别。&lt;/strong&gt; 两者的底层都可以采用因果 Transformer。“编码器—解码器”在 ICAE 里指功能分工：编码端学习怎样写入 $M$，原始冻结模型负责读取。AutoCompressor 让同一套经训练的模型递归写摘要、读摘要、预测后文。两者最后都能拼接 embedding，训练约束却不同。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;13. 500xCompressor&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/500x.DIC31T7a_Z1UqKD5.webp&quot; alt=&quot;500xCompressor: Generalized Prompt Compression for Large Language Models，原图 2&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 2。三栏依次展示重建、问答微调和推理。绿色块表示传给冻结解码器的键值状态。&lt;/em&gt; &amp;lt;a id=&quot;use-16&quot; name=&quot;use-16&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-16&quot;&gt;〔16〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;编码前半段类似 ICAE。&lt;/strong&gt; 将 $k$ 个压缩位置追加在正文末尾。区别出现在读出时：对第 $\ell$ 层，只截取这些位置的键和值。若省略批次维，模型有 $L$ 层、$H_{\rm kv}$ 个 KV 头，每头宽度为 $d_h$，则&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-\mathcal K_X={(K_c^{(\ell)},V_c^{(\ell)}):\ell=1,\dots,L},\qquad
-K_c^{(\ell)},V_c^{(\ell)}\in\mathbb R^{H_{\rm kv}\times k\times d_h}.
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;标准注意力先从进入本层的状态投影出 Q、K、V，再按注意力权重读取前文。第一层末尾位置在完成注意力后才获得上下文化的输出；上层可将这部分文档信息写进该位置的 K、V。保存所有层，解码器每层就能读取与本层对应的前缀状态。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;解码接口。&lt;/strong&gt; 解码问题时，每层将 $K_c^{(\ell)}$ 与当前问题前缀的键沿序列维拼接，值同理。问题的查询与这些键计算注意力，再加权读取值。编码器学习写入缓存，解码器保持冻结。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;与 ICAE 的区别。&lt;/strong&gt; ICAE 传递 $kd$ 个输入嵌入分量，解码器自行算出各层 KV；这里直接传递 $2LkH_{\rm kv}d_h$ 个分量。同样的 $k=1$，两种方案暴露给解码器的信息接口和离线存储量都不同。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;14. xRAG&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/xrag.D651_kuj_2wtPYR.webp&quot; alt=&quot;xRAG: Extreme Context Compression for Retrieval-augmented Generation with One Token，原图 2&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 2。数据库里的文档向量经投影进入语言模型。虚线框中的传统路径需要取回并编码文档文本。&lt;/em&gt; &amp;lt;a id=&quot;use-17&quot; name=&quot;use-17&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-17&quot;&gt;〔17〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;索引阶段。&lt;/strong&gt; 冻结检索编码器 $R$ 将每段文档变成向量 $e_D=R(D)\in\mathbb R^{d_r}$。它原本用于检索相关文档，适合离线计算和保存。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;回答阶段。&lt;/strong&gt; 找到文档后，训练过的两层 MLP 将它的检索向量映为一个输入 embedding。单篇文档对应一行：&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-z_D=W_2\sigma(W_1e_D+b_1)+b_2\in\mathbb R^d,\qquad
-P(y\mid D,q)\approx P_G(y\mid z_D\oplus E(q)).
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;检索训练使向量距离有意义；冻结生成模型要求前缀激活能引发合适的回答。即便 $d_r=d$，维数相同也不能保证这两种用途已经对齐。投影器是两端都冻结后可学习的连接。&lt;/li&gt;
-&lt;li&gt;先用改述预训练，让模型根据文档向量生成文档文本；随后用上下文感知的指令微调，结合目标答案的语言建模损失与自蒸馏。蒸馏项的方向是 $D_{\rm KL}(P_G(\cdot\mid D,q)\Vert P_G(\cdot\mid z_D,q))$，完整文本路径提供教师分布。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;与 ICAE、500xCompressor 的区别。&lt;/strong&gt; xRAG 复用已经存在的检索表示，信息在检索编码器生成单向量时已经收缩。ICAE 用重建与问答监督学习写入多个记忆位置；500xCompressor 还把传递接口推进到解码器每一层。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;15. UniICL&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/uni._aKrdN1Z_adQeL.webp&quot; alt=&quot;UniICL: An Efficient Unified Framework Unifying Compression, Selection, and Generation，原图 2&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;原论文图 2。示例库保存压缩序列；相似度排序决定从库中取哪几条，选中的序列再与问题共同进入生成模型。&lt;/em&gt; &amp;lt;a id=&quot;use-18&quot; name=&quot;use-18&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-18&quot;&gt;〔18〕&lt;/a&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;设示例 $D_i$ 长 $n_i$。在末尾追加 $k_i$ 个共享初始嵌入的记忆位置，冻结的 Vicuna 输出末尾 $k_i$ 行隐藏状态，再以同一个线性层逐行投影：&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-H_i=\operatorname{tail}_{k_i}F(E(D_i)\oplus[M]^{k_i})
-\in\mathbb R^{k_i\times d},\qquad
-C_i=H_iW_p^\top\in\mathbb R^{k_i\times d}.
-$$&lt;/p&gt;
-&lt;p&gt;长度从 $n_i$ 缩到 $k_i$ 发生在取末尾的行。$W_p$ 保留行数，学习把顶层输出对齐到生成模型的输入空间。共享记忆嵌入和投影层都可训练，主干冻结。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;候选的 $C_i$ 可预先建库。用同样过程编码新问题，得到 $C_q$。先在&lt;strong&gt;单条示例内部&lt;/strong&gt;沿 token 维平均，再比较余弦相似度：&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-\bar c_i=\frac1{k_i}\sum_{j=1}^{k_i} C_i[j,:]\in\mathbb R^d,\qquad
-s_i=\frac{\bar c_q^\top\bar c_i}{|\bar c_q|,|\bar c_i|}.
-$$&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;设选中的示例编号为 $i_1,\ldots,i_m$，解码器读入 $C_{i_1}\oplus\cdots\oplus C_{i_m}\oplus E(q)$，总长度为 $\sum_j k_{i_j}+|q|$。排序阶段的一行均值已完成任务。问题在选示例时压缩过一次，在回答时以完整 token 出现。&lt;/li&gt;
-&lt;li&gt;首先随机压缩训练输入的一部分，结合剩余原文预测目标答案，训练写入能力。随后用有标签的训练问题测量候选示例的价值：&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;$$
-g_i=\mathrm{PPL}(y\mid q)-\mathrm{PPL}(y\mid D_i,q).
-$$&lt;/p&gt;
-&lt;p&gt;增益大的候选能让正确答案更容易预测。根据相对增益挖掘正负示例，再结合语言建模与对比训练，使均值向量能区分有益和干扰示例。上线时没有标准答案，用已学到的余弦分数选示例。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;与 xRAG 的区别。&lt;/strong&gt; 两者都把投影结果拼在完整问题之前。xRAG 从一个已有的、固定的文档检索向量出发；UniICL 为带输入和答案的示例生成多行表示，训练共享记忆嵌入来影响读取过程。其均值服务于检索，整组行服务于上下文学习。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;参考文献&lt;/h2&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-1&quot; name=&quot;ref-1&quot;&amp;gt;&amp;lt;/a&amp;gt;〔1〕 Zongqian Li、Yinhong Liu、Yixuan Su、Nigel Collier．&lt;a href=&quot;https://arxiv.org/abs/2410.12388v2&quot;&gt;Prompt Compression for Large Language Models: A Survey&lt;/a&gt;．2024，arXiv:2410.12388v2。&lt;a href=&quot;#use-1&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-2&quot; name=&quot;ref-2&quot;&amp;gt;&amp;lt;/a&amp;gt;〔2〕 360亿方智能（文内注明转自「老刘说NLP」）．&lt;a href=&quot;https://zhuanlan.zhihu.com/p/8370444834&quot;&gt;大模型prompt压缩技术总结：从硬提示到软提示代表方案实现思路&lt;/a&gt;．知乎，2024-11-22。&lt;a href=&quot;#use-2&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-3&quot; name=&quot;ref-3&quot;&amp;gt;&amp;lt;/a&amp;gt;〔3〕 用户与 ChatGPT．&lt;a href=&quot;https://chatgpt.com/share/6b0715c8-cad4-83ee-9d0f-8213967f77b1&quot;&gt;提示词压缩工程&lt;/a&gt;．用户提供的完整分享对话，另有本地 HTML 节选。&lt;a href=&quot;#use-3&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-4&quot; name=&quot;ref-4&quot;&amp;gt;&amp;lt;/a&amp;gt;〔4〕 Yucheng Li 等．&lt;a href=&quot;https://arxiv.org/abs/2310.06201v1&quot;&gt;Compressing Context to Enhance Inference Efficiency of Large Language Models&lt;/a&gt;．arXiv:2310.06201v1，原图 2，PDF 第 3 页。&lt;a href=&quot;#use-4&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-5&quot; name=&quot;ref-5&quot;&amp;gt;&amp;lt;/a&amp;gt;〔5〕 Huiqiang Jiang 等．&lt;a href=&quot;https://arxiv.org/abs/2310.05736v2&quot;&gt;LLMLingua: Compressing Prompts for Accelerated Inference of Large Language Models&lt;/a&gt;．arXiv:2310.05736v2，原图 1，PDF 第 3 页。&lt;a href=&quot;#use-5&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-6&quot; name=&quot;ref-6&quot;&amp;gt;&amp;lt;/a&amp;gt;〔6〕 Huiqiang Jiang 等．&lt;a href=&quot;https://arxiv.org/abs/2310.06839v2&quot;&gt;LongLLMLingua: Accelerating and Enhancing LLMs in Long Context Scenarios via Prompt Compression&lt;/a&gt;．arXiv:2310.06839v2，原图 2，PDF 第 3 页。&lt;a href=&quot;#use-6&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-7&quot; name=&quot;ref-7&quot;&amp;gt;&amp;lt;/a&amp;gt;〔7〕 Zhuoshi Pan 等．&lt;a href=&quot;https://arxiv.org/abs/2403.12968v2&quot;&gt;LLMLingua-2: Data Distillation for Efficient and Faithful Task-Agnostic Prompt Compression&lt;/a&gt;．arXiv:2403.12968v2，原图 1，PDF 第 3 页。&lt;a href=&quot;#use-7&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-8&quot; name=&quot;ref-8&quot;&amp;gt;&amp;lt;/a&amp;gt;〔8〕 Qianchi Zhang 等．&lt;a href=&quot;https://arxiv.org/abs/2409.01579v2&quot;&gt;AdaComp: Extractive Context Compression with Adaptive Predictor for Retrieval-Augmented Large Language Models&lt;/a&gt;．arXiv:2409.01579v2，原图 2，PDF 第 3 页。&lt;a href=&quot;#use-8&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-9&quot; name=&quot;ref-9&quot;&amp;gt;&amp;lt;/a&amp;gt;〔9〕 Yu-Neng Chuang 等．&lt;a href=&quot;https://arxiv.org/abs/2402.18700v2&quot;&gt;Learning to Compress Prompt in Natural Language Formats&lt;/a&gt;．arXiv:2402.18700v2，原图 2，PDF 第 4 页。&lt;a href=&quot;#use-9&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-10&quot; name=&quot;ref-10&quot;&amp;gt;&amp;lt;/a&amp;gt;〔10〕 Chanwoong Yoon 等．&lt;a href=&quot;https://arxiv.org/abs/2407.09014v3&quot;&gt;CompAct: Compressing Retrieved Documents Actively for Question Answering&lt;/a&gt;．arXiv:2407.09014v3，原图 2，PDF 第 3 页。&lt;a href=&quot;#use-10&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-11&quot; name=&quot;ref-11&quot;&amp;gt;&amp;lt;/a&amp;gt;〔11〕 Dongwon Jung 等．&lt;a href=&quot;https://arxiv.org/abs/2409.12468v1&quot;&gt;Familiarity-Aware Evidence Compression for Retrieval Augmented Generation&lt;/a&gt;．arXiv:2409.12468v1，原图 1，PDF 第 2 页。&lt;a href=&quot;#use-11&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-12&quot; name=&quot;ref-12&quot;&amp;gt;&amp;lt;/a&amp;gt;〔12〕 David Wingate、Mohammad Shoeybi、Taylor Sorensen．&lt;a href=&quot;https://arxiv.org/abs/2210.03162v1&quot;&gt;Prompt Compression and Contrastive Conditioning for Controllability and Toxicity Reduction in Language Models&lt;/a&gt;．arXiv:2210.03162v1，原图 1，PDF 第 1 页。&lt;a href=&quot;#use-12&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-13&quot; name=&quot;ref-13&quot;&amp;gt;&amp;lt;/a&amp;gt;〔13〕 Jesse Mu、Xiang Lisa Li、Noah Goodman．&lt;a href=&quot;https://arxiv.org/abs/2304.08467v3&quot;&gt;Learning to Compress Prompts with Gist Tokens&lt;/a&gt;．arXiv:2304.08467v3，原图 2，PDF 第 3 页。&lt;a href=&quot;#use-13&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-14&quot; name=&quot;ref-14&quot;&amp;gt;&amp;lt;/a&amp;gt;〔14〕 Alexis Chevalier 等．&lt;a href=&quot;https://arxiv.org/abs/2305.14788v2&quot;&gt;Adapting Language Models to Compress Contexts&lt;/a&gt;．arXiv:2305.14788v2，原图 1，PDF 第 1 页。&lt;a href=&quot;#use-14&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-15&quot; name=&quot;ref-15&quot;&amp;gt;&amp;lt;/a&amp;gt;〔15〕 Tao Ge 等．&lt;a href=&quot;https://arxiv.org/abs/2307.06945v4&quot;&gt;In-context Autoencoder for Context Compression in a Large Language Model&lt;/a&gt;．arXiv:2307.06945v4，原图 3，PDF 第 3 页。&lt;a href=&quot;#use-15&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-16&quot; name=&quot;ref-16&quot;&amp;gt;&amp;lt;/a&amp;gt;〔16〕 Zongqian Li、Yixuan Su、Nigel Collier．&lt;a href=&quot;https://arxiv.org/abs/2408.03094v1&quot;&gt;500xCompressor: Generalized Prompt Compression for Large Language Models&lt;/a&gt;．arXiv:2408.03094v1，原图 2，PDF 第 2 页。&lt;a href=&quot;#use-16&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-17&quot; name=&quot;ref-17&quot;&amp;gt;&amp;lt;/a&amp;gt;〔17〕 Xin Cheng 等．&lt;a href=&quot;https://arxiv.org/abs/2405.13792v2&quot;&gt;xRAG: Extreme Context Compression for Retrieval-augmented Generation with One Token&lt;/a&gt;．arXiv:2405.13792v2，原图 2，PDF 第 3 页。&lt;a href=&quot;#use-17&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-18&quot; name=&quot;ref-18&quot;&amp;gt;&amp;lt;/a&amp;gt;〔18〕 Jun Gao 等．&lt;a href=&quot;https://arxiv.org/abs/2405.17062v3&quot;&gt;UniICL: An Efficient Unified Framework Unifying Compression, Selection, and Generation&lt;/a&gt;．arXiv:2405.17062v3，原图 2，PDF 第 2 页。&lt;a href=&quot;#use-18&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-</content:encoded></item><item><title>推测解码与MTP</title><link>https://miku.nikonikoni.blog/posts/%E6%8E%A8%E6%B5%8B%E8%A7%A3%E7%A0%81%E4%B8%8Emtp/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/%E6%8E%A8%E6%B5%8B%E8%A7%A3%E7%A0%81%E4%B8%8Emtp/</guid><description>介绍推测级联的路由规则，以及 DeepSeek-V3 多 token 预测的训练与推理。</description><pubDate>Thu, 26 Nov 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;推测解码与MTP&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>nikonikoni&apos;s blog</title><description>a blog website</description><link>https://miku.nikonikoni.blog/</link><language>zh_CN</language><item><title>推测解码与MTP</title><link>https://miku.nikonikoni.blog/posts/%E6%8E%A8%E6%B5%8B%E8%A7%A3%E7%A0%81%E4%B8%8Emtp/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/%E6%8E%A8%E6%B5%8B%E8%A7%A3%E7%A0%81%E4%B8%8Emtp/</guid><description>介绍推测级联的路由规则，以及 DeepSeek-V3 多 token 预测的训练与推理。</description><pubDate>Thu, 26 Nov 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;推测解码与MTP&lt;/h1&gt;
 &lt;p&gt;在自回归 LLM 中，模型要先生成第一个 token，才能确定预测第二个 token 时应当读入什么。如果先给它一段候选文本，情况就变了：各位置的候选前缀都已知，大模型一次前向就能给出每个位置的条件分布。推测解码（Speculative Decoding）利用这个性质，把逐词生成中的一部分工作转化为并行验证。推测级联进一步改变验证时采用的目标分布。多 token 预测（Multi-Token Prediction，MTP）则从训练入手，让同一段前文为多个未来位置提供预测，其中的辅助预测可以用来起草。 &amp;lt;a id=&quot;cite-1&quot; name=&quot;cite-1&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-1&quot;&gt;〔1〕&lt;/a&gt; &amp;lt;a id=&quot;cite-2&quot; name=&quot;cite-2&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-2&quot;&gt;〔2〕&lt;/a&gt;&lt;/p&gt;
 &lt;h2&gt;一、自回归解码与推测解码&lt;/h2&gt;
 &lt;p&gt;记已经确认的前缀为 $h$，目标模型为 $p$，草稿模型为 $q$，词表为 $V$，一轮最多起草 $\gamma$ 个 token。本文中 $p(v\mid h)$ 和 $q(v\mid h)$ 都指实际参与解码的归一化概率。使用温度或 top-p 采样时，应按各自的采样设置处理 logits，再计算这些概率。&lt;/p&gt;
@@ -399,7 +40,7 @@ $$&lt;/p&gt;
 &lt;/table&gt;
 &lt;h3&gt;1. 草稿 ABC 是怎样得到的&lt;/h3&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/classic.BbDfjueH_2hnkiu.webp&quot; alt=&quot;classic&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;Leviathan 等，原论文图 1。每一行对应一次推测解码迭代，行内多个词可以在同一次目标模型调用后得到确认。&lt;/em&gt; &amp;lt;a id=&quot;cite-6&quot; name=&quot;cite-6&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-6&quot;&gt;〔6〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Leviathan 等，原论文图 1。每一行对应一次推测解码迭代，行内多个词可以在同一次目标模型调用后得到确认。&lt;/em&gt; &amp;lt;a id=&quot;cite-5&quot; name=&quot;cite-5&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-5&quot;&gt;〔5〕&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;普通解码。&lt;/strong&gt; 要生成 $y_{1:n}$，目标模型依次使用条件分布 $p(y_i\mid h,y_{&amp;lt;i})$。预填充时整段提示已经给出，可以并行处理；生成时未来 token 尚未确定，通常一次只推进一个位置。&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;起草。&lt;/strong&gt; 设 $\gamma=3$。独立小模型先根据 $h$ 生成 $A$，把 $A$ 接回输入生成 $B$，再根据 $hAB$ 生成 $C$。整个草稿的概率为&lt;/li&gt;
@@ -449,7 +90,7 @@ $$&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;贪婪验证。&lt;/strong&gt; 在位置 $j$，设 $h_j$ 为原前缀加上之前已通过的草稿，$d_j$ 为候选。若 $d_j=\arg\max_v p(v\mid h_j)$，就接受并继续；首次不一致时提交目标模型的 argmax，结束本轮。只要并列分数的处理规则相同，每一步提交的都是目标模型在同一前缀上的贪婪结果。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;随机采样。&lt;/strong&gt; 若目标是从 $p$ 采样，同一前缀可以有多个合法结果。Chen 等给出的算法先从 $q$ 采样，再根据两个分布的概率质量决定是否接受。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/sampling.DDcw7CRM_ZMQ7wt.webp&quot; alt=&quot;sampling&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;Chen 等，原论文算法 2。注意拒绝分支重新采样使用的分布，以及全块接受时多采一个 token 的分支。&lt;/em&gt; &amp;lt;a id=&quot;cite-7&quot; name=&quot;cite-7&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-7&quot;&gt;〔7〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Chen 等，原论文算法 2。注意拒绝分支重新采样使用的分布，以及全块接受时多采一个 token 的分支。&lt;/em&gt; &amp;lt;a id=&quot;cite-6&quot; name=&quot;cite-6&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-6&quot;&gt;〔6〕&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;固定一个位置，省略条件 $h_j$。设 $d\sim q$，独立采样 $u\sim U(0,1)$。在 $q(d)&amp;gt;0$ 的候选上，接受条件为&lt;/p&gt;
 &lt;p&gt;$$
 u\le a(d),\qquad a(d)=\min\left(1,\frac{p(d)}{q(d)}\right).
@@ -475,14 +116,14 @@ $$&lt;/p&gt;
 &lt;h2&gt;二、草稿&lt;/h2&gt;
 &lt;h3&gt;3. SpecDec 与 DistillSpec&lt;/h3&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/specdec.Df6SaWir_Z1jJG1J.webp&quot; alt=&quot;specdec&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;SpecDec 原论文图 4。同一处候选在严格匹配下会产生分歧，放宽排名和对数概率差要求后，可以继续验证后续位置。&lt;/em&gt; &amp;lt;a id=&quot;cite-8&quot; name=&quot;cite-8&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-8&quot;&gt;〔8〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;SpecDec 原论文图 4。同一处候选在严格匹配下会产生分歧，放宽排名和对数概率差要求后，可以继续验证后续位置。&lt;/em&gt; &amp;lt;a id=&quot;cite-7&quot; name=&quot;cite-7&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-7&quot;&gt;〔7〕&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;SpecDec。&lt;/strong&gt; 在序列到序列任务中，使用独立的 Spec-Drafter，根据源输入和目标前缀并行预测一个块。作者把较多容量分配给只需编码一次的源端，减少反复运行的解码端开销，用序列级蒸馏训练草稿器。&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;Spec-Verification。&lt;/strong&gt; 记目标分布为 $p_j$。候选须进入前 $\beta$ 名，同时与最优词的对数概率差 $\log\max_v p_j(v)-\log p_j(d_j)$ 落入容许范围。这两个条件分别控制排名和分数差距。即使候选排第二，它也可能与第一名相差很远。&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;与严格采样的区别。&lt;/strong&gt; 此处允许提交一个满足阈值的次优词，衡量的是翻译或摘要等任务的质量。前节的概率比和残差修正则给出对指定分布的严格保证。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/distill.SpsyKnOW_mSilC.webp&quot; alt=&quot;distill&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;DistillSpec 原论文图 3 是机制消融图。左图比较不同蒸馏策略的接受率，中图比较蒸馏前后的块效率，右图对照理论块效率和实测值。&lt;/em&gt; &amp;lt;a id=&quot;cite-9&quot; name=&quot;cite-9&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-9&quot;&gt;〔9〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;DistillSpec 原论文图 3 是机制消融图。左图比较不同蒸馏策略的接受率，中图比较蒸馏前后的块效率，右图对照理论块效率和实测值。&lt;/em&gt; &amp;lt;a id=&quot;cite-8&quot; name=&quot;cite-8&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-8&quot;&gt;〔8〕&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;DistillSpec。&lt;/strong&gt; 保留独立的小型自回归草稿器，改变其训练目标。让学生在自己的轨迹上生成前缀，再让教师给这些位置提供完整的下一词分布。用 $d_q$ 表示草稿器实际访问的前缀分布，目标可概括为&lt;/li&gt;
 &lt;/ul&gt;
@@ -496,20 +137,20 @@ $$&lt;/p&gt;
 &lt;/ul&gt;
 &lt;h3&gt;4. Draft &amp;amp; Verify 与 Predictive Pipelined Decoding&lt;/h3&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/skip.Dxrrt3ld_Z1dMGQS.webp&quot; alt=&quot;skip&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;Draft &amp;amp; Verify 原论文图 1。起草使用跳层的网络，验证使用完整网络。&lt;/em&gt; &amp;lt;a id=&quot;cite-10&quot; name=&quot;cite-10&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-10&quot;&gt;〔10〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Draft &amp;amp; Verify 原论文图 1。起草使用跳层的网络，验证使用完整网络。&lt;/em&gt; &amp;lt;a id=&quot;cite-9&quot; name=&quot;cite-9&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-9&quot;&gt;〔9〕&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;跳层。&lt;/strong&gt; 同一组模型参数按两种方式执行。起草时跳过选定的注意力或前馈子层，以较低成本生成多个词；验证时走完整的目标模型。跳过哪些子层会同时影响草稿速度和准确性，论文在样本上搜索跳层策略。&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;自适应停止。&lt;/strong&gt; 当下一个草稿词的置信度过低时，可以提前结束起草，把已有候选交给完整网络。这里的置信度控制草稿长度，最终能否提交仍由验证结果决定。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/pipe.B2DCJu6Y_ZYAv4A.webp&quot; alt=&quot;pipe&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;Predictive Pipelined Decoding 原论文图 1。右侧沿时间轴排列多个前向过程，错误候选对应的后续分支会终止。&lt;/em&gt; &amp;lt;a id=&quot;cite-11&quot; name=&quot;cite-11&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-11&quot;&gt;〔11〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Predictive Pipelined Decoding 原论文图 1。右侧沿时间轴排列多个前向过程，错误候选对应的后续分支会终止。&lt;/em&gt; &amp;lt;a id=&quot;cite-10&quot; name=&quot;cite-10&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-10&quot;&gt;〔10〕&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;提前启动下一步。&lt;/strong&gt; 当前 token 的完整前向仍在进行时，用中间层表示预测它可能取的值。分配额外计算资源，以候选词作为输入，提前启动下一个位置的前向。等深层结果可用后，保留与完整模型一致的分支。&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;与跳层的区别。&lt;/strong&gt; 跳层先廉价地写一块草稿，再让完整网络读一遍；流水线让相邻 token 的计算在时间上重叠。早期预测命中才有可复用的工作，分支越多，占用的并行计算资源越多。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h3&gt;5. Jacobi 并行解码与 Lookahead Decoding&lt;/h3&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/jacobi.BHQlMiGQ_14Y1NA.webp&quot; alt=&quot;jacobi&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;Santilli 等原论文图 1。左侧为自回归翻译，右侧用初始猜测填满多个目标位置，在一次迭代里同时更新。&lt;/em&gt; &amp;lt;a id=&quot;cite-12&quot; name=&quot;cite-12&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-12&quot;&gt;〔12〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Santilli 等原论文图 1。左侧为自回归翻译，右侧用初始猜测填满多个目标位置，在一次迭代里同时更新。&lt;/em&gt; &amp;lt;a id=&quot;cite-11&quot; name=&quot;cite-11&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-11&quot;&gt;〔11〕&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;Jacobi 更新。&lt;/strong&gt; 给定源句 $x$ 和固定长度的目标位置，贪婪解码的结果满足 $y_i=\arg\max_v p(v\mid x,y_{&amp;lt;i})$。先用占位 token 等方式初始化猜测，在第 $s+1$ 轮同时计算&lt;/li&gt;
 &lt;/ul&gt;
@@ -518,7 +159,7 @@ y_i^{(s+1)}=\arg\max_v p(v\mid x,y_{&amp;lt;i}^{(s)}).
 $$&lt;/p&gt;
 &lt;p&gt;同一轮的各位置都读上一轮的猜测。每轮至少可使正确前缀再向前延伸一个位置，猜对的远端位置还可能提前稳定。论文还研究按块处理和随后切回自回归的方式。总收益取决于迭代次数及每轮成本。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/look.BNyPj-1G_Z1ONoT6.webp&quot; alt=&quot;look&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;Lookahead Decoding 原论文图 1。左侧分支形成候选 n-gram，验证分支读取与当前前缀相接的候选。&lt;/em&gt; &amp;lt;a id=&quot;cite-13&quot; name=&quot;cite-13&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-13&quot;&gt;〔13〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Lookahead Decoding 原论文图 1。左侧分支形成候选 n-gram，验证分支读取与当前前缀相接的候选。&lt;/em&gt; &amp;lt;a id=&quot;cite-12&quot; name=&quot;cite-12&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-12&quot;&gt;〔12〕&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;收集候选。&lt;/strong&gt; 保留多个位置在连续 Jacobi 迭代中的预测轨迹，抽取沿轨迹形成的 n-gram，写入候选池。一个局部片段即使当时位于错误前缀后面，也可能在稍后的正确前缀上派上用场。&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;取出并验证。&lt;/strong&gt; 根据当前已确认的末词从池中选出若干续段，使用目标模型并行验证。前瞻分支生成新片段，验证分支提交可接受前缀，两者可以合到一次带掩码的前向里。&lt;/li&gt;
@@ -526,13 +167,13 @@ $$&lt;/p&gt;
 &lt;/ul&gt;
 &lt;h3&gt;6. SpecInfer 与 Medusa&lt;/h3&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/tree.BiA7bw10_1K6Adl.webp&quot; alt=&quot;tree&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;SpecInfer 原论文图 2。上半部把多个候选组织成树，下半部在目标模型中验证各条可行路径。&lt;/em&gt; &amp;lt;a id=&quot;cite-14&quot; name=&quot;cite-14&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-14&quot;&gt;〔14〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;SpecInfer 原论文图 2。上半部把多个候选组织成树，下半部在目标模型中验证各条可行路径。&lt;/em&gt; &amp;lt;a id=&quot;cite-13&quot; name=&quot;cite-13&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-13&quot;&gt;〔13〕&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;从链到树。&lt;/strong&gt; 若多个草稿共享首词，将共同前缀存成同一节点，随后才分叉。对树中节点 $u$，目标模型应给出 $p(\cdot\mid h,\operatorname{path}(u))$。比较候选节点自身时，要读取其&lt;strong&gt;父节点&lt;/strong&gt;对应的预测。&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;树注意力。&lt;/strong&gt; 每个候选位置可以关注公共前缀、自己的祖先及自身，屏蔽兄弟节点。并行处理一棵树就能得到多条路径上的条件分布。提交选中的路径后，只保留这条路径所需的缓存。树增宽可以覆盖更多候选，也会消耗更多验证位置。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/medusa.CNZyIcnT_1rUFy8.webp&quot; alt=&quot;medusa&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;Medusa 原论文图 1。左侧为共享主干，中间的附加头预测不同偏移量，右侧各头的高分候选按偏移量排列，下方展示从中选择并验证的续段。&lt;/em&gt; &amp;lt;a id=&quot;cite-15&quot; name=&quot;cite-15&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-15&quot;&gt;〔15〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Medusa 原论文图 1。左侧为共享主干，中间的附加头预测不同偏移量，右侧各头的高分候选按偏移量排列，下方展示从中选择并验证的续段。&lt;/em&gt; &amp;lt;a id=&quot;cite-14&quot; name=&quot;cite-14&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-14&quot;&gt;〔14〕&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;多头起草。&lt;/strong&gt; 设 $h_t$ 为主干顶层状态。原始头预测 $x_{t+1}$，第 $k$ 个附加头从同一 $h_t$ 预测 $x_{t+k+1}$。每个头可以保留多个高分词，按预设树结构选择部分组合，再用树注意力验证。&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;训练和接受。&lt;/strong&gt; Medusa-1 冻结主干、训练附加头；Medusa-2 联合微调。采用贪婪一致性验证时，结果对齐所用目标模型的贪婪输出。论文也讨论 typical acceptance，即根据目标概率和熵放宽接受条件，此时应同时测量生成质量。&lt;/li&gt;
@@ -559,7 +200,7 @@ $$&lt;/p&gt;
 &lt;li&gt;&lt;strong&gt;与标准推测解码的区别。&lt;/strong&gt; 标准算法每一步都以 $p$ 为目标。推测级联可以有意保留小模型的措辞，其严格采样保证针对 $\pi$。它仍要为一块候选运行大模型；节省时间的机会来自更长的提交前缀。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/cascade.Dwc7YyMX_Zk8dLI.webp&quot; alt=&quot;cascade&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;《Faster Cascades via Speculative Decoding》原论文算法 1–5。左栏比较不同路由方式，右栏算法 4 是通用采样器，算法 5 把级联目标传入该采样器。&lt;/em&gt; &amp;lt;a id=&quot;cite-16&quot; name=&quot;cite-16&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-16&quot;&gt;〔16〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;《Faster Cascades via Speculative Decoding》原论文算法 1–5。左栏比较不同路由方式，右栏算法 4 是通用采样器，算法 5 把级联目标传入该采样器。&lt;/em&gt; &amp;lt;a id=&quot;cite-15&quot; name=&quot;cite-15&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-15&quot;&gt;〔15〕&lt;/a&gt;&lt;/p&gt;
 &lt;h3&gt;8. 转交规则&lt;/h3&gt;
 &lt;p&gt;记 $c_q=\max_v q(v\mid h)$，$c_p=\max_v p(v\mid h)$。用 $\alpha\ge 0$ 调节转交成本，论文比较了以下几种规则。&lt;/p&gt;
 &lt;table&gt;
@@ -606,7 +247,7 @@ $$&lt;/p&gt;
 &lt;h2&gt;四、MTP&lt;/h2&gt;
 &lt;h3&gt;9. Blockwise Parallel Decoding&lt;/h3&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/block.C_hrCXcw_Z1VhoXU.webp&quot; alt=&quot;block&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;Stern 等原论文图 1。自上而下依次是提出整块、验证候选前缀和接受最长匹配前缀。&lt;/em&gt; &amp;lt;a id=&quot;cite-17&quot; name=&quot;cite-17&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-17&quot;&gt;〔17〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Stern 等原论文图 1。自上而下依次是提出整块、验证候选前缀和接受最长匹配前缀。&lt;/em&gt; &amp;lt;a id=&quot;cite-16&quot; name=&quot;cite-16&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-16&quot;&gt;〔16〕&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;多头预测。&lt;/strong&gt; 给定 $h=x_{\le t}$，主干得到隐藏向量 $z_t\in\mathbb R^d$。多个输出分支分别预测偏移 $1,\ldots,k$。论文的 Transformer 实现在解码器顶层加入有残差连接的多输出前馈层，再对各分支使用原有的词表投影。$z_t$ 是隐藏向量，经过词表投影后才得到 $|V|$ 维 logits。&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;并行。&lt;/strong&gt; 令 $\hat x_{t+j}=\arg\max_v q_j(v\mid h)$。第二个头和第一个头读取相同前缀，因此第二个头输出的是对未来第二个词的直接预测。验证时，主头会读取已经提出的第一个词，重新判断第二个位置：&lt;/li&gt;
@@ -626,7 +267,7 @@ $$&lt;/p&gt;
 &lt;/ul&gt;
 &lt;h3&gt;10. Meta MTP&lt;/h3&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/meta.BCujJXZL_Otfmn.webp&quot; alt=&quot;meta&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;Gloeckle 等原论文图 1。上半部的多个预测头读取同一份主干表示，下半部报告作者在代码任务中的结果。&lt;/em&gt; &amp;lt;a id=&quot;cite-18&quot; name=&quot;cite-18&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-18&quot;&gt;〔18〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Gloeckle 等原论文图 1。上半部的多个预测头读取同一份主干表示，下半部报告作者在代码任务中的结果。&lt;/em&gt; &amp;lt;a id=&quot;cite-17&quot; name=&quot;cite-17&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-17&quot;&gt;〔17〕&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;网络结构。&lt;/strong&gt; 共享因果主干产生 $z_{\le t}=F(x_{\le t})$。第 $j$ 个头各有自己的 Transformer 层 $f_j$，最后共享词表投影 $W_U$：&lt;/li&gt;
 &lt;/ul&gt;
@@ -649,7 +290,7 @@ $$&lt;/p&gt;
 &lt;/ul&gt;
 &lt;h3&gt;11. DeepSeek-V3 MTP&lt;/h3&gt;
 &lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/deep.CwcS5vqh_D4vMM.webp&quot; alt=&quot;deep&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;DeepSeek-V3 技术报告图 3。先沿水平方向看不同预测深度之间传递的隐藏状态，再沿每列看移位后的 token embedding 和上方的预测标签。&lt;/em&gt; &amp;lt;a id=&quot;cite-19&quot; name=&quot;cite-19&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-19&quot;&gt;〔19〕&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;DeepSeek-V3 技术报告图 3。先沿水平方向看不同预测深度之间传递的隐藏状态，再沿每列看移位后的 token embedding 和上方的预测标签。&lt;/em&gt; &amp;lt;a id=&quot;cite-18&quot; name=&quot;cite-18&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-18&quot;&gt;〔18〕&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;输入和标签的错位。&lt;/strong&gt; 设主模型输入为 $t_1,\dots,t_T$，训练窗口另有最后一个标签 $t_{T+1}$。以 $j$ 表示主模型位置，以 $k$ 表示额外预测深度。 &amp;lt;a id=&quot;cite-3&quot; name=&quot;cite-3&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-3&quot;&gt;〔3〕&lt;/a&gt;主模型顶层状态记为 $h_j^0$。&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;
@@ -741,21 +382,377 @@ $$&lt;/p&gt;
 &lt;p&gt;&amp;lt;a id=&quot;ref-2&quot; name=&quot;ref-2&quot;&amp;gt;&amp;lt;/a&amp;gt;〔2〕 hemingkx．&lt;a href=&quot;https://zhuanlan.zhihu.com/p/678404136&quot;&gt;LLM推理加速新范式！推测解码（Speculative Decoding）最新综述&lt;/a&gt;。&lt;a href=&quot;#cite-2&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&amp;lt;a id=&quot;ref-3&quot; name=&quot;ref-3&quot;&amp;gt;&amp;lt;/a&amp;gt;〔3〕 姜富春．&lt;a href=&quot;https://zhuanlan.zhihu.com/p/18056041194&quot;&gt;deepseek技术解读(2)-MTP（Multi-Token Prediction）的前世今生&lt;/a&gt;。&lt;a href=&quot;#cite-3&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&amp;lt;a id=&quot;ref-4&quot; name=&quot;ref-4&quot;&amp;gt;&amp;lt;/a&amp;gt;〔4〕 Hari Narasimhan、Aditya Menon．&lt;a href=&quot;https://research.google/blog/speculative-cascades-a-hybrid-approach-for-smarter-faster-llm-inference/&quot;&gt;Speculative cascades — A hybrid approach for smarter, faster LLM inference&lt;/a&gt;。&lt;a href=&quot;#cite-4&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-5&quot; name=&quot;ref-5&quot;&amp;gt;&amp;lt;/a&amp;gt;〔5〕 用户与 ChatGPT．&lt;a href=&quot;https://chatgpt.com/share/6b07f279-aa68-83e8-be3f-a1377691757d&quot;&gt;关于推测解码、级联与 MTP 的讨论&lt;/a&gt;。&lt;a href=&quot;#cite-5&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-6&quot; name=&quot;ref-6&quot;&amp;gt;&amp;lt;/a&amp;gt;〔6〕 Yaniv Leviathan、Matan Kalman、Yossi Matias．&lt;a href=&quot;https://arxiv.org/abs/2211.17192v2&quot;&gt;Fast Inference from Transformers via Speculative Decoding&lt;/a&gt;。&lt;a href=&quot;#cite-6&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-7&quot; name=&quot;ref-7&quot;&amp;gt;&amp;lt;/a&amp;gt;〔7〕 Charlie Chen 等．&lt;a href=&quot;https://arxiv.org/abs/2302.01318v1&quot;&gt;Accelerating Large Language Model Decoding with Speculative Sampling&lt;/a&gt;。&lt;a href=&quot;#cite-7&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-8&quot; name=&quot;ref-8&quot;&amp;gt;&amp;lt;/a&amp;gt;〔8〕 Heming Xia 等．&lt;a href=&quot;https://arxiv.org/abs/2203.16487v6&quot;&gt;Speculative Decoding: Exploiting Speculative Execution for Accelerating Seq2seq Generation&lt;/a&gt;。&lt;a href=&quot;#cite-8&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-9&quot; name=&quot;ref-9&quot;&amp;gt;&amp;lt;/a&amp;gt;〔9〕 Yongchao Zhou 等．&lt;a href=&quot;https://arxiv.org/abs/2310.08461v2&quot;&gt;DistillSpec: Improving Speculative Decoding via Knowledge Distillation&lt;/a&gt;。&lt;a href=&quot;#cite-9&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-10&quot; name=&quot;ref-10&quot;&amp;gt;&amp;lt;/a&amp;gt;〔10〕 Jun Zhang 等．&lt;a href=&quot;https://arxiv.org/abs/2309.08168v2&quot;&gt;Draft &amp;amp; Verify: Lossless Large Language Model Acceleration via Self-Speculative Decoding&lt;/a&gt;。&lt;a href=&quot;#cite-10&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-11&quot; name=&quot;ref-11&quot;&amp;gt;&amp;lt;/a&amp;gt;〔11〕 Seongjun Yang 等．&lt;a href=&quot;https://arxiv.org/abs/2307.05908v2&quot;&gt;Predictive Pipelined Decoding: A Compute-Latency Trade-off for Exact LLM Decoding&lt;/a&gt;。&lt;a href=&quot;#cite-11&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-12&quot; name=&quot;ref-12&quot;&amp;gt;&amp;lt;/a&amp;gt;〔12〕 Andrea Santilli 等．&lt;a href=&quot;https://arxiv.org/abs/2305.10427v1&quot;&gt;Accelerating Transformer Inference for Translation via Parallel Decoding&lt;/a&gt;。&lt;a href=&quot;#cite-12&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-13&quot; name=&quot;ref-13&quot;&amp;gt;&amp;lt;/a&amp;gt;〔13〕 Yichao Fu 等．&lt;a href=&quot;https://arxiv.org/abs/2402.02057v1&quot;&gt;Break the Sequential Dependency of LLM Inference Using Lookahead Decoding&lt;/a&gt;。&lt;a href=&quot;#cite-13&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-14&quot; name=&quot;ref-14&quot;&amp;gt;&amp;lt;/a&amp;gt;〔14〕 Xupeng Miao 等．&lt;a href=&quot;https://arxiv.org/abs/2305.09781v4&quot;&gt;SpecInfer: Accelerating Large Language Model Serving with Tree-based Speculative Inference and Verification&lt;/a&gt;。&lt;a href=&quot;#cite-14&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-15&quot; name=&quot;ref-15&quot;&amp;gt;&amp;lt;/a&amp;gt;〔15〕 Tianle Cai 等．&lt;a href=&quot;https://arxiv.org/abs/2401.10774v3&quot;&gt;Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads&lt;/a&gt;。&lt;a href=&quot;#cite-15&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-16&quot; name=&quot;ref-16&quot;&amp;gt;&amp;lt;/a&amp;gt;〔16〕 Harikrishna Narasimhan 等．&lt;a href=&quot;https://arxiv.org/abs/2405.19261v2&quot;&gt;Faster Cascades via Speculative Decoding&lt;/a&gt;。&lt;a href=&quot;#cite-16&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-17&quot; name=&quot;ref-17&quot;&amp;gt;&amp;lt;/a&amp;gt;〔17〕 Mitchell Stern、Noam Shazeer、Jakob Uszkoreit．&lt;a href=&quot;https://arxiv.org/abs/1811.03115v1&quot;&gt;Blockwise Parallel Decoding for Deep Autoregressive Models&lt;/a&gt;。&lt;a href=&quot;#cite-17&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-18&quot; name=&quot;ref-18&quot;&amp;gt;&amp;lt;/a&amp;gt;〔18〕 Fabian Gloeckle 等．&lt;a href=&quot;https://arxiv.org/abs/2404.19737v1&quot;&gt;Better &amp;amp; Faster Large Language Models via Multi-token Prediction&lt;/a&gt;。&lt;a href=&quot;#cite-18&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&amp;lt;a id=&quot;ref-19&quot; name=&quot;ref-19&quot;&amp;gt;&amp;lt;/a&amp;gt;〔19〕 DeepSeek-AI．&lt;a href=&quot;https://arxiv.org/abs/2412.19437v2&quot;&gt;DeepSeek-V3 Technical Report&lt;/a&gt;。&lt;a href=&quot;#cite-19&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-5&quot; name=&quot;ref-5&quot;&amp;gt;&amp;lt;/a&amp;gt;〔5〕 Yaniv Leviathan、Matan Kalman、Yossi Matias．&lt;a href=&quot;https://arxiv.org/abs/2211.17192v2&quot;&gt;Fast Inference from Transformers via Speculative Decoding&lt;/a&gt;。&lt;a href=&quot;#cite-5&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-6&quot; name=&quot;ref-6&quot;&amp;gt;&amp;lt;/a&amp;gt;〔6〕 Charlie Chen 等．&lt;a href=&quot;https://arxiv.org/abs/2302.01318v1&quot;&gt;Accelerating Large Language Model Decoding with Speculative Sampling&lt;/a&gt;。&lt;a href=&quot;#cite-6&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-7&quot; name=&quot;ref-7&quot;&amp;gt;&amp;lt;/a&amp;gt;〔7〕 Heming Xia 等．&lt;a href=&quot;https://arxiv.org/abs/2203.16487v6&quot;&gt;Speculative Decoding: Exploiting Speculative Execution for Accelerating Seq2seq Generation&lt;/a&gt;。&lt;a href=&quot;#cite-7&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-8&quot; name=&quot;ref-8&quot;&amp;gt;&amp;lt;/a&amp;gt;〔8〕 Yongchao Zhou 等．&lt;a href=&quot;https://arxiv.org/abs/2310.08461v2&quot;&gt;DistillSpec: Improving Speculative Decoding via Knowledge Distillation&lt;/a&gt;。&lt;a href=&quot;#cite-8&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-9&quot; name=&quot;ref-9&quot;&amp;gt;&amp;lt;/a&amp;gt;〔9〕 Jun Zhang 等．&lt;a href=&quot;https://arxiv.org/abs/2309.08168v2&quot;&gt;Draft &amp;amp; Verify: Lossless Large Language Model Acceleration via Self-Speculative Decoding&lt;/a&gt;。&lt;a href=&quot;#cite-9&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-10&quot; name=&quot;ref-10&quot;&amp;gt;&amp;lt;/a&amp;gt;〔10〕 Seongjun Yang 等．&lt;a href=&quot;https://arxiv.org/abs/2307.05908v2&quot;&gt;Predictive Pipelined Decoding: A Compute-Latency Trade-off for Exact LLM Decoding&lt;/a&gt;。&lt;a href=&quot;#cite-10&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-11&quot; name=&quot;ref-11&quot;&amp;gt;&amp;lt;/a&amp;gt;〔11〕 Andrea Santilli 等．&lt;a href=&quot;https://arxiv.org/abs/2305.10427v1&quot;&gt;Accelerating Transformer Inference for Translation via Parallel Decoding&lt;/a&gt;。&lt;a href=&quot;#cite-11&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-12&quot; name=&quot;ref-12&quot;&amp;gt;&amp;lt;/a&amp;gt;〔12〕 Yichao Fu 等．&lt;a href=&quot;https://arxiv.org/abs/2402.02057v1&quot;&gt;Break the Sequential Dependency of LLM Inference Using Lookahead Decoding&lt;/a&gt;。&lt;a href=&quot;#cite-12&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-13&quot; name=&quot;ref-13&quot;&amp;gt;&amp;lt;/a&amp;gt;〔13〕 Xupeng Miao 等．&lt;a href=&quot;https://arxiv.org/abs/2305.09781v4&quot;&gt;SpecInfer: Accelerating Large Language Model Serving with Tree-based Speculative Inference and Verification&lt;/a&gt;。&lt;a href=&quot;#cite-13&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-14&quot; name=&quot;ref-14&quot;&amp;gt;&amp;lt;/a&amp;gt;〔14〕 Tianle Cai 等．&lt;a href=&quot;https://arxiv.org/abs/2401.10774v3&quot;&gt;Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads&lt;/a&gt;。&lt;a href=&quot;#cite-14&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-15&quot; name=&quot;ref-15&quot;&amp;gt;&amp;lt;/a&amp;gt;〔15〕 Harikrishna Narasimhan 等．&lt;a href=&quot;https://arxiv.org/abs/2405.19261v2&quot;&gt;Faster Cascades via Speculative Decoding&lt;/a&gt;。&lt;a href=&quot;#cite-15&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-16&quot; name=&quot;ref-16&quot;&amp;gt;&amp;lt;/a&amp;gt;〔16〕 Mitchell Stern、Noam Shazeer、Jakob Uszkoreit．&lt;a href=&quot;https://arxiv.org/abs/1811.03115v1&quot;&gt;Blockwise Parallel Decoding for Deep Autoregressive Models&lt;/a&gt;。&lt;a href=&quot;#cite-16&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-17&quot; name=&quot;ref-17&quot;&amp;gt;&amp;lt;/a&amp;gt;〔17〕 Fabian Gloeckle 等．&lt;a href=&quot;https://arxiv.org/abs/2404.19737v1&quot;&gt;Better &amp;amp; Faster Large Language Models via Multi-token Prediction&lt;/a&gt;。&lt;a href=&quot;#cite-17&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-18&quot; name=&quot;ref-18&quot;&amp;gt;&amp;lt;/a&amp;gt;〔18〕 DeepSeek-AI．&lt;a href=&quot;https://arxiv.org/abs/2412.19437v2&quot;&gt;DeepSeek-V3 Technical Report&lt;/a&gt;。&lt;a href=&quot;#cite-18&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+</content:encoded></item><item><title>LLM中的提示词压缩工程</title><link>https://miku.nikonikoni.blog/posts/llm%E4%B8%AD%E7%9A%84%E6%8F%90%E7%A4%BA%E8%AF%8D%E5%8E%8B%E7%BC%A9%E5%B7%A5%E7%A8%8B/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/llm%E4%B8%AD%E7%9A%84%E6%8F%90%E7%A4%BA%E8%AF%8D%E5%8E%8B%E7%BC%A9%E5%B7%A5%E7%A8%8B/</guid><description>一篇关于提示词压缩工程的综述</description><pubDate>Thu, 26 Nov 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;LLM中的提示词压缩工程&lt;/h1&gt;
+&lt;p&gt;在自回归LLM中，模型接收提示词并将其映射为词嵌入向量，然后在每一层计算key和value，并存入缓存。然而，当上下文窗口变长时，过长的提示词可能增加计算量，导致模型推理效率下降；也可能“稀释”模型的注意力分配，导致模型输出质量下降。本文将介绍多种常见的提示词压缩方法。 &amp;lt;a id=&quot;use-1&quot; name=&quot;use-1&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-1&quot;&gt;〔1〕&lt;/a&gt; &amp;lt;a id=&quot;use-2&quot; name=&quot;use-2&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-2&quot;&gt;〔2〕&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;一、压缩对象和预算&lt;/h2&gt;
+&lt;p&gt;先建立一个整体的认知：记任务指令为 $I$，上下文或示例为 $X$，当前问题为 $q$，回答为 $y$，$\oplus$ 表示沿序列维拼接。若只压缩上下文，原始和压缩后的两条计算路径可写为&lt;/p&gt;
+&lt;p&gt;$$
+P_{\rm full}(y)=P_G(y\mid I,X,q),\qquad
+Z=C(X;q),\qquad P_{\rm comp}(y)=P_G(y\mid I,Z,q).
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;$C(X;q)$ 可以针对这次问题保留证据；$C(X)$ 可以提前为同一文档建立一份表示，随后服务多个问题&lt;/li&gt;
+&lt;li&gt;设 $B$ 为预算、$\ell$ 为任务损失。目标函数记为 $\min_C\mathbb E[\ell(G(I,C(X;q),q),y)]$，约束为 $|C(X;q)|\le B$。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;输出给生成模型的表示&lt;/th&gt;
+&lt;th&gt;本文中的方法&lt;/th&gt;
+&lt;th&gt;长度缩短的位置&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;原文中保留下来的词、短语或文档&lt;/td&gt;
+&lt;td&gt;Selective Context、LLMLingua、LongLLMLingua、LLMLingua-2、AdaComp&lt;/td&gt;
+&lt;td&gt;选择子序列或文档前缀&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;重新生成的自然语言&lt;/td&gt;
+&lt;td&gt;Nano-Capsulator、CompAct、FAVICOMP&lt;/td&gt;
+&lt;td&gt;生成短提示或证据摘要&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;固定前缀参数，或从指令、上下文读出的状态&lt;/td&gt;
+&lt;td&gt;CC、GIST、AutoCompressor&lt;/td&gt;
+&lt;td&gt;用少量可训练位置或缓存代替原前缀&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;编码器产生的向量或逐层 KV&lt;/td&gt;
+&lt;td&gt;ICAE、500xCompressor、xRAG、UniICL&lt;/td&gt;
+&lt;td&gt;向生成端传递有限个位置&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;二、硬提示：Filtering&lt;/h2&gt;
+&lt;h3&gt;1. Selective Context&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/selective.DhO0QpYA_ZRR2UM.webp&quot; alt=&quot;Compressing Context to Enhance Inference Efficiency of Large Language Models，原图 2&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 2。上半部按自信息着色，下半部显示筛选后留下的原文单元。&lt;/em&gt; &amp;lt;a id=&quot;use-3&quot; name=&quot;use-3&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-3&quot;&gt;〔3〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;自信息。&lt;/strong&gt; 小型因果语言模型在位置 $t$ 给词表打分 $z_t$。先归一化 $p_t(v)=\operatorname{softmax}(z_t)_v$，再取原文实际出现的 $x_t$。它的自信息为 $s_t=-\log_2 p_t(x_t)$。越容易根据前文预测的词，分数越低。&lt;/li&gt;
+&lt;li&gt;固定一个位置，对词表求期望，得到预测分布的熵；固定一段已经发生的文本，沿位置平均，得到模型在该文本上的平均负对数概率。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+H(p_t)=\sum_{v\in V}p_t(v)[-\log_2p_t(v)],\qquad
+h(X)=\frac1n\sum_{t=1}^n s_t,\qquad
+\mathrm{PPL}(X)=2^{h(X)}.
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;可以按 token、短语或句子筛选。对连续单元 $u=x_{a:b}$， $s(u)=-\log_2P(x_{a:b}\mid x_{&amp;lt;a})=\sum_{t=a}^bs_t$。短语方案借助句法分析合并名词短语。按单元分数的分位数设阈值，保留高分单元，再按原序拼回。&lt;/li&gt;
+&lt;li&gt;图中颜色编码自信息，上下两行分别展示原文和筛选结果。每个单元的分数都在原始前文上计算。其中，罕见词可能很意外，得到保留，却与问题无关，这也是Selective Context的缺陷。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;2. LLMLingua&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/lingua.ChzuBjJw_Z1Lxmpv.webp&quot; alt=&quot;LLMLingua: Compressing Prompts for Accelerated Inference of Large Language Models，原图 1&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 1。中间绿色模块依次分配预算、迭代删词；分布对齐作用于小模型。右侧黑盒读取短文本。&lt;/em&gt; &amp;lt;a id=&quot;use-4&quot; name=&quot;use-4&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-4&quot;&gt;〔4〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;粗筛示例。&lt;/strong&gt; 将提示拆成指令、示例集和问题。小模型计算每条示例的困惑度，按从高到低的顺序在粗筛预算内选入示例。指令和问题通常保留较高比例。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;分块细筛。&lt;/strong&gt; 记第 $j$ 块为 $S_j$，前面各块已经保留的部分为 $\widetilde S_{&amp;lt;j}$。该块中第 $t$ 个 token 的工作分数可写为&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+s_{j,t}=-\log p_s(x_{j,t}\mid\widetilde S_{&amp;lt;j},x_{j,&amp;lt;t}),
+\qquad
+\widetilde S_j=(x_{j,t}:s_{j,t}\ge\gamma_j).
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;图中小模型负责打分，黑盒大模型只接收最终文本。论文还用目标模型产生的指令响应数据调整小模型，使打分模型更接近目标模型的分布。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;与 Selective Context 的区别。&lt;/strong&gt; 两者都用原文 token 的预测难度。Selective Context 在完整前文上一次确定单元分数；LLMLingua 增加了分区预算和跨块重打分。它能识别、保护末尾的问题；在通常的前向打分顺序中，较早的文档词仍看不到末尾问题。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;3. LongLLMLingua&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/long.CqCRhy6G_1k2raN.webp&quot; alt=&quot;LongLLMLingua: Accelerating and Enhancing LLMs in Long Context Scenarios via Prompt Compression，原图 2&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 2。文档重排在粗筛阶段完成，动态预算进入词级细筛；最右侧的子序列恢复位于生成之后。&lt;/em&gt; &amp;lt;a id=&quot;use-5&quot; name=&quot;use-5&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-5&quot;&gt;〔5〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;文档级。&lt;/strong&gt; 对每篇文档 $D_k$，都让小模型预测同一问题序列 $q&apos;$（论文在问题后追加约束语句）。下式越小，读过该文档后，问题越容易预测。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+r_k=-\frac1{|q&apos;|}\sum_t\log p_s(q&apos;&lt;em&gt;t\mid D_k,q&apos;&lt;/em&gt;{&amp;lt;t}).
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;词级。&lt;/strong&gt; 令 $h_t$ 表示该处的可用前文。按原论文对数损失的写法，问题为一个已观察词提供的额外信息为&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+\Delta_t=[-\log p_s(x_t\mid h_t)]-[-\log p_s(x_t\mid q,h_t)]
+=\log\frac{p_s(x_t\mid q,h_t)}{p_s(x_t\mid h_t)}.
+$$&lt;/p&gt;
+&lt;p&gt;$\Delta_t$ 大，表示给出问题后这个词变得更容易预测，因而得到较高保留优先级。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;粗筛后按相关性调整文档位置，减轻关键信息落在长输入中部的影响，并让高相关文档获得较宽松的词级预算。回答生成后，还可以把回答中匹配压缩文本的片段映回原文，以恢复被裁掉的细节。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;与 LLMLingua 的区别。&lt;/strong&gt; 初代给“问题本身”留预算，LongLLMLingua 用“当前问的是什么”决定前面哪篇文档、哪些词值得保留。换一个问题，文档排序和词级保留结果都可能改变。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;4. LLMLingua-2&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/lingua2.DmFs4jva_uAnpp.webp&quot; alt=&quot;LLMLingua-2: Data Distillation for Efficient and Faithful Task-Agnostic Prompt Compression，原图 1&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 1。左侧教师生成抽取式短文，中间将其对齐成保留标签，右侧学生用一次编码预测各位置的标签。&lt;/em&gt; &amp;lt;a id=&quot;use-6&quot; name=&quot;use-6&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-6&quot;&gt;〔6〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;标签。&lt;/strong&gt; 让教师模型 GPT-4 对原文执行抽取式压缩，要求尽量使用原词。将短文与原文对齐，给原位置赋保留或删除标签，再做质量过滤。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;双向分类。&lt;/strong&gt; 学生编码器同时读左右上下文。$h_t$ 为该位置的上下文化表示，$y_t\in{0,1}$ 为对齐标签。二分类头输出保留概率 $a_t$，以交叉熵训练：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+a_t=\operatorname{softmax}(Wh_t+b)_1,\qquad
+\mathcal L=-\sum_t{y_t\log a_t+(1-y_t)\log(1-a_t)}.
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;对一个词的多个子词取保留概率均值，按预算选得分最高的词，再恢复原有顺序。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;与前两代的区别。&lt;/strong&gt; 初代估计“这个词有多难预测”，LongLLMLingua 估计“给出问题后预测这个词改变多少”，LLMLingua-2 估计“教师会不会保留这个词”。最后一种可以在问题出现之前压缩文档，以后反复使用。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;5. AdaComp&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/ada.Tiv2iCvY_Z1tXMTA.webp&quot; alt=&quot;AdaComp: Extractive Context Compression with Adaptive Predictor for Retrieval-Augmented Large Language Models，原图 2&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 2。中间横条的切点 K 是预测结果；底部只有前 K 篇文档与问题一起送入生成器。&lt;/em&gt; &amp;lt;a id=&quot;use-7&quot; name=&quot;use-7&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-7&quot;&gt;〔7〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;监督信号。&lt;/strong&gt; 检索结果已排序为 $D_{1:N}$。在训练集上，以已知答案 $y$ 检查各个前缀。标签是足以使系统答对的最小前缀长度；没有前缀答对时，原算法返回空集。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+k^*=\min{k\in{1,\dots,N}:G(q,D_{1:k})\text{ 命中 }y}.
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;预测器以问题和检索集为输入，预测 $\hat k=f_\theta(q,D_{1:N})$；生成模型读取 $q\oplus D_{1:\hat k}$。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;与 LongLLMLingua 的区别。&lt;/strong&gt; 两者都关心当前问题。AdaComp 学的是排序切点，整篇保留入选文档；LongLLMLingua 还可以重排并在文档内部删词。因此相同的 $\hat k$ 能产生完全不同的 token 成本，排序靠后的关键证据也可能被前缀选择漏掉。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;三、硬提示：Paraphrasing&lt;/h2&gt;
+&lt;h3&gt;6. Nano-Capsulator&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/nano.BszaMFAD_Z4s5Fg.webp&quot; alt=&quot;Learning to Compress Prompt in Natural Language Formats，原图 2&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 2。左侧比较复述和概括的语义，右侧冻结模型对两份提示作答，中间反馈两条答题路径的差异。&lt;/em&gt; &amp;lt;a id=&quot;use-8&quot; name=&quot;use-8&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-8&quot;&gt;〔8〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;压缩器的比较。&lt;/strong&gt; 可训练模型 $F_\theta$ 在复述指令下读取长提示 $K$，得到表示 $e_K$；在概括指令下生成短提示 $C$，得到表示 $e_C$。用均方误差约束两种表示的距离。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;冻结模型的比较。&lt;/strong&gt; 抽取训练问题 $q$，让已有的下游模型 $G$ 分别在 $K\oplus q$ 与 $\Phi(C)\oplus q$ 下作答。$\Phi$ 将短提示截到目标预算；比较两条答题路径的隐藏表示，得到论文称为 reward 的效用差异信号。复述和概括分支在 $F_\theta$ 上，答题分支在冻结的 $G$ 上。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+\mathcal L_{\rm sem}=\mathbb E_C,\mathrm{MSE}(e_K,e_C),\qquad
+R_{\rm cap}=\mathbb E_q,\mathrm{MSE}\big(h_G(K,q),h_G(\Phi(C),q)\big),
+\qquad \mathcal L_{\rm Nano}=\mathcal L_{\rm sem},R_{\rm cap}.
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;与 LLMLingua-2 的区别。&lt;/strong&gt; 抽取器只能从原文词序列中选择；生成式压缩器可以合并、换词和重组句子。后者有机会保留跨句含义，也增加逐步生成短文的开销及改写事实的可能。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;7. CompAct&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/compact.DLaw2umB_1bckN6.webp&quot; alt=&quot;CompAct: Compressing Retrieved Documents Actively for Question Answering，原图 2&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 2。每列是一轮读取。前一列的短文本进入后一列；下方的判断由证据不足转为充分时终止。&lt;/em&gt; &amp;lt;a id=&quot;use-9&quot; name=&quot;use-9&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-9&quot;&gt;〔9〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;状态。&lt;/strong&gt; 将检索文档分批为 $B_1,\dots,B_J$。初始摘要 $C_0$ 为空；每次把问题、上一版摘要和新一批文档交给压缩器。图中从第二轮起才出现“Previous Output”。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+(C_j,E_j)=F_\theta(q,C_{j-1},B_j),\qquad
+j^&lt;em&gt;=\min{j:E_j\text{ 判断证据充分}};
+\qquad \hat y=G(q,C_{j^&lt;/em&gt;}).
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;停止条件。&lt;/strong&gt; $E_j$ 给出判断理由和结论。证据不足则读下一批，证据充分则提前停止；若始终不充分，读完末批后使用最终摘要。早先文档中的中间事实只能通过 $C_{j-1}$ 传给下一轮。&lt;/li&gt;
+&lt;li&gt;用含逐轮摘要和充分性判断的监督数据微调压缩器。多跳问题受益于跨批合并；若过早判定充分，尚在后续批次的证据没有补入机会。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;与 Nano-Capsulator、AdaComp 的区别。&lt;/strong&gt; Nano-Capsulator 为长提示学习可复用的短表述；CompAct 围绕当前问题反复更新摘要。AdaComp 通过预测篇数决定读多少，CompAct 通过已经积累的证据决定是否继续读。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;8. FAVICOMP&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/favi.CSouELAW_ZhT6pg.webp&quot; alt=&quot;Familiarity-Aware Evidence Compression for Retrieval Augmented Generation，原图 1&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 1。下路使目标模型参与证据压缩。图中的日期差异展示了只有压缩器参与和两模型共同参与时可能产生的不同表述。&lt;/em&gt; &amp;lt;a id=&quot;use-10&quot; name=&quot;use-10&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-10&quot;&gt;〔10〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;压缩模型 $P_c$ 读取问题、检索证据 $D$ 和摘要前缀 $c_{&amp;lt;t}$。目标模型 $P_g$ 只读问题和同一个前缀，根据自身知识预测对答题有用的下一个词。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;逐词合并。&lt;/strong&gt; 每一步在两者共享的词表中选择&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+c_t=\arg\max_{v\in V}
+\left[(1-\alpha)\log P_c(v\mid D,q,c_{&amp;lt;t})
++\alpha\log P_g(v\mid q,c_{&amp;lt;t})\right].
+$$&lt;/p&gt;
+&lt;p&gt;这相当于最大化两项概率的加权几何平均。$\alpha=0$ 时完全依赖证据压缩器；增大 $\alpha$ 会让目标模型较熟悉的表达更容易入选，也可能加大其已有知识与新证据冲突时的偏移。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;与 CompAct 的区别。&lt;/strong&gt; CompAct 的决策发生在批次之间，决定要不要继续读；FAVICOMP 的决策发生在摘要的每个生成位置，决定怎样写。原方案是免训练的解码策略，但需要能对齐两个模型的候选 token 并取得相应分数。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;四、软提示&lt;/h2&gt;
+&lt;h3&gt;9. Contrastive Conditioning（CC）&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/cc.D5YUu3Hv_F7rxd.webp&quot; alt=&quot;Prompt Compression and Contrastive Conditioning for Controllability and Toxicity Reduction in Language Models，原图 1&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 1。左右使用同一语言模型；中间的 KL 比较硬前缀和短软前缀所诱导的后续分布。&lt;/em&gt; &amp;lt;a id=&quot;use-11&quot; name=&quot;use-11&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-11&quot;&gt;〔11〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;记当前用户输入及已生成历史为 $h$。实践者另外准备体现目标属性的前缀 $x^+$ 和对照前缀 $x^-$。“正、负”由希望控制的属性定义。普通对话只有 $h$ 时，模型没有这两段材料，也没有自动决定控制方向的步骤。&lt;/li&gt;
+&lt;li&gt;对给定硬提示 $x$，冻结语言模型，初始化 $S_x\in\mathbb R^{k\times d}$。让同一模型分别读取硬前缀和软前缀，在相同的训练文本位置比较下一词分布。用统一记号展开图中的 KL 目标：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+S_x^*=\arg\min_S\ \mathbb E_{u}
+\sum_t D_{\rm KL}!\left(P_G(\cdot\mid x,u_{&amp;lt;t}),\Vert,P_G(\cdot\mid S,u_{&amp;lt;t})\right).
+$$&lt;/p&gt;
+&lt;p&gt;训练文本提供各种后续语境，优化变量是 $S$。每个新的固定前缀都要单独拟合；反复使用同一前缀时可以摊薄训练成本。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;分别为 $x^+,x^-$ 学得 $S^+,S^-$。对候选 token $v$，令 $p_0=P_G(v\mid h)$、$p_+=P_G(v\mid S^+,h)$、$p_-=P_G(v\mid S^-,h)$。原论文将属性分数乘回基础分布，并在词表上归一化：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+P_{\rm ctrl}(v\mid h)=
+\frac{1}{Z(h)}p_0\left(\frac{p_+}{p_++p_-}\right)^{\omega}.
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;压缩。&lt;/strong&gt; 用户历史 $h$ 在三个分支中都保留；缩短的是两段反复使用的控制示例。$\omega=0$ 恢复基础分布。与 LongLLMLingua 对照，后者的对比分数决定删哪个&lt;strong&gt;输入词&lt;/strong&gt;；这里的对比分数调整哪个&lt;strong&gt;输出词&lt;/strong&gt;更可能被生成。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;10. GIST&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/gist.BvXior9T_1Rda2h.webp&quot; alt=&quot;Learning to Compress Prompts with Gist Tokens，原图 2&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 2。逐行读掩码：绿色表示采用 gist 掩码后仍可关注的位置，灰色表示普通模型原本可见、采用 gist 掩码后被阻断的位置。左边是因果解码器，右边分别画出编码器和交叉注意力。&lt;/em&gt; &amp;lt;a id=&quot;use-12&quot; name=&quot;use-12&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-12&quot;&gt;〔12〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;构造序列。&lt;/strong&gt; 令 $T$ 为指令、$g_{1:k}$ 为追加的 gist 位置、$X$ 为本次输入。模型处理 $[T;g_{1:k};X;y]$。相同的特殊 token 在不同指令后会产生不同状态，因为它们在计算注意力时读到了不同的 $T$。&lt;/li&gt;
+&lt;li&gt;在 decoder-only 实现中，对查询位置 $i$ 与键位置 $j$，可将加性掩码写成&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+A_{ij}=\begin{cases}
+-\infty,&amp;amp;j&amp;gt;i,\
+-\infty,&amp;amp;i\in X\cup y,\ j\in T,\
+0,&amp;amp;\text{其余情况}.
+\end{cases}
+$$&lt;/p&gt;
+&lt;p&gt;gist 位置可以读指令，输入与回答位置可以读 gist 和各自可见的历史。若放开 $X\to T$，模型就能绕过 gist，保留原指令也会成为推理时的依赖。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;训练和复用。&lt;/strong&gt; 在多种指令、输入与目标回答上训练带掩码的模型。遇到新指令时一次前向即可形成 gist；相同指令换输入时可直接复用 gist 状态。在因果模型里缓存相应位置的逐层 KV，随后无需保留全部指令位置。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;与 CC 的区别。&lt;/strong&gt; CC 为每条固定前缀重新优化矩阵；GIST 将“怎样读出指令摘要”学进模型参数，因此能够对训练时未见的指令执行压缩。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;11. AutoCompressor&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/auto.DtcapEwp_1aM9Fw.webp&quot; alt=&quot;Adapting Language Models to Compress Contexts，原图 1&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 1。自下而上是相继读入的文本段。段末摘要沿箭头传给后续段；顶部紫色框为累积的摘要向量。&lt;/em&gt; &amp;lt;a id=&quot;use-13&quot; name=&quot;use-13&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-13&quot;&gt;〔13〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;分块读。&lt;/strong&gt; 将长文分成 $S_1,\ldots,S_J$，每段末尾追加 $k$ 个摘要位置。记 $U_j$ 为本段摘要，$U_{&amp;lt;j}$ 为以前各段摘要的拼接。论文的摘要累积版本可写为&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+U_j=\operatorname{tail}&lt;em&gt;k F&lt;/em&gt;\theta!\left(U_{&amp;lt;j}\oplus E(S_j)\oplus E(\sigma_{1:k})\right),\qquad
+U_{\le j}=U_{&amp;lt;j}\oplus U_j.
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;下一段只能通过 $U_{\le j}$ 获取早先文本。用语言建模损失 $\mathcal L=-\sum_{j,t}\log P_\theta(s_{j,t}\mid U_{&amp;lt;j},s_{j,&amp;lt;t})$ 训练；后文若依赖前文，被保留的摘要应提高对后文的预测概率。&lt;/li&gt;
+&lt;li&gt;段末输出取顶层向量，作为下一段输入端的软提示。累积版本的摘要长度随段数增长为 $Jk$；早先的正文位置不再进入下一段。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;与 GIST 的区别。&lt;/strong&gt; “逐段做 gist 再拼接”能描述段末读出的直觉。实现上，AutoCompressor 把向量送回输入层、递归处理后续段，并用后文的预测损失训练。GIST 的典型任务是用受限可见性的少数位置承载一条指令，再对新输入执行它。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;12. ICAE&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/icae.Cno5vJzg_Z15mDLO.webp&quot; alt=&quot;In-context Autoencoder for Context Compression in a Large Language Model，原图 3&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 3。下方启用 LoRA 的编码端输出记忆槽，上方冻结解码端以这些槽和已知目标前缀逐词重建。&lt;/em&gt; &amp;lt;a id=&quot;use-14&quot; name=&quot;use-14&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-14&quot;&gt;〔14〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;编码。&lt;/strong&gt; 长度为 $n$ 的正文后追加 $k$ 个记忆 token，用带 LoRA 的语言模型处理。只取末尾位置的顶层隐藏状态：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+M=\operatorname{tail}&lt;em&gt;k F&lt;/em&gt;{\theta+\Delta_{\rm LoRA}}
+(E(X)\oplus E_m)\in\mathbb R^{k\times d}.
+$$&lt;/p&gt;
+&lt;p&gt;$E_m$ 是可学习的初始记忆嵌入，$M$ 是读完这条正文后的结果。同一组 $E_m$ 可以处理不同文档，每篇得到自己的 $M$。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;训练目标。&lt;/strong&gt; 设 $\mathrm{NLL}&lt;em&gt;G(b\mid a)=-\sum_t\log P_G(b_t\mid a,b&lt;/em&gt;{&amp;lt;t})$。下表给出编码端收到的三类监督：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;阶段&lt;/th&gt;
+&lt;th&gt;解码器的条件&lt;/th&gt;
+&lt;th&gt;损失&lt;/th&gt;
+&lt;th&gt;记忆需要保留什么&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;自编码预训练&lt;/td&gt;
+&lt;td&gt;$M$ 和特殊标记 $[\mathrm{AE}]$&lt;/td&gt;
+&lt;td&gt;$\mathrm{NLL}_G(X\mid M,[\mathrm{AE}])$&lt;/td&gt;
+&lt;td&gt;足够还原原文的细节&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;续写预训练&lt;/td&gt;
+&lt;td&gt;$M$&lt;/td&gt;
+&lt;td&gt;$\mathrm{NLL}&lt;em&gt;G(X&lt;/em&gt;{\rm next}\mid M)$&lt;/td&gt;
+&lt;td&gt;对后文有预测价值的信息&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;指令微调&lt;/td&gt;
+&lt;td&gt;$M$ 和完整问题 $q$&lt;/td&gt;
+&lt;td&gt;$\mathrm{NLL}_G(y\mid M,q)$&lt;/td&gt;
+&lt;td&gt;回答所需的内容&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;ul&gt;
+&lt;li&gt;训练时，在预测 $x_t$ 的位置只提供真实前缀 $x_{&amp;lt;t}$。标签是原文 token，不需要人为指定“正确的记忆向量”。解码器权重冻结，但损失对输入 $M$ 可微，梯度沿 $\partial\mathcal L/\partial M$ 更新编码端 LoRA 和记忆嵌入。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;与 AutoCompressor 的区别。&lt;/strong&gt; 两者的底层都可以采用因果 Transformer。“编码器—解码器”在 ICAE 里指功能分工：编码端学习怎样写入 $M$，原始冻结模型负责读取。AutoCompressor 让同一套经训练的模型递归写摘要、读摘要、预测后文。两者最后都能拼接 embedding，训练约束却不同。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;13. 500xCompressor&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/500x.DIC31T7a_Z1UqKD5.webp&quot; alt=&quot;500xCompressor: Generalized Prompt Compression for Large Language Models，原图 2&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 2。三栏依次展示重建、问答微调和推理。绿色块表示传给冻结解码器的键值状态。&lt;/em&gt; &amp;lt;a id=&quot;use-15&quot; name=&quot;use-15&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-15&quot;&gt;〔15〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;编码前半段类似 ICAE。&lt;/strong&gt; 将 $k$ 个压缩位置追加在正文末尾。区别出现在读出时：对第 $\ell$ 层，只截取这些位置的键和值。若省略批次维，模型有 $L$ 层、$H_{\rm kv}$ 个 KV 头，每头宽度为 $d_h$，则&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+\mathcal K_X={(K_c^{(\ell)},V_c^{(\ell)}):\ell=1,\dots,L},\qquad
+K_c^{(\ell)},V_c^{(\ell)}\in\mathbb R^{H_{\rm kv}\times k\times d_h}.
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;标准注意力先从进入本层的状态投影出 Q、K、V，再按注意力权重读取前文。第一层末尾位置在完成注意力后才获得上下文化的输出；上层可将这部分文档信息写进该位置的 K、V。保存所有层，解码器每层就能读取与本层对应的前缀状态。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;解码接口。&lt;/strong&gt; 解码问题时，每层将 $K_c^{(\ell)}$ 与当前问题前缀的键沿序列维拼接，值同理。问题的查询与这些键计算注意力，再加权读取值。编码器学习写入缓存，解码器保持冻结。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;与 ICAE 的区别。&lt;/strong&gt; ICAE 传递 $kd$ 个输入嵌入分量，解码器自行算出各层 KV；这里直接传递 $2LkH_{\rm kv}d_h$ 个分量。同样的 $k=1$，两种方案暴露给解码器的信息接口和离线存储量都不同。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;14. xRAG&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/xrag.D651_kuj_2wtPYR.webp&quot; alt=&quot;xRAG: Extreme Context Compression for Retrieval-augmented Generation with One Token，原图 2&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 2。数据库里的文档向量经投影进入语言模型。虚线框中的传统路径需要取回并编码文档文本。&lt;/em&gt; &amp;lt;a id=&quot;use-16&quot; name=&quot;use-16&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-16&quot;&gt;〔16〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;索引阶段。&lt;/strong&gt; 冻结检索编码器 $R$ 将每段文档变成向量 $e_D=R(D)\in\mathbb R^{d_r}$。它原本用于检索相关文档，适合离线计算和保存。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;回答阶段。&lt;/strong&gt; 找到文档后，训练过的两层 MLP 将它的检索向量映为一个输入 embedding。单篇文档对应一行：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+z_D=W_2\sigma(W_1e_D+b_1)+b_2\in\mathbb R^d,\qquad
+P(y\mid D,q)\approx P_G(y\mid z_D\oplus E(q)).
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;检索训练使向量距离有意义；冻结生成模型要求前缀激活能引发合适的回答。即便 $d_r=d$，维数相同也不能保证这两种用途已经对齐。投影器是两端都冻结后可学习的连接。&lt;/li&gt;
+&lt;li&gt;先用改述预训练，让模型根据文档向量生成文档文本；随后用上下文感知的指令微调，结合目标答案的语言建模损失与自蒸馏。蒸馏项的方向是 $D_{\rm KL}(P_G(\cdot\mid D,q)\Vert P_G(\cdot\mid z_D,q))$，完整文本路径提供教师分布。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;与 ICAE、500xCompressor 的区别。&lt;/strong&gt; xRAG 复用已经存在的检索表示，信息在检索编码器生成单向量时已经收缩。ICAE 用重建与问答监督学习写入多个记忆位置；500xCompressor 还把传递接口推进到解码器每一层。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;15. UniICL&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://miku.nikonikoni.blog/_astro/uni._aKrdN1Z_adQeL.webp&quot; alt=&quot;UniICL: An Efficient Unified Framework Unifying Compression, Selection, and Generation，原图 2&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;原论文图 2。示例库保存压缩序列；相似度排序决定从库中取哪几条，选中的序列再与问题共同进入生成模型。&lt;/em&gt; &amp;lt;a id=&quot;use-17&quot; name=&quot;use-17&quot;&amp;gt;&amp;lt;/a&amp;gt;&lt;a href=&quot;#ref-17&quot;&gt;〔17〕&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;设示例 $D_i$ 长 $n_i$。在末尾追加 $k_i$ 个共享初始嵌入的记忆位置，冻结的 Vicuna 输出末尾 $k_i$ 行隐藏状态，再以同一个线性层逐行投影：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+H_i=\operatorname{tail}_{k_i}F(E(D_i)\oplus[M]^{k_i})
+\in\mathbb R^{k_i\times d},\qquad
+C_i=H_iW_p^\top\in\mathbb R^{k_i\times d}.
+$$&lt;/p&gt;
+&lt;p&gt;长度从 $n_i$ 缩到 $k_i$ 发生在取末尾的行。$W_p$ 保留行数，学习把顶层输出对齐到生成模型的输入空间。共享记忆嵌入和投影层都可训练，主干冻结。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;候选的 $C_i$ 可预先建库。用同样过程编码新问题，得到 $C_q$。先在&lt;strong&gt;单条示例内部&lt;/strong&gt;沿 token 维平均，再比较余弦相似度：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+\bar c_i=\frac1{k_i}\sum_{j=1}^{k_i} C_i[j,:]\in\mathbb R^d,\qquad
+s_i=\frac{\bar c_q^\top\bar c_i}{|\bar c_q|,|\bar c_i|}.
+$$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;设选中的示例编号为 $i_1,\ldots,i_m$，解码器读入 $C_{i_1}\oplus\cdots\oplus C_{i_m}\oplus E(q)$，总长度为 $\sum_j k_{i_j}+|q|$。排序阶段的一行均值已完成任务。问题在选示例时压缩过一次，在回答时以完整 token 出现。&lt;/li&gt;
+&lt;li&gt;首先随机压缩训练输入的一部分，结合剩余原文预测目标答案，训练写入能力。随后用有标签的训练问题测量候选示例的价值：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$
+g_i=\mathrm{PPL}(y\mid q)-\mathrm{PPL}(y\mid D_i,q).
+$$&lt;/p&gt;
+&lt;p&gt;增益大的候选能让正确答案更容易预测。根据相对增益挖掘正负示例，再结合语言建模与对比训练，使均值向量能区分有益和干扰示例。上线时没有标准答案，用已学到的余弦分数选示例。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;与 xRAG 的区别。&lt;/strong&gt; 两者都把投影结果拼在完整问题之前。xRAG 从一个已有的、固定的文档检索向量出发；UniICL 为带输入和答案的示例生成多行表示，训练共享记忆嵌入来影响读取过程。其均值服务于检索，整组行服务于上下文学习。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;参考文献&lt;/h2&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-1&quot; name=&quot;ref-1&quot;&amp;gt;&amp;lt;/a&amp;gt;〔1〕 Zongqian Li、Yinhong Liu、Yixuan Su、Nigel Collier．&lt;a href=&quot;https://arxiv.org/abs/2410.12388v2&quot;&gt;Prompt Compression for Large Language Models: A Survey&lt;/a&gt;．2024，arXiv:2410.12388v2。&lt;a href=&quot;#use-1&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-2&quot; name=&quot;ref-2&quot;&amp;gt;&amp;lt;/a&amp;gt;〔2〕 360亿方智能（文内注明转自「老刘说NLP」）．&lt;a href=&quot;https://zhuanlan.zhihu.com/p/8370444834&quot;&gt;大模型prompt压缩技术总结：从硬提示到软提示代表方案实现思路&lt;/a&gt;．知乎，2024-11-22。&lt;a href=&quot;#use-2&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-3&quot; name=&quot;ref-3&quot;&amp;gt;&amp;lt;/a&amp;gt;〔3〕 Yucheng Li 等．&lt;a href=&quot;https://arxiv.org/abs/2310.06201v1&quot;&gt;Compressing Context to Enhance Inference Efficiency of Large Language Models&lt;/a&gt;．arXiv:2310.06201v1，原图 2，PDF 第 3 页。&lt;a href=&quot;#use-3&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-4&quot; name=&quot;ref-4&quot;&amp;gt;&amp;lt;/a&amp;gt;〔4〕 Huiqiang Jiang 等．&lt;a href=&quot;https://arxiv.org/abs/2310.05736v2&quot;&gt;LLMLingua: Compressing Prompts for Accelerated Inference of Large Language Models&lt;/a&gt;．arXiv:2310.05736v2，原图 1，PDF 第 3 页。&lt;a href=&quot;#use-4&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-5&quot; name=&quot;ref-5&quot;&amp;gt;&amp;lt;/a&amp;gt;〔5〕 Huiqiang Jiang 等．&lt;a href=&quot;https://arxiv.org/abs/2310.06839v2&quot;&gt;LongLLMLingua: Accelerating and Enhancing LLMs in Long Context Scenarios via Prompt Compression&lt;/a&gt;．arXiv:2310.06839v2，原图 2，PDF 第 3 页。&lt;a href=&quot;#use-5&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-6&quot; name=&quot;ref-6&quot;&amp;gt;&amp;lt;/a&amp;gt;〔6〕 Zhuoshi Pan 等．&lt;a href=&quot;https://arxiv.org/abs/2403.12968v2&quot;&gt;LLMLingua-2: Data Distillation for Efficient and Faithful Task-Agnostic Prompt Compression&lt;/a&gt;．arXiv:2403.12968v2，原图 1，PDF 第 3 页。&lt;a href=&quot;#use-6&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-7&quot; name=&quot;ref-7&quot;&amp;gt;&amp;lt;/a&amp;gt;〔7〕 Qianchi Zhang 等．&lt;a href=&quot;https://arxiv.org/abs/2409.01579v2&quot;&gt;AdaComp: Extractive Context Compression with Adaptive Predictor for Retrieval-Augmented Large Language Models&lt;/a&gt;．arXiv:2409.01579v2，原图 2，PDF 第 3 页。&lt;a href=&quot;#use-7&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-8&quot; name=&quot;ref-8&quot;&amp;gt;&amp;lt;/a&amp;gt;〔8〕 Yu-Neng Chuang 等．&lt;a href=&quot;https://arxiv.org/abs/2402.18700v2&quot;&gt;Learning to Compress Prompt in Natural Language Formats&lt;/a&gt;．arXiv:2402.18700v2，原图 2，PDF 第 4 页。&lt;a href=&quot;#use-8&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-9&quot; name=&quot;ref-9&quot;&amp;gt;&amp;lt;/a&amp;gt;〔9〕 Chanwoong Yoon 等．&lt;a href=&quot;https://arxiv.org/abs/2407.09014v3&quot;&gt;CompAct: Compressing Retrieved Documents Actively for Question Answering&lt;/a&gt;．arXiv:2407.09014v3，原图 2，PDF 第 3 页。&lt;a href=&quot;#use-9&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-10&quot; name=&quot;ref-10&quot;&amp;gt;&amp;lt;/a&amp;gt;〔10〕 Dongwon Jung 等．&lt;a href=&quot;https://arxiv.org/abs/2409.12468v1&quot;&gt;Familiarity-Aware Evidence Compression for Retrieval Augmented Generation&lt;/a&gt;．arXiv:2409.12468v1，原图 1，PDF 第 2 页。&lt;a href=&quot;#use-10&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-11&quot; name=&quot;ref-11&quot;&amp;gt;&amp;lt;/a&amp;gt;〔11〕 David Wingate、Mohammad Shoeybi、Taylor Sorensen．&lt;a href=&quot;https://arxiv.org/abs/2210.03162v1&quot;&gt;Prompt Compression and Contrastive Conditioning for Controllability and Toxicity Reduction in Language Models&lt;/a&gt;．arXiv:2210.03162v1，原图 1，PDF 第 1 页。&lt;a href=&quot;#use-11&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-12&quot; name=&quot;ref-12&quot;&amp;gt;&amp;lt;/a&amp;gt;〔12〕 Jesse Mu、Xiang Lisa Li、Noah Goodman．&lt;a href=&quot;https://arxiv.org/abs/2304.08467v3&quot;&gt;Learning to Compress Prompts with Gist Tokens&lt;/a&gt;．arXiv:2304.08467v3，原图 2，PDF 第 3 页。&lt;a href=&quot;#use-12&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-13&quot; name=&quot;ref-13&quot;&amp;gt;&amp;lt;/a&amp;gt;〔13〕 Alexis Chevalier 等．&lt;a href=&quot;https://arxiv.org/abs/2305.14788v2&quot;&gt;Adapting Language Models to Compress Contexts&lt;/a&gt;．arXiv:2305.14788v2，原图 1，PDF 第 1 页。&lt;a href=&quot;#use-13&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-14&quot; name=&quot;ref-14&quot;&amp;gt;&amp;lt;/a&amp;gt;〔14〕 Tao Ge 等．&lt;a href=&quot;https://arxiv.org/abs/2307.06945v4&quot;&gt;In-context Autoencoder for Context Compression in a Large Language Model&lt;/a&gt;．arXiv:2307.06945v4，原图 3，PDF 第 3 页。&lt;a href=&quot;#use-14&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-15&quot; name=&quot;ref-15&quot;&amp;gt;&amp;lt;/a&amp;gt;〔15〕 Zongqian Li、Yixuan Su、Nigel Collier．&lt;a href=&quot;https://arxiv.org/abs/2408.03094v1&quot;&gt;500xCompressor: Generalized Prompt Compression for Large Language Models&lt;/a&gt;．arXiv:2408.03094v1，原图 2，PDF 第 2 页。&lt;a href=&quot;#use-15&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-16&quot; name=&quot;ref-16&quot;&amp;gt;&amp;lt;/a&amp;gt;〔16〕 Xin Cheng 等．&lt;a href=&quot;https://arxiv.org/abs/2405.13792v2&quot;&gt;xRAG: Extreme Context Compression for Retrieval-augmented Generation with One Token&lt;/a&gt;．arXiv:2405.13792v2，原图 2，PDF 第 3 页。&lt;a href=&quot;#use-16&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&amp;lt;a id=&quot;ref-17&quot; name=&quot;ref-17&quot;&amp;gt;&amp;lt;/a&amp;gt;〔17〕 Jun Gao 等．&lt;a href=&quot;https://arxiv.org/abs/2405.17062v3&quot;&gt;UniICL: An Efficient Unified Framework Unifying Compression, Selection, and Generation&lt;/a&gt;．arXiv:2405.17062v3，原图 2，PDF 第 2 页。&lt;a href=&quot;#use-17&quot;&gt;↩ 返回正文&lt;/a&gt;&lt;/p&gt;
 </content:encoded></item><item><title>Pandas Illustrated</title><link>https://miku.nikonikoni.blog/posts/pandas-illustrated/</link><guid isPermaLink="true">https://miku.nikonikoni.blog/posts/pandas-illustrated/</guid><description>从常用操作和 NumPy 对照出发，介绍 Pandas 的 Series、Index、DataFrame 与 MultiIndex。</description><pubDate>Fri, 11 Sep 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;Pandas Illustrated&lt;/h1&gt;
 &lt;p&gt;原文链接：&lt;a href=&quot;https://medium.com/better-programming/pandas-illustrated-the-definitive-visual-guide-to-pandas-c31fa921a43&quot;&gt;Pandas Illustrated: The Definitive Visual Guide to Pandas | by Lev Maximov | Better Programming&lt;/a&gt;&lt;/p&gt;
 &lt;h2&gt;第一部分：Pandas 常用操作与 NumPy 对照&lt;/h2&gt;
