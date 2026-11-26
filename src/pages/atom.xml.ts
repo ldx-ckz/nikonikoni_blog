@@ -89,6 +89,7 @@ export async function GET(context: APIContext) {
 					}
 				}
 
+				importPath = importPath.replace(/%20/g, " ");
 				const imageMod = await imagesGlob[importPath]?.()?.then(
 					(res) => res.default,
 				);
