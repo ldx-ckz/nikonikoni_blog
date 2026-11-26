@@ -17,9 +17,7 @@ draft: false
 
 # LLM中的提示词压缩工程
 
-在自回归LLM中，模型接收提示词并将其映射为词嵌入向量，然后在每一层计算key和value，并存入缓存。然而，当上下文窗口变长时，过长的提示词可能增加计算量，导致模型推理效率下降；也可能“稀释”模型的注意力分配，导致模型输出质量下降。本文将介绍多种常见的提示词压缩方法。
-
-[TOC]
+在自回归LLM中，模型接收提示词并将其映射为词嵌入向量，然后在每一层计算key和value，并存入缓存。然而，当上下文窗口变长时，过长的提示词可能增加计算量，导致模型推理效率下降；也可能“稀释”模型的注意力分配，导致模型输出质量下降。本文将介绍多种常见的提示词压缩方法。 <a id="use-1" name="use-1"></a>[〔1〕](#ref-1) <a id="use-2" name="use-2"></a>[〔2〕](#ref-2)
 
 ## 一、压缩对象和预算
 
@@ -46,7 +44,7 @@ $$
 
 ![Compressing Context to Enhance Inference Efficiency of Large Language Models，原图 2](<images/prompt compression/selective.png>)
 
-*原论文图 2。上半部按自信息着色，下半部显示筛选后留下的原文单元。* <a id="use-4" name="use-4"></a>[〔4〕](#ref-4)
+*原论文图 2。上半部按自信息着色，下半部显示筛选后留下的原文单元。* <a id="use-3" name="use-3"></a>[〔3〕](#ref-3)
 
 - **自信息。** 小型因果语言模型在位置 $t$ 给词表打分 $z_t$。先归一化 $p_t(v)=\operatorname{softmax}(z_t)_v$，再取原文实际出现的 $x_t$。它的自信息为 $s_t=-\log_2 p_t(x_t)$。越容易根据前文预测的词，分数越低。
 - 固定一个位置，对词表求期望，得到预测分布的熵；固定一段已经发生的文本，沿位置平均，得到模型在该文本上的平均负对数概率。
@@ -64,7 +62,7 @@ $$
 
 ![LLMLingua: Compressing Prompts for Accelerated Inference of Large Language Models，原图 1](<images/prompt compression/lingua.png>)
 
-*原论文图 1。中间绿色模块依次分配预算、迭代删词；分布对齐作用于小模型。右侧黑盒读取短文本。* <a id="use-5" name="use-5"></a>[〔5〕](#ref-5)
+*原论文图 1。中间绿色模块依次分配预算、迭代删词；分布对齐作用于小模型。右侧黑盒读取短文本。* <a id="use-4" name="use-4"></a>[〔4〕](#ref-4)
 
 - **粗筛示例。** 将提示拆成指令、示例集和问题。小模型计算每条示例的困惑度，按从高到低的顺序在粗筛预算内选入示例。指令和问题通常保留较高比例。
 - **分块细筛。** 记第 $j$ 块为 $S_j$，前面各块已经保留的部分为 $\widetilde S_{<j}$。该块中第 $t$ 个 token 的工作分数可写为
@@ -82,7 +80,7 @@ $$
 
 ![LongLLMLingua: Accelerating and Enhancing LLMs in Long Context Scenarios via Prompt Compression，原图 2](<images/prompt compression/long.png>)
 
-*原论文图 2。文档重排在粗筛阶段完成，动态预算进入词级细筛；最右侧的子序列恢复位于生成之后。* <a id="use-6" name="use-6"></a>[〔6〕](#ref-6)
+*原论文图 2。文档重排在粗筛阶段完成，动态预算进入词级细筛；最右侧的子序列恢复位于生成之后。* <a id="use-5" name="use-5"></a>[〔5〕](#ref-5)
 
 - **文档级。** 对每篇文档 $D_k$，都让小模型预测同一问题序列 $q'$（论文在问题后追加约束语句）。下式越小，读过该文档后，问题越容易预测。
 
@@ -106,7 +104,7 @@ $$
 
 ![LLMLingua-2: Data Distillation for Efficient and Faithful Task-Agnostic Prompt Compression，原图 1](<images/prompt compression/lingua2.png>)
 
-*原论文图 1。左侧教师生成抽取式短文，中间将其对齐成保留标签，右侧学生用一次编码预测各位置的标签。* <a id="use-7" name="use-7"></a>[〔7〕](#ref-7)
+*原论文图 1。左侧教师生成抽取式短文，中间将其对齐成保留标签，右侧学生用一次编码预测各位置的标签。* <a id="use-6" name="use-6"></a>[〔6〕](#ref-6)
 
 - **标签。** 让教师模型 GPT-4 对原文执行抽取式压缩，要求尽量使用原词。将短文与原文对齐，给原位置赋保留或删除标签，再做质量过滤。
 - **双向分类。** 学生编码器同时读左右上下文。$h_t$ 为该位置的上下文化表示，$y_t\in\{0,1\}$ 为对齐标签。二分类头输出保留概率 $a_t$，以交叉熵训练：
@@ -123,7 +121,7 @@ $$
 
 ![AdaComp: Extractive Context Compression with Adaptive Predictor for Retrieval-Augmented Large Language Models，原图 2](<images/prompt compression/ada.png>)
 
-*原论文图 2。中间横条的切点 K 是预测结果；底部只有前 K 篇文档与问题一起送入生成器。* <a id="use-8" name="use-8"></a>[〔8〕](#ref-8)
+*原论文图 2。中间横条的切点 K 是预测结果；底部只有前 K 篇文档与问题一起送入生成器。* <a id="use-7" name="use-7"></a>[〔7〕](#ref-7)
 
 - **监督信号。** 检索结果已排序为 $D_{1:N}$。在训练集上，以已知答案 $y$ 检查各个前缀。标签是足以使系统答对的最小前缀长度；没有前缀答对时，原算法返回空集。
 
@@ -140,7 +138,7 @@ $$
 
 ![Learning to Compress Prompt in Natural Language Formats，原图 2](<images/prompt compression/nano.png>)
 
-*原论文图 2。左侧比较复述和概括的语义，右侧冻结模型对两份提示作答，中间反馈两条答题路径的差异。* <a id="use-9" name="use-9"></a>[〔9〕](#ref-9)
+*原论文图 2。左侧比较复述和概括的语义，右侧冻结模型对两份提示作答，中间反馈两条答题路径的差异。* <a id="use-8" name="use-8"></a>[〔8〕](#ref-8)
 
 - **压缩器的比较。** 可训练模型 $F_\theta$ 在复述指令下读取长提示 $K$，得到表示 $e_K$；在概括指令下生成短提示 $C$，得到表示 $e_C$。用均方误差约束两种表示的距离。
 - **冻结模型的比较。** 抽取训练问题 $q$，让已有的下游模型 $G$ 分别在 $K\oplus q$ 与 $\Phi(C)\oplus q$ 下作答。$\Phi$ 将短提示截到目标预算；比较两条答题路径的隐藏表示，得到论文称为 reward 的效用差异信号。复述和概括分支在 $F_\theta$ 上，答题分支在冻结的 $G$ 上。
@@ -157,7 +155,7 @@ $$
 
 ![CompAct: Compressing Retrieved Documents Actively for Question Answering，原图 2](<images/prompt compression/compact.png>)
 
-*原论文图 2。每列是一轮读取。前一列的短文本进入后一列；下方的判断由证据不足转为充分时终止。* <a id="use-10" name="use-10"></a>[〔10〕](#ref-10)
+*原论文图 2。每列是一轮读取。前一列的短文本进入后一列；下方的判断由证据不足转为充分时终止。* <a id="use-9" name="use-9"></a>[〔9〕](#ref-9)
 
 - **状态。** 将检索文档分批为 $B_1,\dots,B_J$。初始摘要 $C_0$ 为空；每次把问题、上一版摘要和新一批文档交给压缩器。图中从第二轮起才出现“Previous Output”。
 
@@ -175,7 +173,7 @@ $$
 
 ![Familiarity-Aware Evidence Compression for Retrieval Augmented Generation，原图 1](<images/prompt compression/favi.png>)
 
-*原论文图 1。下路使目标模型参与证据压缩。图中的日期差异展示了只有压缩器参与和两模型共同参与时可能产生的不同表述。* <a id="use-11" name="use-11"></a>[〔11〕](#ref-11)
+*原论文图 1。下路使目标模型参与证据压缩。图中的日期差异展示了只有压缩器参与和两模型共同参与时可能产生的不同表述。* <a id="use-10" name="use-10"></a>[〔10〕](#ref-10)
 
 - 压缩模型 $P_c$ 读取问题、检索证据 $D$ 和摘要前缀 $c_{<t}$。目标模型 $P_g$ 只读问题和同一个前缀，根据自身知识预测对答题有用的下一个词。
 - **逐词合并。** 每一步在两者共享的词表中选择
@@ -196,7 +194,7 @@ $$
 
 ![Prompt Compression and Contrastive Conditioning for Controllability and Toxicity Reduction in Language Models，原图 1](<images/prompt compression/cc.png>)
 
-*原论文图 1。左右使用同一语言模型；中间的 KL 比较硬前缀和短软前缀所诱导的后续分布。* <a id="use-12" name="use-12"></a>[〔12〕](#ref-12)
+*原论文图 1。左右使用同一语言模型；中间的 KL 比较硬前缀和短软前缀所诱导的后续分布。* <a id="use-11" name="use-11"></a>[〔11〕](#ref-11)
 
 - 记当前用户输入及已生成历史为 $h$。实践者另外准备体现目标属性的前缀 $x^+$ 和对照前缀 $x^-$。“正、负”由希望控制的属性定义。普通对话只有 $h$ 时，模型没有这两段材料，也没有自动决定控制方向的步骤。
 - 对给定硬提示 $x$，冻结语言模型，初始化 $S_x\in\mathbb R^{k\times d}$。让同一模型分别读取硬前缀和软前缀，在相同的训练文本位置比较下一词分布。用统一记号展开图中的 KL 目标：
@@ -221,7 +219,7 @@ $$
 
 ![Learning to Compress Prompts with Gist Tokens，原图 2](<images/prompt compression/gist.png>)
 
-*原论文图 2。逐行读掩码：绿色表示采用 gist 掩码后仍可关注的位置，灰色表示普通模型原本可见、采用 gist 掩码后被阻断的位置。左边是因果解码器，右边分别画出编码器和交叉注意力。* <a id="use-13" name="use-13"></a>[〔13〕](#ref-13)
+*原论文图 2。逐行读掩码：绿色表示采用 gist 掩码后仍可关注的位置，灰色表示普通模型原本可见、采用 gist 掩码后被阻断的位置。左边是因果解码器，右边分别画出编码器和交叉注意力。* <a id="use-12" name="use-12"></a>[〔12〕](#ref-12)
 
 - **构造序列。** 令 $T$ 为指令、$g_{1:k}$ 为追加的 gist 位置、$X$ 为本次输入。模型处理 $[T;g_{1:k};X;y]$。相同的特殊 token 在不同指令后会产生不同状态，因为它们在计算注意力时读到了不同的 $T$。
 - 在 decoder-only 实现中，对查询位置 $i$ 与键位置 $j$，可将加性掩码写成
@@ -243,7 +241,7 @@ $$
 
 ![Adapting Language Models to Compress Contexts，原图 1](<images/prompt compression/auto.png>)
 
-*原论文图 1。自下而上是相继读入的文本段。段末摘要沿箭头传给后续段；顶部紫色框为累积的摘要向量。* <a id="use-14" name="use-14"></a>[〔14〕](#ref-14)
+*原论文图 1。自下而上是相继读入的文本段。段末摘要沿箭头传给后续段；顶部紫色框为累积的摘要向量。* <a id="use-13" name="use-13"></a>[〔13〕](#ref-13)
 
 - **分块读。** 将长文分成 $S_1,\ldots,S_J$，每段末尾追加 $k$ 个摘要位置。记 $U_j$ 为本段摘要，$U_{<j}$ 为以前各段摘要的拼接。论文的摘要累积版本可写为
 
@@ -260,7 +258,7 @@ $$
 
 ![In-context Autoencoder for Context Compression in a Large Language Model，原图 3](<images/prompt compression/icae.png>)
 
-*原论文图 3。下方启用 LoRA 的编码端输出记忆槽，上方冻结解码端以这些槽和已知目标前缀逐词重建。* <a id="use-15" name="use-15"></a>[〔15〕](#ref-15)
+*原论文图 3。下方启用 LoRA 的编码端输出记忆槽，上方冻结解码端以这些槽和已知目标前缀逐词重建。* <a id="use-14" name="use-14"></a>[〔14〕](#ref-14)
 
 - **编码。** 长度为 $n$ 的正文后追加 $k$ 个记忆 token，用带 LoRA 的语言模型处理。只取末尾位置的顶层隐藏状态：
 
@@ -286,7 +284,7 @@ $$
 
 ![500xCompressor: Generalized Prompt Compression for Large Language Models，原图 2](<images/prompt compression/500x.png>)
 
-*原论文图 2。三栏依次展示重建、问答微调和推理。绿色块表示传给冻结解码器的键值状态。* <a id="use-16" name="use-16"></a>[〔16〕](#ref-16)
+*原论文图 2。三栏依次展示重建、问答微调和推理。绿色块表示传给冻结解码器的键值状态。* <a id="use-15" name="use-15"></a>[〔15〕](#ref-15)
 
 - **编码前半段类似 ICAE。** 将 $k$ 个压缩位置追加在正文末尾。区别出现在读出时：对第 $\ell$ 层，只截取这些位置的键和值。若省略批次维，模型有 $L$ 层、$H_{\rm kv}$ 个 KV 头，每头宽度为 $d_h$，则
 
@@ -303,7 +301,7 @@ $$
 
 ![xRAG: Extreme Context Compression for Retrieval-augmented Generation with One Token，原图 2](<images/prompt compression/xrag.png>)
 
-*原论文图 2。数据库里的文档向量经投影进入语言模型。虚线框中的传统路径需要取回并编码文档文本。* <a id="use-17" name="use-17"></a>[〔17〕](#ref-17)
+*原论文图 2。数据库里的文档向量经投影进入语言模型。虚线框中的传统路径需要取回并编码文档文本。* <a id="use-16" name="use-16"></a>[〔16〕](#ref-16)
 
 - **索引阶段。** 冻结检索编码器 $R$ 将每段文档变成向量 $e_D=R(D)\in\mathbb R^{d_r}$。它原本用于检索相关文档，适合离线计算和保存。
 - **回答阶段。** 找到文档后，训练过的两层 MLP 将它的检索向量映为一个输入 embedding。单篇文档对应一行：
@@ -321,7 +319,7 @@ $$
 
 ![UniICL: An Efficient Unified Framework Unifying Compression, Selection, and Generation，原图 2](<images/prompt compression/uni.png>)
 
-*原论文图 2。示例库保存压缩序列；相似度排序决定从库中取哪几条，选中的序列再与问题共同进入生成模型。* <a id="use-18" name="use-18"></a>[〔18〕](#ref-18)
+*原论文图 2。示例库保存压缩序列；相似度排序决定从库中取哪几条，选中的序列再与问题共同进入生成模型。* <a id="use-17" name="use-17"></a>[〔17〕](#ref-17)
 
 - 设示例 $D_i$ 长 $n_i$。在末尾追加 $k_i$ 个共享初始嵌入的记忆位置，冻结的 Vicuna 输出末尾 $k_i$ 行隐藏状态，再以同一个线性层逐行投影：
 
@@ -358,35 +356,33 @@ $$
 
 <a id="ref-2" name="ref-2"></a>〔2〕 360亿方智能（文内注明转自「老刘说NLP」）．[大模型prompt压缩技术总结：从硬提示到软提示代表方案实现思路](https://zhuanlan.zhihu.com/p/8370444834)．知乎，2024-11-22。[↩ 返回正文](#use-2)
 
-<a id="ref-3" name="ref-3"></a>〔3〕 用户与 ChatGPT．[提示词压缩工程](https://chatgpt.com/share/6b0715c8-cad4-83ee-9d0f-8213967f77b1)．用户提供的完整分享对话，另有本地 HTML 节选。[↩ 返回正文](#use-3)
+<a id="ref-3" name="ref-3"></a>〔3〕 Yucheng Li 等．[Compressing Context to Enhance Inference Efficiency of Large Language Models](https://arxiv.org/abs/2310.06201v1)．arXiv:2310.06201v1，原图 2，PDF 第 3 页。[↩ 返回正文](#use-3)
 
-<a id="ref-4" name="ref-4"></a>〔4〕 Yucheng Li 等．[Compressing Context to Enhance Inference Efficiency of Large Language Models](https://arxiv.org/abs/2310.06201v1)．arXiv:2310.06201v1，原图 2，PDF 第 3 页。[↩ 返回正文](#use-4)
+<a id="ref-4" name="ref-4"></a>〔4〕 Huiqiang Jiang 等．[LLMLingua: Compressing Prompts for Accelerated Inference of Large Language Models](https://arxiv.org/abs/2310.05736v2)．arXiv:2310.05736v2，原图 1，PDF 第 3 页。[↩ 返回正文](#use-4)
 
-<a id="ref-5" name="ref-5"></a>〔5〕 Huiqiang Jiang 等．[LLMLingua: Compressing Prompts for Accelerated Inference of Large Language Models](https://arxiv.org/abs/2310.05736v2)．arXiv:2310.05736v2，原图 1，PDF 第 3 页。[↩ 返回正文](#use-5)
+<a id="ref-5" name="ref-5"></a>〔5〕 Huiqiang Jiang 等．[LongLLMLingua: Accelerating and Enhancing LLMs in Long Context Scenarios via Prompt Compression](https://arxiv.org/abs/2310.06839v2)．arXiv:2310.06839v2，原图 2，PDF 第 3 页。[↩ 返回正文](#use-5)
 
-<a id="ref-6" name="ref-6"></a>〔6〕 Huiqiang Jiang 等．[LongLLMLingua: Accelerating and Enhancing LLMs in Long Context Scenarios via Prompt Compression](https://arxiv.org/abs/2310.06839v2)．arXiv:2310.06839v2，原图 2，PDF 第 3 页。[↩ 返回正文](#use-6)
+<a id="ref-6" name="ref-6"></a>〔6〕 Zhuoshi Pan 等．[LLMLingua-2: Data Distillation for Efficient and Faithful Task-Agnostic Prompt Compression](https://arxiv.org/abs/2403.12968v2)．arXiv:2403.12968v2，原图 1，PDF 第 3 页。[↩ 返回正文](#use-6)
 
-<a id="ref-7" name="ref-7"></a>〔7〕 Zhuoshi Pan 等．[LLMLingua-2: Data Distillation for Efficient and Faithful Task-Agnostic Prompt Compression](https://arxiv.org/abs/2403.12968v2)．arXiv:2403.12968v2，原图 1，PDF 第 3 页。[↩ 返回正文](#use-7)
+<a id="ref-7" name="ref-7"></a>〔7〕 Qianchi Zhang 等．[AdaComp: Extractive Context Compression with Adaptive Predictor for Retrieval-Augmented Large Language Models](https://arxiv.org/abs/2409.01579v2)．arXiv:2409.01579v2，原图 2，PDF 第 3 页。[↩ 返回正文](#use-7)
 
-<a id="ref-8" name="ref-8"></a>〔8〕 Qianchi Zhang 等．[AdaComp: Extractive Context Compression with Adaptive Predictor for Retrieval-Augmented Large Language Models](https://arxiv.org/abs/2409.01579v2)．arXiv:2409.01579v2，原图 2，PDF 第 3 页。[↩ 返回正文](#use-8)
+<a id="ref-8" name="ref-8"></a>〔8〕 Yu-Neng Chuang 等．[Learning to Compress Prompt in Natural Language Formats](https://arxiv.org/abs/2402.18700v2)．arXiv:2402.18700v2，原图 2，PDF 第 4 页。[↩ 返回正文](#use-8)
 
-<a id="ref-9" name="ref-9"></a>〔9〕 Yu-Neng Chuang 等．[Learning to Compress Prompt in Natural Language Formats](https://arxiv.org/abs/2402.18700v2)．arXiv:2402.18700v2，原图 2，PDF 第 4 页。[↩ 返回正文](#use-9)
+<a id="ref-9" name="ref-9"></a>〔9〕 Chanwoong Yoon 等．[CompAct: Compressing Retrieved Documents Actively for Question Answering](https://arxiv.org/abs/2407.09014v3)．arXiv:2407.09014v3，原图 2，PDF 第 3 页。[↩ 返回正文](#use-9)
 
-<a id="ref-10" name="ref-10"></a>〔10〕 Chanwoong Yoon 等．[CompAct: Compressing Retrieved Documents Actively for Question Answering](https://arxiv.org/abs/2407.09014v3)．arXiv:2407.09014v3，原图 2，PDF 第 3 页。[↩ 返回正文](#use-10)
+<a id="ref-10" name="ref-10"></a>〔10〕 Dongwon Jung 等．[Familiarity-Aware Evidence Compression for Retrieval Augmented Generation](https://arxiv.org/abs/2409.12468v1)．arXiv:2409.12468v1，原图 1，PDF 第 2 页。[↩ 返回正文](#use-10)
 
-<a id="ref-11" name="ref-11"></a>〔11〕 Dongwon Jung 等．[Familiarity-Aware Evidence Compression for Retrieval Augmented Generation](https://arxiv.org/abs/2409.12468v1)．arXiv:2409.12468v1，原图 1，PDF 第 2 页。[↩ 返回正文](#use-11)
+<a id="ref-11" name="ref-11"></a>〔11〕 David Wingate、Mohammad Shoeybi、Taylor Sorensen．[Prompt Compression and Contrastive Conditioning for Controllability and Toxicity Reduction in Language Models](https://arxiv.org/abs/2210.03162v1)．arXiv:2210.03162v1，原图 1，PDF 第 1 页。[↩ 返回正文](#use-11)
 
-<a id="ref-12" name="ref-12"></a>〔12〕 David Wingate、Mohammad Shoeybi、Taylor Sorensen．[Prompt Compression and Contrastive Conditioning for Controllability and Toxicity Reduction in Language Models](https://arxiv.org/abs/2210.03162v1)．arXiv:2210.03162v1，原图 1，PDF 第 1 页。[↩ 返回正文](#use-12)
+<a id="ref-12" name="ref-12"></a>〔12〕 Jesse Mu、Xiang Lisa Li、Noah Goodman．[Learning to Compress Prompts with Gist Tokens](https://arxiv.org/abs/2304.08467v3)．arXiv:2304.08467v3，原图 2，PDF 第 3 页。[↩ 返回正文](#use-12)
 
-<a id="ref-13" name="ref-13"></a>〔13〕 Jesse Mu、Xiang Lisa Li、Noah Goodman．[Learning to Compress Prompts with Gist Tokens](https://arxiv.org/abs/2304.08467v3)．arXiv:2304.08467v3，原图 2，PDF 第 3 页。[↩ 返回正文](#use-13)
+<a id="ref-13" name="ref-13"></a>〔13〕 Alexis Chevalier 等．[Adapting Language Models to Compress Contexts](https://arxiv.org/abs/2305.14788v2)．arXiv:2305.14788v2，原图 1，PDF 第 1 页。[↩ 返回正文](#use-13)
 
-<a id="ref-14" name="ref-14"></a>〔14〕 Alexis Chevalier 等．[Adapting Language Models to Compress Contexts](https://arxiv.org/abs/2305.14788v2)．arXiv:2305.14788v2，原图 1，PDF 第 1 页。[↩ 返回正文](#use-14)
+<a id="ref-14" name="ref-14"></a>〔14〕 Tao Ge 等．[In-context Autoencoder for Context Compression in a Large Language Model](https://arxiv.org/abs/2307.06945v4)．arXiv:2307.06945v4，原图 3，PDF 第 3 页。[↩ 返回正文](#use-14)
 
-<a id="ref-15" name="ref-15"></a>〔15〕 Tao Ge 等．[In-context Autoencoder for Context Compression in a Large Language Model](https://arxiv.org/abs/2307.06945v4)．arXiv:2307.06945v4，原图 3，PDF 第 3 页。[↩ 返回正文](#use-15)
+<a id="ref-15" name="ref-15"></a>〔15〕 Zongqian Li、Yixuan Su、Nigel Collier．[500xCompressor: Generalized Prompt Compression for Large Language Models](https://arxiv.org/abs/2408.03094v1)．arXiv:2408.03094v1，原图 2，PDF 第 2 页。[↩ 返回正文](#use-15)
 
-<a id="ref-16" name="ref-16"></a>〔16〕 Zongqian Li、Yixuan Su、Nigel Collier．[500xCompressor: Generalized Prompt Compression for Large Language Models](https://arxiv.org/abs/2408.03094v1)．arXiv:2408.03094v1，原图 2，PDF 第 2 页。[↩ 返回正文](#use-16)
+<a id="ref-16" name="ref-16"></a>〔16〕 Xin Cheng 等．[xRAG: Extreme Context Compression for Retrieval-augmented Generation with One Token](https://arxiv.org/abs/2405.13792v2)．arXiv:2405.13792v2，原图 2，PDF 第 3 页。[↩ 返回正文](#use-16)
 
-<a id="ref-17" name="ref-17"></a>〔17〕 Xin Cheng 等．[xRAG: Extreme Context Compression for Retrieval-augmented Generation with One Token](https://arxiv.org/abs/2405.13792v2)．arXiv:2405.13792v2，原图 2，PDF 第 3 页。[↩ 返回正文](#use-17)
-
-<a id="ref-18" name="ref-18"></a>〔18〕 Jun Gao 等．[UniICL: An Efficient Unified Framework Unifying Compression, Selection, and Generation](https://arxiv.org/abs/2405.17062v3)．arXiv:2405.17062v3，原图 2，PDF 第 2 页。[↩ 返回正文](#use-18)
+<a id="ref-17" name="ref-17"></a>〔17〕 Jun Gao 等．[UniICL: An Efficient Unified Framework Unifying Compression, Selection, and Generation](https://arxiv.org/abs/2405.17062v3)．arXiv:2405.17062v3，原图 2，PDF 第 2 页。[↩ 返回正文](#use-17)
 

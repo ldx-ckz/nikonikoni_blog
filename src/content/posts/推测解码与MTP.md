@@ -33,7 +33,7 @@ draft: false
 
 ![classic](images/speculative-decoding-mtp/classic.png)
 
-*Leviathan 等，原论文图 1。每一行对应一次推测解码迭代，行内多个词可以在同一次目标模型调用后得到确认。* <a id="cite-6" name="cite-6"></a>[〔6〕](#ref-6)
+*Leviathan 等，原论文图 1。每一行对应一次推测解码迭代，行内多个词可以在同一次目标模型调用后得到确认。* <a id="cite-5" name="cite-5"></a>[〔5〕](#ref-5)
 
 - **普通解码。** 要生成 $y_{1:n}$，目标模型依次使用条件分布 $p(y_i\mid h,y_{<i})$。预填充时整段提示已经给出，可以并行处理；生成时未来 token 尚未确定，通常一次只推进一个位置。
 - **起草。** 设 $\gamma=3$。独立小模型先根据 $h$ 生成 $A$，把 $A$ 接回输入生成 $B$，再根据 $hAB$ 生成 $C$。整个草稿的概率为
@@ -62,7 +62,7 @@ $$
 
 ![sampling](images/speculative-decoding-mtp/sampling.png)
 
-*Chen 等，原论文算法 2。注意拒绝分支重新采样使用的分布，以及全块接受时多采一个 token 的分支。* <a id="cite-7" name="cite-7"></a>[〔7〕](#ref-7)
+*Chen 等，原论文算法 2。注意拒绝分支重新采样使用的分布，以及全块接受时多采一个 token 的分支。* <a id="cite-6" name="cite-6"></a>[〔6〕](#ref-6)
 
 固定一个位置，省略条件 $h_j$。设 $d\sim q$，独立采样 $u\sim U(0,1)$。在 $q(d)>0$ 的候选上，接受条件为
 
@@ -94,7 +94,7 @@ $$
 
 ![specdec](images/speculative-decoding-mtp/specdec.png)
 
-*SpecDec 原论文图 4。同一处候选在严格匹配下会产生分歧，放宽排名和对数概率差要求后，可以继续验证后续位置。* <a id="cite-8" name="cite-8"></a>[〔8〕](#ref-8)
+*SpecDec 原论文图 4。同一处候选在严格匹配下会产生分歧，放宽排名和对数概率差要求后，可以继续验证后续位置。* <a id="cite-7" name="cite-7"></a>[〔7〕](#ref-7)
 
 - **SpecDec。** 在序列到序列任务中，使用独立的 Spec-Drafter，根据源输入和目标前缀并行预测一个块。作者把较多容量分配给只需编码一次的源端，减少反复运行的解码端开销，用序列级蒸馏训练草稿器。
 - **Spec-Verification。** 记目标分布为 $p_j$。候选须进入前 $\beta$ 名，同时与最优词的对数概率差 $\log\max_v p_j(v)-\log p_j(d_j)$ 落入容许范围。这两个条件分别控制排名和分数差距。即使候选排第二，它也可能与第一名相差很远。
@@ -102,7 +102,7 @@ $$
 
 ![distill](images/speculative-decoding-mtp/distill.png)
 
-*DistillSpec 原论文图 3 是机制消融图。左图比较不同蒸馏策略的接受率，中图比较蒸馏前后的块效率，右图对照理论块效率和实测值。* <a id="cite-9" name="cite-9"></a>[〔9〕](#ref-9)
+*DistillSpec 原论文图 3 是机制消融图。左图比较不同蒸馏策略的接受率，中图比较蒸馏前后的块效率，右图对照理论块效率和实测值。* <a id="cite-8" name="cite-8"></a>[〔8〕](#ref-8)
 
 - **DistillSpec。** 保留独立的小型自回归草稿器，改变其训练目标。让学生在自己的轨迹上生成前缀，再让教师给这些位置提供完整的下一词分布。用 $d_q$ 表示草稿器实际访问的前缀分布，目标可概括为
 
@@ -118,14 +118,14 @@ $$
 
 ![skip](images/speculative-decoding-mtp/skip.png)
 
-*Draft & Verify 原论文图 1。起草使用跳层的网络，验证使用完整网络。* <a id="cite-10" name="cite-10"></a>[〔10〕](#ref-10)
+*Draft & Verify 原论文图 1。起草使用跳层的网络，验证使用完整网络。* <a id="cite-9" name="cite-9"></a>[〔9〕](#ref-9)
 
 - **跳层。** 同一组模型参数按两种方式执行。起草时跳过选定的注意力或前馈子层，以较低成本生成多个词；验证时走完整的目标模型。跳过哪些子层会同时影响草稿速度和准确性，论文在样本上搜索跳层策略。
 - **自适应停止。** 当下一个草稿词的置信度过低时，可以提前结束起草，把已有候选交给完整网络。这里的置信度控制草稿长度，最终能否提交仍由验证结果决定。
 
 ![pipe](images/speculative-decoding-mtp/pipe.png)
 
-*Predictive Pipelined Decoding 原论文图 1。右侧沿时间轴排列多个前向过程，错误候选对应的后续分支会终止。* <a id="cite-11" name="cite-11"></a>[〔11〕](#ref-11)
+*Predictive Pipelined Decoding 原论文图 1。右侧沿时间轴排列多个前向过程，错误候选对应的后续分支会终止。* <a id="cite-10" name="cite-10"></a>[〔10〕](#ref-10)
 
 - **提前启动下一步。** 当前 token 的完整前向仍在进行时，用中间层表示预测它可能取的值。分配额外计算资源，以候选词作为输入，提前启动下一个位置的前向。等深层结果可用后，保留与完整模型一致的分支。
 - **与跳层的区别。** 跳层先廉价地写一块草稿，再让完整网络读一遍；流水线让相邻 token 的计算在时间上重叠。早期预测命中才有可复用的工作，分支越多，占用的并行计算资源越多。
@@ -134,7 +134,7 @@ $$
 
 ![jacobi](images/speculative-decoding-mtp/jacobi.png)
 
-*Santilli 等原论文图 1。左侧为自回归翻译，右侧用初始猜测填满多个目标位置，在一次迭代里同时更新。* <a id="cite-12" name="cite-12"></a>[〔12〕](#ref-12)
+*Santilli 等原论文图 1。左侧为自回归翻译，右侧用初始猜测填满多个目标位置，在一次迭代里同时更新。* <a id="cite-11" name="cite-11"></a>[〔11〕](#ref-11)
 
 - **Jacobi 更新。** 给定源句 $x$ 和固定长度的目标位置，贪婪解码的结果满足 $y_i=\arg\max_v p(v\mid x,y_{<i})$。先用占位 token 等方式初始化猜测，在第 $s+1$ 轮同时计算
 
@@ -146,7 +146,7 @@ $$
 
 ![look](images/speculative-decoding-mtp/look.png)
 
-*Lookahead Decoding 原论文图 1。左侧分支形成候选 n-gram，验证分支读取与当前前缀相接的候选。* <a id="cite-13" name="cite-13"></a>[〔13〕](#ref-13)
+*Lookahead Decoding 原论文图 1。左侧分支形成候选 n-gram，验证分支读取与当前前缀相接的候选。* <a id="cite-12" name="cite-12"></a>[〔12〕](#ref-12)
 
 - **收集候选。** 保留多个位置在连续 Jacobi 迭代中的预测轨迹，抽取沿轨迹形成的 n-gram，写入候选池。一个局部片段即使当时位于错误前缀后面，也可能在稍后的正确前缀上派上用场。
 - **取出并验证。** 根据当前已确认的末词从池中选出若干续段，使用目标模型并行验证。前瞻分支生成新片段，验证分支提交可接受前缀，两者可以合到一次带掩码的前向里。
@@ -156,14 +156,14 @@ $$
 
 ![tree](images/speculative-decoding-mtp/tree.png)
 
-*SpecInfer 原论文图 2。上半部把多个候选组织成树，下半部在目标模型中验证各条可行路径。* <a id="cite-14" name="cite-14"></a>[〔14〕](#ref-14)
+*SpecInfer 原论文图 2。上半部把多个候选组织成树，下半部在目标模型中验证各条可行路径。* <a id="cite-13" name="cite-13"></a>[〔13〕](#ref-13)
 
 - **从链到树。** 若多个草稿共享首词，将共同前缀存成同一节点，随后才分叉。对树中节点 $u$，目标模型应给出 $p(\cdot\mid h,\operatorname{path}(u))$。比较候选节点自身时，要读取其**父节点**对应的预测。
 - **树注意力。** 每个候选位置可以关注公共前缀、自己的祖先及自身，屏蔽兄弟节点。并行处理一棵树就能得到多条路径上的条件分布。提交选中的路径后，只保留这条路径所需的缓存。树增宽可以覆盖更多候选，也会消耗更多验证位置。
 
 ![medusa](images/speculative-decoding-mtp/medusa.png)
 
-*Medusa 原论文图 1。左侧为共享主干，中间的附加头预测不同偏移量，右侧各头的高分候选按偏移量排列，下方展示从中选择并验证的续段。* <a id="cite-15" name="cite-15"></a>[〔15〕](#ref-15)
+*Medusa 原论文图 1。左侧为共享主干，中间的附加头预测不同偏移量，右侧各头的高分候选按偏移量排列，下方展示从中选择并验证的续段。* <a id="cite-14" name="cite-14"></a>[〔14〕](#ref-14)
 
 - **多头起草。** 设 $h_t$ 为主干顶层状态。原始头预测 $x_{t+1}$，第 $k$ 个附加头从同一 $h_t$ 预测 $x_{t+k+1}$。每个头可以保留多个高分词，按预设树结构选择部分组合，再用树注意力验证。
 - **训练和接受。** Medusa-1 冻结主干、训练附加头；Medusa-2 联合微调。采用贪婪一致性验证时，结果对齐所用目标模型的贪婪输出。论文也讨论 typical acceptance，即根据目标概率和熵放宽接受条件，此时应同时测量生成质量。
@@ -196,7 +196,7 @@ $$
 
 ![cascade](images/speculative-decoding-mtp/cascade.png)
 
-*《Faster Cascades via Speculative Decoding》原论文算法 1–5。左栏比较不同路由方式，右栏算法 4 是通用采样器，算法 5 把级联目标传入该采样器。* <a id="cite-16" name="cite-16"></a>[〔16〕](#ref-16)
+*《Faster Cascades via Speculative Decoding》原论文算法 1–5。左栏比较不同路由方式，右栏算法 4 是通用采样器，算法 5 把级联目标传入该采样器。* <a id="cite-15" name="cite-15"></a>[〔15〕](#ref-15)
 
 ### 8. 转交规则
 
@@ -231,7 +231,7 @@ $$
 
 ![block](images/speculative-decoding-mtp/block.png)
 
-*Stern 等原论文图 1。自上而下依次是提出整块、验证候选前缀和接受最长匹配前缀。* <a id="cite-17" name="cite-17"></a>[〔17〕](#ref-17)
+*Stern 等原论文图 1。自上而下依次是提出整块、验证候选前缀和接受最长匹配前缀。* <a id="cite-16" name="cite-16"></a>[〔16〕](#ref-16)
 
 - **多头预测。** 给定 $h=x_{\le t}$，主干得到隐藏向量 $z_t\in\mathbb R^d$。多个输出分支分别预测偏移 $1,\ldots,k$。论文的 Transformer 实现在解码器顶层加入有残差连接的多输出前馈层，再对各分支使用原有的词表投影。$z_t$ 是隐藏向量，经过词表投影后才得到 $|V|$ 维 logits。
 - **并行。** 令 $\hat x_{t+j}=\arg\max_v q_j(v\mid h)$。第二个头和第一个头读取相同前缀，因此第二个头输出的是对未来第二个词的直接预测。验证时，主头会读取已经提出的第一个词，重新判断第二个位置：
@@ -254,7 +254,7 @@ $$
 
 ![meta](images/speculative-decoding-mtp/meta.png)
 
-*Gloeckle 等原论文图 1。上半部的多个预测头读取同一份主干表示，下半部报告作者在代码任务中的结果。* <a id="cite-18" name="cite-18"></a>[〔18〕](#ref-18)
+*Gloeckle 等原论文图 1。上半部的多个预测头读取同一份主干表示，下半部报告作者在代码任务中的结果。* <a id="cite-17" name="cite-17"></a>[〔17〕](#ref-17)
 
 - **网络结构。** 共享因果主干产生 $z_{\le t}=F(x_{\le t})$。第 $j$ 个头各有自己的 Transformer 层 $f_j$，最后共享词表投影 $W_U$：
 
@@ -280,7 +280,7 @@ $$
 
 ![deep](images/speculative-decoding-mtp/deep.png)
 
-*DeepSeek-V3 技术报告图 3。先沿水平方向看不同预测深度之间传递的隐藏状态，再沿每列看移位后的 token embedding 和上方的预测标签。* <a id="cite-19" name="cite-19"></a>[〔19〕](#ref-19)
+*DeepSeek-V3 技术报告图 3。先沿水平方向看不同预测深度之间传递的隐藏状态，再沿每列看移位后的 token embedding 和上方的预测标签。* <a id="cite-18" name="cite-18"></a>[〔18〕](#ref-18)
 
 **输入和标签的错位。** 设主模型输入为 $t_1,\dots,t_T$，训练窗口另有最后一个标签 $t_{T+1}$。以 $j$ 表示主模型位置，以 $k$ 表示额外预测深度。 <a id="cite-3" name="cite-3"></a>[〔3〕](#ref-3)主模型顶层状态记为 $h_j^0$。
 
@@ -355,32 +355,30 @@ $$
 
 <a id="ref-4" name="ref-4"></a>〔4〕 Hari Narasimhan、Aditya Menon．[Speculative cascades — A hybrid approach for smarter, faster LLM inference](https://research.google/blog/speculative-cascades-a-hybrid-approach-for-smarter-faster-llm-inference/)。[↩ 返回正文](#cite-4)
 
-<a id="ref-5" name="ref-5"></a>〔5〕 用户与 ChatGPT．[关于推测解码、级联与 MTP 的讨论](https://chatgpt.com/share/6b07f279-aa68-83e8-be3f-a1377691757d)。[↩ 返回正文](#cite-5)
+<a id="ref-5" name="ref-5"></a>〔5〕 Yaniv Leviathan、Matan Kalman、Yossi Matias．[Fast Inference from Transformers via Speculative Decoding](https://arxiv.org/abs/2211.17192v2)。[↩ 返回正文](#cite-5)
 
-<a id="ref-6" name="ref-6"></a>〔6〕 Yaniv Leviathan、Matan Kalman、Yossi Matias．[Fast Inference from Transformers via Speculative Decoding](https://arxiv.org/abs/2211.17192v2)。[↩ 返回正文](#cite-6)
+<a id="ref-6" name="ref-6"></a>〔6〕 Charlie Chen 等．[Accelerating Large Language Model Decoding with Speculative Sampling](https://arxiv.org/abs/2302.01318v1)。[↩ 返回正文](#cite-6)
 
-<a id="ref-7" name="ref-7"></a>〔7〕 Charlie Chen 等．[Accelerating Large Language Model Decoding with Speculative Sampling](https://arxiv.org/abs/2302.01318v1)。[↩ 返回正文](#cite-7)
+<a id="ref-7" name="ref-7"></a>〔7〕 Heming Xia 等．[Speculative Decoding: Exploiting Speculative Execution for Accelerating Seq2seq Generation](https://arxiv.org/abs/2203.16487v6)。[↩ 返回正文](#cite-7)
 
-<a id="ref-8" name="ref-8"></a>〔8〕 Heming Xia 等．[Speculative Decoding: Exploiting Speculative Execution for Accelerating Seq2seq Generation](https://arxiv.org/abs/2203.16487v6)。[↩ 返回正文](#cite-8)
+<a id="ref-8" name="ref-8"></a>〔8〕 Yongchao Zhou 等．[DistillSpec: Improving Speculative Decoding via Knowledge Distillation](https://arxiv.org/abs/2310.08461v2)。[↩ 返回正文](#cite-8)
 
-<a id="ref-9" name="ref-9"></a>〔9〕 Yongchao Zhou 等．[DistillSpec: Improving Speculative Decoding via Knowledge Distillation](https://arxiv.org/abs/2310.08461v2)。[↩ 返回正文](#cite-9)
+<a id="ref-9" name="ref-9"></a>〔9〕 Jun Zhang 等．[Draft & Verify: Lossless Large Language Model Acceleration via Self-Speculative Decoding](https://arxiv.org/abs/2309.08168v2)。[↩ 返回正文](#cite-9)
 
-<a id="ref-10" name="ref-10"></a>〔10〕 Jun Zhang 等．[Draft & Verify: Lossless Large Language Model Acceleration via Self-Speculative Decoding](https://arxiv.org/abs/2309.08168v2)。[↩ 返回正文](#cite-10)
+<a id="ref-10" name="ref-10"></a>〔10〕 Seongjun Yang 等．[Predictive Pipelined Decoding: A Compute-Latency Trade-off for Exact LLM Decoding](https://arxiv.org/abs/2307.05908v2)。[↩ 返回正文](#cite-10)
 
-<a id="ref-11" name="ref-11"></a>〔11〕 Seongjun Yang 等．[Predictive Pipelined Decoding: A Compute-Latency Trade-off for Exact LLM Decoding](https://arxiv.org/abs/2307.05908v2)。[↩ 返回正文](#cite-11)
+<a id="ref-11" name="ref-11"></a>〔11〕 Andrea Santilli 等．[Accelerating Transformer Inference for Translation via Parallel Decoding](https://arxiv.org/abs/2305.10427v1)。[↩ 返回正文](#cite-11)
 
-<a id="ref-12" name="ref-12"></a>〔12〕 Andrea Santilli 等．[Accelerating Transformer Inference for Translation via Parallel Decoding](https://arxiv.org/abs/2305.10427v1)。[↩ 返回正文](#cite-12)
+<a id="ref-12" name="ref-12"></a>〔12〕 Yichao Fu 等．[Break the Sequential Dependency of LLM Inference Using Lookahead Decoding](https://arxiv.org/abs/2402.02057v1)。[↩ 返回正文](#cite-12)
 
-<a id="ref-13" name="ref-13"></a>〔13〕 Yichao Fu 等．[Break the Sequential Dependency of LLM Inference Using Lookahead Decoding](https://arxiv.org/abs/2402.02057v1)。[↩ 返回正文](#cite-13)
+<a id="ref-13" name="ref-13"></a>〔13〕 Xupeng Miao 等．[SpecInfer: Accelerating Large Language Model Serving with Tree-based Speculative Inference and Verification](https://arxiv.org/abs/2305.09781v4)。[↩ 返回正文](#cite-13)
 
-<a id="ref-14" name="ref-14"></a>〔14〕 Xupeng Miao 等．[SpecInfer: Accelerating Large Language Model Serving with Tree-based Speculative Inference and Verification](https://arxiv.org/abs/2305.09781v4)。[↩ 返回正文](#cite-14)
+<a id="ref-14" name="ref-14"></a>〔14〕 Tianle Cai 等．[Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads](https://arxiv.org/abs/2401.10774v3)。[↩ 返回正文](#cite-14)
 
-<a id="ref-15" name="ref-15"></a>〔15〕 Tianle Cai 等．[Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads](https://arxiv.org/abs/2401.10774v3)。[↩ 返回正文](#cite-15)
+<a id="ref-15" name="ref-15"></a>〔15〕 Harikrishna Narasimhan 等．[Faster Cascades via Speculative Decoding](https://arxiv.org/abs/2405.19261v2)。[↩ 返回正文](#cite-15)
 
-<a id="ref-16" name="ref-16"></a>〔16〕 Harikrishna Narasimhan 等．[Faster Cascades via Speculative Decoding](https://arxiv.org/abs/2405.19261v2)。[↩ 返回正文](#cite-16)
+<a id="ref-16" name="ref-16"></a>〔16〕 Mitchell Stern、Noam Shazeer、Jakob Uszkoreit．[Blockwise Parallel Decoding for Deep Autoregressive Models](https://arxiv.org/abs/1811.03115v1)。[↩ 返回正文](#cite-16)
 
-<a id="ref-17" name="ref-17"></a>〔17〕 Mitchell Stern、Noam Shazeer、Jakob Uszkoreit．[Blockwise Parallel Decoding for Deep Autoregressive Models](https://arxiv.org/abs/1811.03115v1)。[↩ 返回正文](#cite-17)
+<a id="ref-17" name="ref-17"></a>〔17〕 Fabian Gloeckle 等．[Better & Faster Large Language Models via Multi-token Prediction](https://arxiv.org/abs/2404.19737v1)。[↩ 返回正文](#cite-17)
 
-<a id="ref-18" name="ref-18"></a>〔18〕 Fabian Gloeckle 等．[Better & Faster Large Language Models via Multi-token Prediction](https://arxiv.org/abs/2404.19737v1)。[↩ 返回正文](#cite-18)
-
-<a id="ref-19" name="ref-19"></a>〔19〕 DeepSeek-AI．[DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437v2)。[↩ 返回正文](#cite-19)
+<a id="ref-18" name="ref-18"></a>〔18〕 DeepSeek-AI．[DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437v2)。[↩ 返回正文](#cite-18)
