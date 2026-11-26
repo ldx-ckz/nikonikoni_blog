@@ -10,7 +10,7 @@ tags:
   - Deep Learning
 category:
   - LLM
-section: technology
+section: tech
 author: nikonikoni
 draft: false
 ---
